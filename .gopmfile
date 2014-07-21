@@ -1,0 +1,5 @@
+[target]
+path=levi
+
+[deps]
+github.com/CMGS/websocket = 
