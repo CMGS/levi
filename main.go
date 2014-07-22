@@ -24,5 +24,5 @@ func main() {
 		return
 	}
 	defer ws.Close()
-	getJobs(ws, sleep, num)
+	getTasks(ws, sleep, num)
 }

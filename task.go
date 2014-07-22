@@ -1,23 +1,30 @@
 package main
 
-type Info struct {
-	Name      string
-	Image     string
-	Version   string
-	Bind      int
-	Port      int
-	Container string
-}
-
-type Config struct {
+type Task struct {
+	Type       int
+	Image      string
+	Version    string
+	Bind       int
+	Port       int
+	Container  string
 	Entrypoint string
 	Memory     int
 	Cpus       float64
 }
 
-type Message struct {
-	Id               string
-	Type             string
-	App_info         Info
-	Container_config Config
+type AppTask struct {
+	Id    string
+	Name  string
+	Tasks []Task
+}
+
+type Taskhub struct {
+	task map[string]bool
+	done chan string
+}
+
+var Type map[int]string = map[int]string{
+	1: "ADD",
+	2: "REMOVE",
+	3: "UPDATE",
 }
