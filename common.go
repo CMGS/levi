@@ -1,8 +1,7 @@
 package main
 
-var Methods map[int]string = map[int]string{
-	1: "ADD",
-	2: "REMOVE",
-	3: "UPDATE",
-	4: "KEEP",
-}
+const (
+	ADD_CONTAINER    = 1
+	REMOVE_CONTAINER = 2
+	UPDATE_CONTAINER = 3
+)

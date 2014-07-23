@@ -28,6 +28,6 @@ func main() {
 	defer ws.Close()
 	levi := Levi{}
 	levi.Connect(docker_url)
-	levi.Parse()
+	levi.Load()
 	levi.Loop(ws, sleep, num, dst_dir)
 }

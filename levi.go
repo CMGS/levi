@@ -21,7 +21,6 @@ type Levi struct {
 	containers []docker.APIContainers
 	info       map[string][]container_info
 	tasks      []AppTask
-	waitgroup  *sync.WaitGroup
 }
 
 func (self *Levi) Connect(docker_url *string) {
@@ -36,7 +35,7 @@ func (self *Levi) Connect(docker_url *string) {
 	}
 }
 
-func (self *Levi) Parse() {
+func (self *Levi) Load() {
 	self.info = make(map[string][]container_info)
 	for _, container := range self.containers {
 		split_names := strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
@@ -46,50 +45,28 @@ func (self *Levi) Parse() {
 	fmt.Println(self.info)
 }
 
-func (self *Levi) Clear() {
+func (self *Levi) clear() {
 	self.tasks = []AppTask{}
 }
 
-func (self *Levi) AppendTask(apptask *AppTask) {
+func (self *Levi) appendTask(apptask *AppTask) {
 	self.tasks = append(self.tasks, *apptask)
 }
 
-func (self *Levi) deploy_app(job Task, task *AppTask) {
-	defer self.waitgroup.Done()
-	fmt.Println(Methods[task.Type], job)
-}
-
-func (self *Levi) deploy_apptask(task AppTask) {
-	defer self.waitgroup.Done()
-	fmt.Println("Appname", task.Name)
-	for _, job := range task.Tasks {
-		self.waitgroup.Add(1)
-		go self.deploy_app(job, &task)
+func (self *Levi) process() {
+	deploy := Deploy{
+		make(map[string][]int),
+		&self.tasks,
+		&sync.WaitGroup{},
 	}
-}
-
-func (self *Levi) incr(method int) {
-	self.waitgroup = &sync.WaitGroup{}
-	for _, task := range self.tasks {
-		if task.Type != method {
-			continue
-		}
-		self.waitgroup.Add(1)
-		go self.deploy_apptask(task)
-	}
-	self.waitgroup.Wait()
-}
-
-func (self *Levi) Process() {
-	fmt.Println("Process", Methods[1])
-	self.incr(1)
-	fmt.Println("Process", Methods[3])
-	self.incr(3)
+	deploy.Deploy()
+	deploy.Wait()
+	fmt.Println(deploy.Result())
 }
 
 func (self *Levi) Loop(ws *websocket.Conn, sleep *int, num *int, dst_dir *string) {
 	ws.SetPingHandler(nil)
-	self.Clear()
+	self.clear()
 	for {
 		got_task := false
 		apptask := AppTask{}
@@ -104,13 +81,13 @@ func (self *Levi) Loop(ws *websocket.Conn, sleep *int, num *int, dst_dir *string
 		}
 		switch {
 		case !got_task && len(self.tasks) != 0:
-			self.Process()
-			self.Clear()
+			self.process()
+			self.clear()
 		case got_task:
-			self.AppendTask(&apptask)
+			self.appendTask(&apptask)
 			if len(self.tasks) >= *num {
-				self.Process()
-				self.Clear()
+				self.process()
+				self.clear()
 			}
 		}
 	}
