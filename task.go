@@ -32,7 +32,7 @@ func (self *Taskhub) Process(task AppTask) {
 	go func() {
 		//TODO add/remove/update container
 		for _, job := range task.Tasks {
-			fmt.Println("process", Type[job.Type], task.Name)
+			fmt.Println("process", Methods[job.Type], task.Name)
 		}
 		self.done <- task.Id
 	}()

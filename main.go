@@ -11,6 +11,7 @@ func main() {
 	var addr = flag.String("addr", "ws://127.0.0.1:8888/", "master service address")
 	var sleep = flag.Int("sleep", 15, "merge task time")
 	var num = flag.Int("num", 3, "max tasks")
+	var docker_url = flag.String("url", "unix:///var/run/docker.sock", "docker url")
 
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -25,7 +26,7 @@ func main() {
 	}
 	defer ws.Close()
 	levi := Levi{}
-	levi.Connect()
+	levi.Connect(docker_url)
 	levi.Parse()
 	levi.Loop(ws, sleep, num)
 }

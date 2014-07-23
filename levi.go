@@ -22,9 +22,9 @@ type Levi struct {
 	tasks      []AppTask
 }
 
-func (self *Levi) Connect() {
+func (self *Levi) Connect(docker_url *string) {
 	var err error
-	self.client, err = docker.NewClient(LOCAL_DOCKER)
+	self.client, err = docker.NewClient(*docker_url)
 	if err != nil {
 		log.Fatal("Connect docker failed")
 	}
