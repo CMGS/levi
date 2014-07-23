@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -52,25 +53,40 @@ func (self *Levi) AppendTask(apptask *AppTask) {
 	self.tasks = append(self.tasks, *apptask)
 }
 
-func (self *Levi) Process() {
-	h := Taskhub{
-		tasks: make(map[string]bool),
-		done:  make(chan string),
-	}
+func deploy_app(job Task, task *AppTask, wg *sync.WaitGroup) {
+	defer wg.Done()
+	fmt.Println(Methods[task.Type], job)
+}
 
-	for _, task := range self.tasks {
-		fmt.Println("Process", task.Name)
-		h.Process(task)
-	}
-
-	for {
-		if h.CheckDone() {
-			break
-		}
+func deploy_apptask(task AppTask, wg *sync.WaitGroup) {
+	defer wg.Done()
+	fmt.Println(task.Name)
+	for _, job := range task.Tasks {
+		wg.Add(1)
+		go deploy_app(job, &task, wg)
 	}
 }
 
-func (self *Levi) Loop(ws *websocket.Conn, sleep *int, num *int) {
+func (self *Levi) incr(method int) {
+	wg := sync.WaitGroup{}
+	for _, task := range self.tasks {
+		if task.Type != method {
+			continue
+		}
+		wg.Add(1)
+		go deploy_apptask(task, &wg)
+	}
+	wg.Wait()
+}
+
+func (self *Levi) Process() {
+	fmt.Println("Process", Methods[1])
+	self.incr(1)
+	fmt.Println("Process", Methods[3])
+	self.incr(3)
+}
+
+func (self *Levi) Loop(ws *websocket.Conn, sleep *int, num *int, dst_dir *string) {
 	ws.SetPingHandler(nil)
 	self.Clear()
 	for {

@@ -12,6 +12,7 @@ func main() {
 	var sleep = flag.Int("sleep", 15, "merge task time")
 	var num = flag.Int("num", 3, "max tasks")
 	var docker_url = flag.String("url", "unix:///var/run/docker.sock", "docker url")
+	var dst_dir = flag.String("dst", "/tmp", "nginx conf dir")
 
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -28,5 +29,5 @@ func main() {
 	levi := Levi{}
 	levi.Connect(docker_url)
 	levi.Parse()
-	levi.Loop(ws, sleep, num)
+	levi.Loop(ws, sleep, num, dst_dir)
 }
