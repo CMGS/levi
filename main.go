@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/CMGS/websocket"
 	"log"
 	"net/http"
@@ -25,7 +24,8 @@ func main() {
 		return
 	}
 	defer ws.Close()
-	contains := load_containers()
-	fmt.Println(process_containers(&contains))
-	getTasks(ws, sleep, num)
+	levi := Levi{}
+	levi.Connect()
+	levi.Parse()
+	levi.Loop(ws, sleep, num)
 }

@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 type Task struct {
 	Type       int
 	Image      string
@@ -19,13 +23,31 @@ type AppTask struct {
 }
 
 type Taskhub struct {
-	task map[string]bool
-	done chan string
+	tasks map[string]bool
+	done  chan string
 }
 
-var Type map[int]string = map[int]string{
-	1: "ADD",
-	2: "REMOVE",
-	3: "UPDATE",
-	4: "KEEP",
+func (self *Taskhub) Process(task AppTask) {
+	self.tasks[task.Id] = false
+	go func() {
+		//TODO add/remove/update container
+		for _, job := range task.Tasks {
+			fmt.Println("process", Type[job.Type], task.Name)
+		}
+		self.done <- task.Id
+	}()
+}
+
+func (self *Taskhub) CheckDone() bool {
+	select {
+	case tid := <-self.done:
+		self.tasks[tid] = true
+		fmt.Println(tid, "done")
+	}
+	for _, done := range self.tasks {
+		if !done {
+			return false
+		}
+	}
+	return true
 }
