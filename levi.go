@@ -21,6 +21,7 @@ type Levi struct {
 	containers []docker.APIContainers
 	info       map[string][]container_info
 	tasks      []AppTask
+	waitgroup  *sync.WaitGroup
 }
 
 func (self *Levi) Connect(docker_url *string) {
@@ -53,30 +54,30 @@ func (self *Levi) AppendTask(apptask *AppTask) {
 	self.tasks = append(self.tasks, *apptask)
 }
 
-func deploy_app(job Task, task *AppTask, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (self *Levi) deploy_app(job Task, task *AppTask) {
+	defer self.waitgroup.Done()
 	fmt.Println(Methods[task.Type], job)
 }
 
-func deploy_apptask(task AppTask, wg *sync.WaitGroup) {
-	defer wg.Done()
-	fmt.Println(task.Name)
+func (self *Levi) deploy_apptask(task AppTask) {
+	defer self.waitgroup.Done()
+	fmt.Println("Appname", task.Name)
 	for _, job := range task.Tasks {
-		wg.Add(1)
-		go deploy_app(job, &task, wg)
+		self.waitgroup.Add(1)
+		go self.deploy_app(job, &task)
 	}
 }
 
 func (self *Levi) incr(method int) {
-	wg := sync.WaitGroup{}
+	self.waitgroup = &sync.WaitGroup{}
 	for _, task := range self.tasks {
 		if task.Type != method {
 			continue
 		}
-		wg.Add(1)
-		go deploy_apptask(task, &wg)
+		self.waitgroup.Add(1)
+		go self.deploy_apptask(task)
 	}
-	wg.Wait()
+	self.waitgroup.Wait()
 }
 
 func (self *Levi) Process() {
