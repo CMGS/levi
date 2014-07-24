@@ -2,17 +2,22 @@ package main
 
 import (
 	"fmt"
+	"github.com/fsouza/go-dockerclient"
+	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 type Deploy struct {
-	result map[string][]int
-	tasks  *[]AppTask
-	wg     *sync.WaitGroup
-	info   map[string]map[string]string
-	dst    *string
+	result     map[string][]int
+	tasks      *[]AppTask
+	wg         *sync.WaitGroup
+	info       map[string]map[string]string
+	containers *[]docker.APIContainers
+	dst        *string
+	ngx        *string
 }
 
 type deploy_method func(int, Task, AppTask)
@@ -80,14 +85,38 @@ func (self *Deploy) genNginxConf() {
 	}
 }
 
+func (self *Deploy) restartNginx() {
+	cmd := exec.Command(*self.ngx, "-s", "reload")
+	err := cmd.Run()
+	if err != nil {
+		//TODO stop deploy
+		fmt.Println(err)
+	}
+}
+
+func (self *Deploy) genInfo() {
+	for _, container := range *self.containers {
+		split_names := strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
+		if self.info[split_names[0]] == nil {
+			self.info[split_names[0]] = make(map[string]string)
+		}
+		self.info[split_names[0]][container.ID] = split_names[1]
+	}
+}
+
 func (self *Deploy) Deploy() {
+	self.genInfo()
+	//Add Container
 	self.doDeploy(REMOVE_CONTAINER, self.incr)
 	//Wait For Add Container Finish
 	self.Wait()
-	//Remove Contaners
+	//Remove Containers In Info
 	self.markRemove()
 	//Update Nginx Config
 	self.genNginxConf()
+	//TODO restart nginx
+	self.restartNginx()
+	//Remove Containers
 	self.doDeploy(ADD_CONTAINER, self.decr)
 	self.Wait()
 }

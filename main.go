@@ -23,6 +23,7 @@ func main() {
 	var num = flag.Int("num", 3, "max tasks")
 	var url = flag.String("url", "unix:///var/run/docker.sock", "docker url")
 	var dst = flag.String("dst", "/tmp", "nginx conf dir")
+	var ngx = flag.String("nginx", "/usr/local/nginx/sbin/nginx", "nginx location")
 	var c = make(chan os.Signal, 1)
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -45,5 +46,5 @@ func main() {
 	levi.Connect(url)
 	levi.Load()
 	go levi.Report(ws, sleep)
-	levi.Loop(ws, wait, num, dst)
+	levi.Loop(ws, wait, num, dst, ngx)
 }
