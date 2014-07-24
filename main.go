@@ -21,8 +21,8 @@ func main() {
 	var wait = flag.Int("wait", 15, "wait task time")
 	var sleep = flag.Int("sleep", 15, "report sleep time")
 	var num = flag.Int("num", 3, "max tasks")
-	var docker_url = flag.String("url", "unix:///var/run/docker.sock", "docker url")
-	var dst_dir = flag.String("dst", "/tmp", "nginx conf dir")
+	var url = flag.String("url", "unix:///var/run/docker.sock", "docker url")
+	var dst = flag.String("dst", "/tmp", "nginx conf dir")
 	var c = make(chan os.Signal, 1)
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -42,8 +42,8 @@ func main() {
 		return
 	}
 	defer ws.Close()
-	levi.Connect(docker_url)
+	levi.Connect(url)
 	levi.Load()
 	go levi.Report(ws, sleep)
-	levi.Loop(ws, wait, num, dst_dir)
+	levi.Loop(ws, wait, num, dst)
 }

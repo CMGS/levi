@@ -11,22 +11,17 @@ import (
 	"time"
 )
 
-type container_info struct {
-	id   string
-	port string
-}
-
 type Levi struct {
 	client     *docker.Client
 	containers []docker.APIContainers
-	info       map[string][]container_info
+	info       map[string]map[string]string
 	tasks      []AppTask
 	finish     bool
 }
 
-func (self *Levi) Connect(docker_url *string) {
+func (self *Levi) Connect(url *string) {
 	var err error
-	self.client, err = docker.NewClient(*docker_url)
+	self.client, err = docker.NewClient(*url)
 	if err != nil {
 		log.Fatal("Connect docker failed")
 	}
@@ -38,11 +33,13 @@ func (self *Levi) Load() {
 	if err != nil {
 		log.Fatal("Query docker failed")
 	}
-	self.info = make(map[string][]container_info)
+	self.info = make(map[string]map[string]string)
 	for _, container := range self.containers {
 		split_names := strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
-		info := container_info{container.ID, split_names[1]}
-		self.info[split_names[0]] = append(self.info[split_names[0]], info)
+		if self.info[split_names[0]] == nil {
+			self.info[split_names[0]] = make(map[string]string)
+		}
+		self.info[split_names[0]][container.ID] = split_names[1]
 	}
 }
 
@@ -54,14 +51,15 @@ func (self *Levi) appendTask(apptask *AppTask) {
 	self.tasks = append(self.tasks, *apptask)
 }
 
-func (self *Levi) process() map[string][]int {
+func (self *Levi) process(dst *string) map[string][]int {
 	deploy := Deploy{
 		make(map[string][]int),
 		&self.tasks,
 		&sync.WaitGroup{},
+		self.info,
+		dst,
 	}
 	deploy.Deploy()
-	deploy.Wait()
 	return deploy.Result()
 }
 
@@ -92,7 +90,7 @@ func (self *Levi) Report(ws *websocket.Conn, sleep *int) {
 	}
 }
 
-func (self *Levi) Loop(ws *websocket.Conn, wait *int, num *int, dst_dir *string) {
+func (self *Levi) Loop(ws *websocket.Conn, wait *int, num *int, dst *string) {
 	self.clear()
 	for !self.finish {
 		apptask := AppTask{}
@@ -100,18 +98,20 @@ func (self *Levi) Loop(ws *websocket.Conn, wait *int, num *int, dst_dir *string)
 		fmt.Println(time.Now())
 		switch got_task := self.read(ws, &apptask); {
 		case !got_task && len(self.tasks) != 0:
-			result := self.process()
+			result := self.process(dst)
 			if err := ws.WriteJSON(&result); err != nil {
 				log.Fatal("Write Fail:", err)
 			}
+			self.Load()
 			self.clear()
 		case got_task:
 			self.appendTask(&apptask)
 			if len(self.tasks) >= *num {
-				result := self.process()
+				result := self.process(dst)
 				if err := ws.WriteJSON(&result); err != nil {
 					log.Fatal("Write Fail:", err)
 				}
+				self.Load()
 				self.clear()
 			}
 		}
