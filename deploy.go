@@ -35,8 +35,8 @@ func (self *Deploy) doDeploy(method int, fn deploy_method) {
 			defer self.wg.Done()
 			fmt.Println("Appname", apptask.Name)
 			self.result[apptask.Id] = make([]int, len(apptask.Tasks))
+			self.wg.Add(len(apptask.Tasks))
 			for index, job := range apptask.Tasks {
-				self.wg.Add(1)
 				go fn(index, job, apptask)
 			}
 		}(apptask)
@@ -44,9 +44,7 @@ func (self *Deploy) doDeploy(method int, fn deploy_method) {
 }
 
 func (self *Deploy) Deploy() {
-	fmt.Println("Add containers")
 	self.doDeploy(REMOVE_CONTAINER, self.incr)
-	fmt.Println("Remove containers")
 	self.doDeploy(ADD_CONTAINER, self.decr)
 }
 
