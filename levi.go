@@ -51,6 +51,7 @@ func (self *Levi) Process(ws *websocket.Conn, dst, ngx *string) {
 			*ngx, *dst,
 			make(map[string]*Upstream),
 		},
+		self.client,
 	}
 	deploy.Deploy()
 	result := deploy.Result()

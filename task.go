@@ -1,7 +1,6 @@
 package main
 
 type Task struct {
-	Image      string
 	Version    string
 	Bind       int
 	Port       int

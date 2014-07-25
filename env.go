@@ -31,7 +31,7 @@ func (self *Env) CreateUser() {
 
 func (self *Env) CreateConfigFile(appname string, job Task, wg *sync.WaitGroup) {
 	defer wg.Done()
-	file_name := strings.Join([]string{job.Image, strconv.Itoa(job.Bind)}, "_")
+	file_name := strings.Join([]string{appname, strconv.Itoa(job.Bind)}, "_")
 	file_name = strings.Join([]string{file_name, "yaml"}, ".")
 	file_path := path.Join(DEFAULT_HOME_PATH, appname, file_name)
 	out, err := yaml.Marshal(job.Config)

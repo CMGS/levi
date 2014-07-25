@@ -14,24 +14,32 @@ type Deploy struct {
 	wg         *sync.WaitGroup
 	containers *[]docker.APIContainers
 	nginx      *Nginx
+	client     *docker.Client
 }
 
 func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 	//TODO PULL Image
 	//TODO GEN Servie Conf
 	//TODO RUN Container
-	fmt.Println("Add Container", job.Image, job.Version)
+	fmt.Println("Add Container", apptask.Name, "@", job.Version)
 	//TODO test now, use fake cid
 	self.nginx.New(apptask.Name, "test_cid"+strconv.Itoa(index), strconv.Itoa(job.Bind))
 	return "test_cid" + strconv.Itoa(index)
 }
 
-func (self *Deploy) remove(index int, job Task, apptask AppTask) {
-	//TODO Stop Container
-	//TODO Remove Servie Conf
-	//TODO Remove Image
+func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 	fmt.Println("Remove Container", apptask.Name, job.Container)
+	container := Container{self.client, job.Container, apptask.Name, ""}
+	if err := container.Stop(); err != nil {
+		fmt.Println("Stop Container", job.Container, "failed")
+		return false
+	}
+	if err := container.Remove(); err != nil {
+		fmt.Println("Remove Container", job.Container, "failed")
+		return false
+	}
 	self.nginx.Remove(apptask.Name, job.Container)
+	return true
 }
 
 func (self *Deploy) AddContainer(index int, job Task, apptask AppTask) {
@@ -42,13 +50,17 @@ func (self *Deploy) AddContainer(index int, job Task, apptask AppTask) {
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask) {
 	defer self.wg.Done()
-	self.remove(index, job, apptask)
-	self.result[apptask.Id][index] = true
+	result := self.remove(index, job, apptask)
+	self.result[apptask.Id][index] = result
 }
 
 func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask) {
 	defer self.wg.Done()
-	self.remove(index, job, apptask)
+	result := self.remove(index, job, apptask)
+	if !result {
+		self.result[apptask.Id][index] = ""
+		return
+	}
 	cid := self.add(index, job, apptask)
 	self.result[apptask.Id][index] = cid
 }
