@@ -9,24 +9,25 @@ import (
 )
 
 type Deploy struct {
-	result     map[string][]bool
+	result     map[string][]interface{}
 	tasks      *[]AppTask
 	wg         *sync.WaitGroup
 	containers *[]docker.APIContainers
 	nginx      *Nginx
 }
 
-func (self *Deploy) add(index int, job Task, apptask AppTask) {
+func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 	//TODO PULL Image
 	//TODO GEN Servie Conf
 	//TODO RUN Container
 	fmt.Println("Add Container", job.Image, job.Version)
 	//TODO test now, use fake cid
 	self.nginx.New(apptask.Name, "test_cid"+strconv.Itoa(index), strconv.Itoa(job.Bind))
+	return "test_cid" + strconv.Itoa(index)
 }
 
 func (self *Deploy) remove(index int, job Task, apptask AppTask) {
-	//TODO S``top Container
+	//TODO Stop Container
 	//TODO Remove Servie Conf
 	//TODO Remove Image
 	fmt.Println("Remove Container", apptask.Name, job.Container)
@@ -35,8 +36,8 @@ func (self *Deploy) remove(index int, job Task, apptask AppTask) {
 
 func (self *Deploy) AddContainer(index int, job Task, apptask AppTask) {
 	defer self.wg.Done()
-	self.add(index, job, apptask)
-	self.result[apptask.Id][index] = true
+	cid := self.add(index, job, apptask)
+	self.result[apptask.Id][index] = cid
 }
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask) {
@@ -48,8 +49,8 @@ func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask) {
 func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask) {
 	defer self.wg.Done()
 	self.remove(index, job, apptask)
-	self.add(index, job, apptask)
-	self.result[apptask.Id][index] = true
+	cid := self.add(index, job, apptask)
+	self.result[apptask.Id][index] = cid
 }
 
 func (self *Deploy) DoDeploy() {
@@ -58,7 +59,7 @@ func (self *Deploy) DoDeploy() {
 		go func(apptask AppTask) {
 			defer self.wg.Done()
 			fmt.Println("Appname", apptask.Name)
-			self.result[apptask.Id] = make([]bool, len(apptask.Tasks))
+			self.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
 			self.wg.Add(len(apptask.Tasks))
 			switch apptask.Type {
 			case ADD_CONTAINER:
@@ -86,9 +87,24 @@ func (self *Deploy) GenerateInfo() {
 	}
 }
 
+func (self *Deploy) PrepareEnv() {
+	for _, apptask := range *self.tasks {
+		self.wg.Add(1)
+		go func(apptask AppTask) {
+			defer self.wg.Done()
+			env := Env{apptask.Name, apptask.Uid}
+			env.CreateUser()
+		}(apptask)
+	}
+}
+
 func (self *Deploy) Deploy() {
 	//Generate Container Info
 	self.GenerateInfo()
+	//Prepare OS environment
+	self.PrepareEnv()
+	//Wait Env Prepared
+	self.Wait()
 	//Do Deploy
 	self.DoDeploy()
 	//Wait For Container Control Finish
@@ -99,7 +115,7 @@ func (self *Deploy) Deploy() {
 	self.nginx.Restart()
 }
 
-func (self *Deploy) Result() map[string][]bool {
+func (self *Deploy) Result() map[string][]interface{} {
 	return self.result
 }
 

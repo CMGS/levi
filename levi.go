@@ -43,7 +43,7 @@ func (self *Levi) Append(apptask *AppTask) {
 
 func (self *Levi) Process(ws *websocket.Conn, dst, ngx *string) {
 	deploy := Deploy{
-		make(map[string][]bool),
+		make(map[string][]interface{}),
 		&self.tasks,
 		&sync.WaitGroup{},
 		&self.containers,
