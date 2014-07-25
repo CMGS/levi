@@ -89,11 +89,18 @@ func (self *Deploy) GenerateInfo() {
 
 func (self *Deploy) PrepareEnv() {
 	for _, apptask := range *self.tasks {
+		if apptask.Type == REMOVE_CONTAINER {
+			continue
+		}
 		self.wg.Add(1)
 		go func(apptask AppTask) {
 			defer self.wg.Done()
 			env := Env{apptask.Name, apptask.Uid}
 			env.CreateUser()
+			self.wg.Add(len(apptask.Tasks))
+			for _, job := range apptask.Tasks {
+				go env.CreateConfigFile(apptask.Name, job, self.wg)
+			}
 		}(apptask)
 	}
 }

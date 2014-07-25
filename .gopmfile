@@ -1,5 +1,11 @@
 [target]
-path=levi
+path = levi
 
 [deps]
 github.com/CMGS/websocket = 
+github.com/fsouza/go-dockerclient = 
+github.com/go-yaml/yaml = tag:v1
+
+[res]
+include = 
+

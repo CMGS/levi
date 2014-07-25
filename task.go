@@ -9,6 +9,7 @@ type Task struct {
 	Entrypoint string
 	Memory     int
 	Cpus       float64
+	Config     interface{}
 }
 
 type AppTask struct {
