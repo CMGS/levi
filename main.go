@@ -24,6 +24,7 @@ func main() {
 	var url = flag.String("url", "unix:///var/run/docker.sock", "docker url")
 	var dst = flag.String("dst", "/tmp", "nginx conf dir")
 	var ngx = flag.String("nginx", "/usr/local/nginx/sbin/nginx", "nginx location")
+	var registry = flag.String("registry", "127.0.0.1", "registry location")
 	var c = make(chan os.Signal, 1)
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -46,5 +47,5 @@ func main() {
 	levi.Connect(url)
 	levi.Load()
 	go levi.Report(ws, sleep)
-	levi.Loop(ws, wait, num, dst, ngx)
+	levi.Loop(ws, wait, num, dst, ngx, registry)
 }

@@ -15,13 +15,23 @@ type Deploy struct {
 	containers *[]docker.APIContainers
 	nginx      *Nginx
 	client     *docker.Client
+	registry   *string
 }
 
 func (self *Deploy) add(index int, job Task, apptask AppTask) string {
-	//TODO PULL Image
-	//TODO GEN Servie Conf
-	//TODO RUN Container
 	fmt.Println("Add Container", apptask.Name, "@", job.Version)
+	image := Image{
+		self.client,
+		apptask.Name,
+		job.Version,
+		GenerateConfigPath(apptask.Name, job.Bind),
+		job.Bind,
+	}
+	if err := image.Pull(self.registry); err != nil {
+		fmt.Println("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
+		return ""
+	}
+	//TODO RUN Container
 	//TODO test now, use fake cid
 	self.nginx.New(apptask.Name, "test_cid"+strconv.Itoa(index), strconv.Itoa(job.Bind))
 	return "test_cid" + strconv.Itoa(index)
@@ -29,7 +39,11 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 
 func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 	fmt.Println("Remove Container", apptask.Name, job.Container)
-	container := Container{self.client, job.Container, apptask.Name, ""}
+	container := Container{
+		client:  self.client,
+		id:      job.Container,
+		appname: apptask.Name,
+	}
 	if err := container.Stop(); err != nil {
 		fmt.Println("Stop Container", job.Container, "failed")
 		return false
@@ -111,7 +125,7 @@ func (self *Deploy) PrepareEnv() {
 			env.CreateUser()
 			self.wg.Add(len(apptask.Tasks))
 			for _, job := range apptask.Tasks {
-				go env.CreateConfigFile(apptask.Name, job, self.wg)
+				go env.CreateConfigFile(job, self.wg)
 			}
 		}(apptask)
 	}

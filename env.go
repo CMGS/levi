@@ -11,6 +11,13 @@ import (
 	"sync"
 )
 
+func GenerateConfigPath(appname string, apport int) string {
+	file_name := strings.Join([]string{appname, strconv.Itoa(apport)}, "_")
+	file_name = strings.Join([]string{file_name, "yaml"}, ".")
+	file_path := path.Join(DEFAULT_HOME_PATH, appname, file_name)
+	return file_path
+}
+
 type Env struct {
 	appname string
 	appuid  int
@@ -29,11 +36,9 @@ func (self *Env) CreateUser() {
 	}
 }
 
-func (self *Env) CreateConfigFile(appname string, job Task, wg *sync.WaitGroup) {
+func (self *Env) CreateConfigFile(job Task, wg *sync.WaitGroup) {
 	defer wg.Done()
-	file_name := strings.Join([]string{appname, strconv.Itoa(job.Bind)}, "_")
-	file_name = strings.Join([]string{file_name, "yaml"}, ".")
-	file_path := path.Join(DEFAULT_HOME_PATH, appname, file_name)
+	file_path := GenerateConfigPath(self.appname, job.Bind)
 	out, err := yaml.Marshal(job.Config)
 	if err != nil {
 		fmt.Println("Get app config failed", err)

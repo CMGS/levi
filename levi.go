@@ -41,7 +41,7 @@ func (self *Levi) Append(apptask *AppTask) {
 	self.tasks = append(self.tasks, *apptask)
 }
 
-func (self *Levi) Process(ws *websocket.Conn, dst, ngx *string) {
+func (self *Levi) Process(ws *websocket.Conn, dst, ngx, registry *string) {
 	deploy := Deploy{
 		make(map[string][]interface{}),
 		&self.tasks,
@@ -52,6 +52,7 @@ func (self *Levi) Process(ws *websocket.Conn, dst, ngx *string) {
 			make(map[string]*Upstream),
 		},
 		self.client,
+		registry,
 	}
 	deploy.Deploy()
 	result := deploy.Result()
@@ -87,7 +88,7 @@ func (self *Levi) Report(ws *websocket.Conn, sleep *int) {
 	}
 }
 
-func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx *string) {
+func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx, registry *string) {
 	var got_task bool
 	self.Clear()
 	for !self.finish {
@@ -98,7 +99,7 @@ func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx *string) {
 			self.Append(&apptask)
 		}
 		if (len(self.tasks) != 0 && !got_task) || len(self.tasks) >= *num {
-			self.Process(ws, dst, ngx)
+			self.Process(ws, dst, ngx, registry)
 			self.Load()
 			self.Clear()
 		}
