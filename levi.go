@@ -13,7 +13,6 @@ import (
 type Levi struct {
 	client     *docker.Client
 	containers []docker.APIContainers
-	info       map[string]map[string]string
 	tasks      []AppTask
 	finish     bool
 }
@@ -34,28 +33,33 @@ func (self *Levi) Load() {
 	}
 }
 
-func (self *Levi) clear() {
+func (self *Levi) Clear() {
 	self.tasks = []AppTask{}
 }
 
-func (self *Levi) appendTask(apptask *AppTask) {
+func (self *Levi) Append(apptask *AppTask) {
 	self.tasks = append(self.tasks, *apptask)
 }
 
-func (self *Levi) process(dst, ngx *string) map[string][]int {
+func (self *Levi) Process(ws *websocket.Conn, dst, ngx *string) {
 	deploy := Deploy{
-		make(map[string][]int),
+		make(map[string][]bool),
 		&self.tasks,
 		&sync.WaitGroup{},
-		make(map[string]map[string]string),
 		&self.containers,
-		dst, ngx,
+		&Nginx{
+			*ngx, *dst,
+			make(map[string]*Upstream),
+		},
 	}
 	deploy.Deploy()
-	return deploy.Result()
+	result := deploy.Result()
+	if err := ws.WriteJSON(&result); err != nil {
+		log.Fatal("Write Fail:", err)
+	}
 }
 
-func (self *Levi) read(ws *websocket.Conn, apptask *AppTask) bool {
+func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
 	switch err := ws.ReadJSON(apptask); {
 	case err != nil:
 		if e, ok := err.(net.Error); !ok || !e.Timeout() {
@@ -83,29 +87,19 @@ func (self *Levi) Report(ws *websocket.Conn, sleep *int) {
 }
 
 func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx *string) {
-	self.clear()
+	var got_task bool
+	self.Clear()
 	for !self.finish {
 		apptask := AppTask{}
 		ws.SetReadDeadline(time.Now().Add(time.Duration(*wait) * time.Second))
 		fmt.Println(time.Now())
-		switch got_task := self.read(ws, &apptask); {
-		case !got_task && len(self.tasks) != 0:
-			result := self.process(dst, ngx)
-			if err := ws.WriteJSON(&result); err != nil {
-				log.Fatal("Write Fail:", err)
-			}
+		if got_task = self.Read(ws, &apptask); got_task {
+			self.Append(&apptask)
+		}
+		if (len(self.tasks) != 0 && !got_task) || len(self.tasks) >= *num {
+			self.Process(ws, dst, ngx)
 			self.Load()
-			self.clear()
-		case got_task:
-			self.appendTask(&apptask)
-			if len(self.tasks) >= *num {
-				result := self.process(dst, ngx)
-				if err := ws.WriteJSON(&result); err != nil {
-					log.Fatal("Write Fail:", err)
-				}
-				self.Load()
-				self.clear()
-			}
+			self.Clear()
 		}
 	}
 }

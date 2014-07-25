@@ -1,5 +1,5 @@
-upstream {{.AppName}}_backend {
-{{range $index, $port := .Ports}}
+upstream {{.Appname}}_backend {
+{{range $cid, $port := .Ports}}
     server 127.0.0.1:{{$port}} max_fails=1 fail_timeout=1s;{{end}}
 
 }

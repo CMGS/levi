@@ -11,8 +11,8 @@ import (
 	"syscall"
 )
 
-func exit(levi *Levi, c *chan os.Signal) {
-	fmt.Println("Catch", <-*c)
+func exit(levi *Levi, c chan os.Signal) {
+	fmt.Println("Catch", <-c)
 	levi.Close()
 }
 
@@ -33,7 +33,7 @@ func main() {
 
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
-	go exit(&levi, &c)
+	go exit(&levi, c)
 
 	flag.Parse()
 	header := http.Header{}
