@@ -44,5 +44,7 @@ func (self *Env) CreateConfigFile(job Task, wg *sync.WaitGroup) {
 		fmt.Println("Get app config failed", err)
 		return
 	}
-	err = ioutil.WriteFile(file_path, out, 0600)
+	if err := ioutil.WriteFile(file_path, out, 0600); err != nil {
+		fmt.Println("Save app config failed", err)
+	}
 }

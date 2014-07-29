@@ -32,8 +32,9 @@ func (self *Image) Run(job *Task, registry *string, user string) (*docker.Contai
 		Memory:     job.Memory,
 		User:       user,
 		Image:      image,
-		Entrypoint: []string{job.Entrypoint},
+		Cmd:        job.Cmd,
 		Env:        []string{"RUNENV=PROD"},
+		WorkingDir: "/",
 	}
 	opts := docker.CreateContainerOptions{
 		strings.Join([]string{self.appname, strconv.Itoa(job.Bind)}, "_"),
