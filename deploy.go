@@ -31,10 +31,14 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		fmt.Println("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
-	//TODO RUN Container
-	//TODO test now, use fake cid
-	self.nginx.New(apptask.Name, "test_cid"+strconv.Itoa(index), strconv.Itoa(job.Bind))
-	return "test_cid" + strconv.Itoa(index)
+	container, err := image.Run(&job, self.registry, apptask.User)
+	if err != nil {
+		fmt.Println("Run Image", apptask.Name, "@", job.Version, "Failed", err)
+		return ""
+	}
+	fmt.Println("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
+	self.nginx.New(apptask.Name, container.ID, strconv.Itoa(job.Bind))
+	return container.ID
 }
 
 func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
