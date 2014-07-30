@@ -26,7 +26,9 @@ func (self *Container) Stop() error {
 	file_name = strings.Join([]string{file_name, "yaml"}, ".")
 	self.config_path = path.Join(DEFAULT_HOME_PATH, self.appname, file_name)
 	if err := self.client.StopContainer(self.id, CONTAINER_STOP_TIMEOUT); err != nil {
-		return err
+		if err := self.client.KillContainer(docker.KillContainerOptions{ID: self.id}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
