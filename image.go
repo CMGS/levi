@@ -13,20 +13,21 @@ type Image struct {
 	version     string
 	config_path string
 	port        int
+	registry    *string
 }
 
-func (self *Image) Pull(registry *string) error {
-	url := strings.Join([]string{*registry, self.appname}, "/")
+func (self *Image) Pull() error {
+	url := strings.Join([]string{*self.registry, self.appname}, "/")
 	if err := self.client.PullImage(
-		docker.PullImageOptions{url, *registry, self.version, os.Stdout},
+		docker.PullImageOptions{url, *self.registry, self.version, os.Stdout},
 		docker.AuthConfiguration{}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (self *Image) Run(job *Task, registry *string, user string) (*docker.Container, error) {
-	image := strings.Join([]string{strings.Join([]string{*registry, self.appname}, "/"), self.version}, ":")
+func (self *Image) Run(job *Task, user string) (*docker.Container, error) {
+	image := strings.Join([]string{strings.Join([]string{*self.registry, self.appname}, "/"), self.version}, ":")
 	config := docker.Config{
 		CpuShares:  job.Cpus,
 		Memory:     job.Memory,

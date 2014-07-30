@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/go-yaml/yaml"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 func GenerateConfigPath(appname string, apport int) string {
@@ -36,15 +36,21 @@ func (self *Env) CreateUser() {
 	}
 }
 
-func (self *Env) CreateConfigFile(job Task, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (self *Env) CreateConfigFile(job *Task) error {
 	file_path := GenerateConfigPath(self.appname, job.Bind)
 	out, err := yaml.Marshal(job.Config)
 	if err != nil {
 		fmt.Println("Get app config failed", err)
-		return
+		return err
 	}
 	if err := ioutil.WriteFile(file_path, out, 0600); err != nil {
 		fmt.Println("Save app config failed", err)
+		return err
 	}
+	return nil
+}
+
+func (self *Env) RemoveConfigFile(job *Task) error {
+	file_path := GenerateConfigPath(self.appname, job.Bind)
+	return os.Remove(file_path)
 }

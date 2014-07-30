@@ -26,12 +26,13 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		job.Version,
 		GenerateConfigPath(apptask.Name, job.Bind),
 		job.Bind,
+		self.registry,
 	}
-	if err := image.Pull(self.registry); err != nil {
+	if err := image.Pull(); err != nil {
 		fmt.Println("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
-	container, err := image.Run(&job, self.registry, apptask.User)
+	container, err := image.Run(&job, apptask.User)
 	if err != nil {
 		fmt.Println("Run Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
@@ -60,23 +61,34 @@ func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 	return true
 }
 
-func (self *Deploy) AddContainer(index int, job Task, apptask AppTask) {
+func (self *Deploy) AddContainer(index int, job Task, apptask AppTask, env *Env) {
 	defer self.wg.Done()
+	if err := env.CreateConfigFile(&job); err != nil {
+		return
+	}
 	cid := self.add(index, job, apptask)
 	self.result[apptask.Id][index] = cid
 }
 
-func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask) {
+func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask, env *Env) {
 	defer self.wg.Done()
+	if err := env.RemoveConfigFile(&job); err != nil {
+		return
+	}
 	result := self.remove(index, job, apptask)
 	self.result[apptask.Id][index] = result
 }
 
-func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask) {
+func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask, env *Env) {
 	defer self.wg.Done()
-	result := self.remove(index, job, apptask)
-	if !result {
-		self.result[apptask.Id][index] = ""
+	self.result[apptask.Id][index] = ""
+	if err := env.RemoveConfigFile(&job); err != nil {
+		return
+	}
+	if result := self.remove(index, job, apptask); !result {
+		return
+	}
+	if err := env.CreateConfigFile(&job); err != nil {
 		return
 	}
 	cid := self.add(index, job, apptask)
@@ -91,19 +103,20 @@ func (self *Deploy) DoDeploy() {
 			fmt.Println("Appname", apptask.Name)
 			self.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
 			self.wg.Add(len(apptask.Tasks))
+			env := Env{apptask.User, apptask.Uid}
+			var f func(index int, job Task, apptask AppTask, env *Env)
 			switch apptask.Type {
 			case ADD_CONTAINER:
-				for index, job := range apptask.Tasks {
-					go self.AddContainer(index, job, apptask)
-				}
-			case REMOVE_CONTAINER:
-				for index, job := range apptask.Tasks {
-					go self.RemoveContainer(index, job, apptask)
-				}
+				env.CreateUser()
+				f = self.AddContainer
 			case UPDATE_CONTAINER:
-				for index, job := range apptask.Tasks {
-					go self.UpdateApp(index, job, apptask)
-				}
+				env.CreateUser()
+				f = self.UpdateApp
+			case REMOVE_CONTAINER:
+				f = self.RemoveContainer
+			}
+			for index, job := range apptask.Tasks {
+				go f(index, job, apptask, &env)
 			}
 		}(apptask)
 	}
@@ -117,31 +130,9 @@ func (self *Deploy) GenerateInfo() {
 	}
 }
 
-func (self *Deploy) PrepareEnv() {
-	for _, apptask := range *self.tasks {
-		if apptask.Type == REMOVE_CONTAINER {
-			continue
-		}
-		self.wg.Add(1)
-		go func(apptask AppTask) {
-			defer self.wg.Done()
-			env := Env{apptask.Name, apptask.Uid}
-			env.CreateUser()
-			self.wg.Add(len(apptask.Tasks))
-			for _, job := range apptask.Tasks {
-				go env.CreateConfigFile(job, self.wg)
-			}
-		}(apptask)
-	}
-}
-
 func (self *Deploy) Deploy() {
 	//Generate Container Info
 	self.GenerateInfo()
-	//Prepare OS environment
-	self.PrepareEnv()
-	//Wait Env Prepared
-	self.Wait()
 	//Do Deploy
 	self.DoDeploy()
 	//Wait For Container Control Finish
