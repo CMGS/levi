@@ -51,11 +51,11 @@ func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 		appname: apptask.Name,
 	}
 	if err := container.Stop(); err != nil {
-		fmt.Println("Stop Container", job.Container, "failed")
+		fmt.Println("Stop Container", job.Container, "failed", err)
 		return false
 	}
 	if err := container.Remove(); err != nil {
-		fmt.Println("Remove Container", job.Container, "failed")
+		fmt.Println("Remove Container", job.Container, "failed", err)
 		return false
 	}
 	self.nginx.Remove(apptask.Name, job.Container)
@@ -71,7 +71,7 @@ func (self *Deploy) AddContainer(index int, job Task, apptask AppTask, env *Env)
 	self.result[apptask.Id][index] = cid
 }
 
-func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask) {
+func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask, _ *Env) {
 	defer self.wg.Done()
 	result := self.remove(index, job, apptask)
 	self.result[apptask.Id][index] = result

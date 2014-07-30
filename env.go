@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-yaml/yaml"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -46,9 +45,4 @@ func (self *Env) CreateConfigFile(job *Task) error {
 		return err
 	}
 	return nil
-}
-
-func (self *Env) RemoveConfigFile(job *Task) error {
-	file_path := GenerateConfigPath(self.appname, job.Bind)
-	return os.Remove(file_path)
 }

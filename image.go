@@ -35,7 +35,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 		Image:      image,
 		Cmd:        job.Cmd,
 		Env:        []string{"RUNENV=PROD"},
-		WorkingDir: "/",
+		WorkingDir: fmt.Sprintf("/%s", self.appname),
 	}
 	opts := docker.CreateContainerOptions{
 		fmt.Sprintf("%s_%d", self.appname, job.Bind),

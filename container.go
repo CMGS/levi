@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/fsouza/go-dockerclient"
 	"os"
-	"path"
 )
 
 type Container struct {
@@ -20,8 +19,7 @@ func (self *Container) Stop() error {
 	}
 	ports_mapping := info.NetworkSettings.PortMappingAPI()
 	public_port := ports_mapping[0].PublicPort
-	file_name := GenerateConfigPath(self.appname, public_port)
-	self.config_path = path.Join(DEFAULT_HOME_PATH, self.appname, file_name)
+	self.config_path = GenerateConfigPath(self.appname, public_port)
 	if err := self.client.StopContainer(self.id, CONTAINER_STOP_TIMEOUT); err != nil {
 		if err := self.client.KillContainer(docker.KillContainerOptions{ID: self.id}); err != nil {
 			return err
