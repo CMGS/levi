@@ -27,19 +27,19 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		job.Version,
 		GenerateConfigPath(apptask.Name, job.Bind),
 		job.Bind,
-		self.registry,
+		*self.registry,
 	}
 	if err := image.Pull(); err != nil {
 		fmt.Println("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
-	container, err := image.Run(&job, apptask.User)
+	container, err := image.Run(&job, apptask.Uid)
 	if err != nil {
 		fmt.Println("Run Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
 	fmt.Println("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
-	self.nginx.New(apptask.Name, container.ID, strconv.Itoa(job.Bind))
+	self.nginx.New(apptask.Name, container.ID, strconv.FormatInt(job.Bind, 10))
 	return container.ID
 }
 
@@ -71,11 +71,8 @@ func (self *Deploy) AddContainer(index int, job Task, apptask AppTask, env *Env)
 	self.result[apptask.Id][index] = cid
 }
 
-func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask, env *Env) {
+func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask) {
 	defer self.wg.Done()
-	if err := env.RemoveConfigFile(&job); err != nil {
-		return
-	}
 	result := self.remove(index, job, apptask)
 	self.result[apptask.Id][index] = result
 }
@@ -83,9 +80,6 @@ func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask, env *E
 func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask, env *Env) {
 	defer self.wg.Done()
 	self.result[apptask.Id][index] = ""
-	if err := env.RemoveConfigFile(&job); err != nil {
-		return
-	}
 	if result := self.remove(index, job, apptask); !result {
 		return
 	}
@@ -104,7 +98,7 @@ func (self *Deploy) DoDeploy() {
 			fmt.Println("Appname", apptask.Name)
 			self.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
 			self.wg.Add(len(apptask.Tasks))
-			env := Env{apptask.User, apptask.Uid}
+			env := Env{apptask.Name, apptask.Uid}
 			var f func(index int, job Task, apptask AppTask, env *Env)
 			switch apptask.Type {
 			case ADD_CONTAINER:
@@ -126,8 +120,8 @@ func (self *Deploy) DoDeploy() {
 func (self *Deploy) GenerateInfo() {
 	for _, container := range *self.containers {
 		split_names := strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
-		appname, appport := split_names[0], split_names[1]
-		self.nginx.New(appname, container.ID, appport)
+		appname, apport := split_names[0], split_names[1]
+		self.nginx.New(appname, container.ID, apport)
 	}
 }
 
@@ -150,4 +144,9 @@ func (self *Deploy) Result() map[string][]interface{} {
 
 func (self *Deploy) Wait() {
 	self.wg.Wait()
+}
+
+func (self *Deploy) Reset() {
+	self.tasks.Init()
+	self.result = make(map[string][]interface{})
 }

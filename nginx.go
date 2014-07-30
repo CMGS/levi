@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"text/template"
 )
 
@@ -41,7 +40,7 @@ func (self *Nginx) Remove(appname, cid string) {
 
 func (self *Nginx) Save() {
 	for appname, upstream := range self.upstreams {
-		conf_path := path.Join(self.conf_path, strings.Join([]string{appname, "conf"}, "."))
+		conf_path := path.Join(self.conf_path, fmt.Sprintf("%s.conf", appname))
 		f, err := os.Create(conf_path)
 		defer f.Close()
 		if err != nil {

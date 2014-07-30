@@ -8,12 +8,10 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
-	"strings"
 )
 
-func GenerateConfigPath(appname string, apport int) string {
-	file_name := strings.Join([]string{appname, strconv.Itoa(apport)}, "_")
-	file_name = strings.Join([]string{file_name, "yaml"}, ".")
+func GenerateConfigPath(appname string, apport int64) string {
+	file_name := fmt.Sprintf("%s_%d.yaml", appname, apport)
 	file_path := path.Join(DEFAULT_HOME_PATH, appname, file_name)
 	return file_path
 }

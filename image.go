@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/fsouza/go-dockerclient"
 	"os"
 	"strconv"
-	"strings"
 )
 
 type Image struct {
@@ -12,33 +12,33 @@ type Image struct {
 	appname     string
 	version     string
 	config_path string
-	port        int
-	registry    *string
+	port        int64
+	registry    string
 }
 
 func (self *Image) Pull() error {
-	url := strings.Join([]string{*self.registry, self.appname}, "/")
+	url := fmt.Sprintf("%s/%s", self.registry, self.appname)
 	if err := self.client.PullImage(
-		docker.PullImageOptions{url, *self.registry, self.version, os.Stdout},
+		docker.PullImageOptions{url, self.registry, self.version, os.Stdout},
 		docker.AuthConfiguration{}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (self *Image) Run(job *Task, user string) (*docker.Container, error) {
-	image := strings.Join([]string{strings.Join([]string{*self.registry, self.appname}, "/"), self.version}, ":")
+func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
+	image := fmt.Sprintf("%s/%s:%s", self.registry, self.appname, self.version)
 	config := docker.Config{
 		CpuShares:  job.Cpus,
 		Memory:     job.Memory,
-		User:       user,
+		User:       strconv.Itoa(uid),
 		Image:      image,
 		Cmd:        job.Cmd,
 		Env:        []string{"RUNENV=PROD"},
 		WorkingDir: "/",
 	}
 	opts := docker.CreateContainerOptions{
-		strings.Join([]string{self.appname, strconv.Itoa(job.Bind)}, "_"),
+		fmt.Sprintf("%s_%d", self.appname, job.Bind),
 		&config,
 	}
 	container, err := self.client.CreateContainer(opts)
@@ -46,13 +46,13 @@ func (self *Image) Run(job *Task, user string) (*docker.Container, error) {
 		return nil, err
 	}
 	portBindings := make(map[docker.Port][]docker.PortBinding)
-	port := docker.Port(strings.Join([]string{strconv.Itoa(job.Port), "tcp"}, "/"))
+	port := docker.Port(fmt.Sprintf("%d/tcp", job.Port))
 	portBindings[port] = []docker.PortBinding{{
 		HostIp:   "0.0.0.0",
-		HostPort: strconv.Itoa(job.Bind),
+		HostPort: strconv.FormatInt(job.Bind, 10),
 	}}
 	hostConfig := docker.HostConfig{
-		Binds:        []string{strings.Join([]string{self.config_path, "/config.yaml"}, ":")},
+		Binds:        []string{fmt.Sprintf("%s:%s", self.config_path, fmt.Sprintf("/%s/config.yaml", self.appname))},
 		PortBindings: portBindings,
 	}
 	if err := self.client.StartContainer(container.ID, &hostConfig); err != nil {

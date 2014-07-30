@@ -39,7 +39,7 @@ func (self *Levi) Process(ws *websocket.Conn, deploy *Deploy) {
 	if err := ws.WriteJSON(&result); err != nil {
 		log.Fatal("Write Fail:", err)
 	}
-	deploy.tasks.Init()
+	deploy.Reset()
 }
 
 func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {

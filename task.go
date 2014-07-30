@@ -2,8 +2,8 @@ package main
 
 type Task struct {
 	Version   string
-	Bind      int
-	Port      int
+	Bind      int64
+	Port      int64
 	Container string
 	Cmd       []string
 	Memory    uint64
@@ -13,7 +13,6 @@ type Task struct {
 
 type AppTask struct {
 	Id    string
-	User  string
 	Uid   int
 	Name  string
 	Type  int
