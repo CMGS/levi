@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"fmt"
 	"github.com/CMGS/websocket"
 	"github.com/fsouza/go-dockerclient"
@@ -13,7 +14,6 @@ import (
 type Levi struct {
 	client     *docker.Client
 	containers []docker.APIContainers
-	tasks      []AppTask
 	finish     bool
 }
 
@@ -33,32 +33,13 @@ func (self *Levi) Load() {
 	}
 }
 
-func (self *Levi) Clear() {
-	self.tasks = []AppTask{}
-}
-
-func (self *Levi) Append(apptask *AppTask) {
-	self.tasks = append(self.tasks, *apptask)
-}
-
-func (self *Levi) Process(ws *websocket.Conn, dst, ngx, registry *string) {
-	deploy := Deploy{
-		make(map[string][]interface{}),
-		&self.tasks,
-		&sync.WaitGroup{},
-		&self.containers,
-		&Nginx{
-			*ngx, *dst,
-			make(map[string]*Upstream),
-		},
-		self.client,
-		registry,
-	}
+func (self *Levi) Process(ws *websocket.Conn, deploy *Deploy) {
 	deploy.Deploy()
 	result := deploy.Result()
 	if err := ws.WriteJSON(&result); err != nil {
 		log.Fatal("Write Fail:", err)
 	}
+	deploy.tasks.Init()
 }
 
 func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
@@ -90,18 +71,28 @@ func (self *Levi) Report(ws *websocket.Conn, sleep *int) {
 
 func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx, registry *string) {
 	var got_task bool
-	self.Clear()
+	deploy := &Deploy{
+		make(map[string][]interface{}),
+		list.New(),
+		&sync.WaitGroup{},
+		&self.containers,
+		&Nginx{
+			*ngx, *dst,
+			make(map[string]*Upstream),
+		},
+		self.client,
+		registry,
+	}
 	for !self.finish {
 		apptask := AppTask{}
 		ws.SetReadDeadline(time.Now().Add(time.Duration(*wait) * time.Second))
 		fmt.Println(time.Now())
 		if got_task = self.Read(ws, &apptask); got_task {
-			self.Append(&apptask)
+			deploy.tasks.PushBack(apptask)
 		}
-		if (len(self.tasks) != 0 && !got_task) || len(self.tasks) >= *num {
-			self.Process(ws, dst, ngx, registry)
+		if (deploy.tasks.Len() != 0 && !got_task) || deploy.tasks.Len() >= *num {
+			self.Process(ws, deploy)
 			self.Load()
-			self.Clear()
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"fmt"
 	"github.com/fsouza/go-dockerclient"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 
 type Deploy struct {
 	result     map[string][]interface{}
-	tasks      *[]AppTask
+	tasks      *list.List
 	wg         *sync.WaitGroup
 	containers *[]docker.APIContainers
 	nginx      *Nginx
@@ -96,7 +97,7 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask, env *Env) {
 }
 
 func (self *Deploy) DoDeploy() {
-	for _, apptask := range *self.tasks {
+	for apptask := self.tasks.Front(); apptask != nil; apptask = apptask.Next() {
 		self.wg.Add(1)
 		go func(apptask AppTask) {
 			defer self.wg.Done()
@@ -118,7 +119,7 @@ func (self *Deploy) DoDeploy() {
 			for index, job := range apptask.Tasks {
 				go f(index, job, apptask, &env)
 			}
-		}(apptask)
+		}(apptask.Value.(AppTask))
 	}
 }
 
