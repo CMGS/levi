@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
+	"github.com/CMGS/go-dockerclient"
 	"os"
 	"strconv"
 )

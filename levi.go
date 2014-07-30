@@ -3,8 +3,8 @@ package main
 import (
 	"container/list"
 	"fmt"
+	"github.com/CMGS/go-dockerclient"
 	"github.com/CMGS/websocket"
-	"github.com/fsouza/go-dockerclient"
 	"log"
 	"net"
 	"sync"

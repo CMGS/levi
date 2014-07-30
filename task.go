@@ -6,7 +6,7 @@ type Task struct {
 	Port      int64
 	Container string
 	Cmd       []string
-	Memory    uint64
+	Memory    float64
 	Cpus      int64
 	Config    interface{}
 }
