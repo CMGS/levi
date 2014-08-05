@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-yaml/yaml"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -42,6 +43,10 @@ func (self *Env) CreateConfigFile(job *Task) error {
 	}
 	if err := ioutil.WriteFile(file_path, out, 0600); err != nil {
 		fmt.Println("Save app config failed", err)
+		return err
+	}
+	if err := os.Chown(file_path, self.appuid, self.appuid); err != nil {
+		fmt.Println("Set owner as app failed", err)
 		return err
 	}
 	return nil
