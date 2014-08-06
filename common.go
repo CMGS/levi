@@ -7,5 +7,6 @@ const (
 	NGINX_CONF_TMPL        = "etc/site.tmpl"
 	DEFAULT_HOME_PATH      = "/tmp"
 	CONTAINER_STOP_TIMEOUT = 15
-	BRIDGE_MODE            = "bridge"
+	NETWORK_MODE           = "bridge"
+	PERMDIRS               = "/mnt/mfs/permdirs"
 )
