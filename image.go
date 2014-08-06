@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/CMGS/go-dockerclient"
 	"os"
+	"path"
 	"strconv"
 )
 
@@ -56,10 +57,14 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 		HostIp:   "0.0.0.0",
 		HostPort: strconv.FormatInt(job.Bind, 10),
 	}}
+	permdir := path.Join(PERMDIRS, self.appname)
 	hostConfig := docker.HostConfig{
-		Binds:        []string{fmt.Sprintf("%s:%s", self.config_path, fmt.Sprintf("/%s/config.yaml", self.appname))},
+		Binds: []string{
+			fmt.Sprintf("%s:%s", self.config_path, fmt.Sprintf("/%s/config.yaml", self.appname)),
+			fmt.Sprintf("%s:%s", permdir, fmt.Sprintf("/%s/permdir", self.appname)),
+		},
 		PortBindings: portBindings,
-		NetworkMode:  BRIDGE_MODE,
+		NetworkMode:  NETWORK_MODE,
 	}
 	if err := self.client.StartContainer(container.ID, &hostConfig); err != nil {
 		return nil, err
