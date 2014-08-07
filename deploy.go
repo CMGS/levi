@@ -2,8 +2,8 @@ package main
 
 import (
 	"container/list"
-	"fmt"
 	"github.com/CMGS/go-dockerclient"
+	"levi/logger"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,46 +16,44 @@ type Deploy struct {
 	containers *[]docker.APIContainers
 	nginx      *Nginx
 	client     *docker.Client
-	registry   *string
 }
 
 func (self *Deploy) add(index int, job Task, apptask AppTask) string {
-	fmt.Println("Add Container", apptask.Name, "@", job.Version)
+	logger.Info("Add Container", apptask.Name, "@", job.Version)
 	image := Image{
 		self.client,
 		apptask.Name,
 		job.Version,
 		GenerateConfigPath(apptask.Name, job.Bind),
 		job.Bind,
-		*self.registry,
 	}
 	if err := image.Pull(); err != nil {
-		fmt.Println("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
+		logger.Info("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
 	container, err := image.Run(&job, apptask.Uid)
 	if err != nil {
-		fmt.Println("Run Image", apptask.Name, "@", job.Version, "Failed", err)
+		logger.Info("Run Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
-	fmt.Println("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
+	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
 	self.nginx.New(apptask.Name, container.ID, strconv.FormatInt(job.Bind, 10))
 	return container.ID
 }
 
 func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
-	fmt.Println("Remove Container", apptask.Name, job.Container)
+	logger.Info("Remove Container", apptask.Name, job.Container)
 	container := Container{
 		client:  self.client,
 		id:      job.Container,
 		appname: apptask.Name,
 	}
 	if err := container.Stop(); err != nil {
-		fmt.Println("Stop Container", job.Container, "failed", err)
+		logger.Info("Stop Container", job.Container, "failed", err)
 		return false
 	}
 	if err := container.Remove(); err != nil {
-		fmt.Println("Remove Container", job.Container, "failed", err)
+		logger.Info("Remove Container", job.Container, "failed", err)
 		return false
 	}
 	self.nginx.Remove(apptask.Name, job.Container)
@@ -95,7 +93,7 @@ func (self *Deploy) DoDeploy() {
 		self.wg.Add(1)
 		go func(apptask AppTask) {
 			defer self.wg.Done()
-			fmt.Println("Appname", apptask.Name)
+			logger.Info("Appname", apptask.Name)
 			self.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
 			self.wg.Add(len(apptask.Tasks))
 			env := Env{apptask.Name, apptask.Uid}

@@ -2,10 +2,9 @@ package main
 
 import (
 	"container/list"
-	"fmt"
 	"github.com/CMGS/go-dockerclient"
 	"github.com/CMGS/websocket"
-	"log"
+	"levi/logger"
 	"net"
 	"sync"
 	"time"
@@ -17,11 +16,11 @@ type Levi struct {
 	finish     bool
 }
 
-func (self *Levi) Connect(url *string) {
+func (self *Levi) Connect(endpoint string) {
 	var err error
-	self.client, err = docker.NewClient(*url)
+	self.client, err = docker.NewClient(endpoint)
 	if err != nil {
-		log.Fatal("Connect docker failed")
+		logger.Assert(err, "Docker")
 	}
 }
 
@@ -29,7 +28,7 @@ func (self *Levi) Load() {
 	var err error
 	self.containers, err = self.client.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
-		log.Fatal("Query docker failed")
+		logger.Assert(err, "Docker")
 	}
 }
 
@@ -37,7 +36,7 @@ func (self *Levi) Process(ws *websocket.Conn, deploy *Deploy) {
 	deploy.Deploy()
 	result := deploy.Result()
 	if err := ws.WriteJSON(&result); err != nil {
-		log.Fatal("Write Fail:", err)
+		logger.Assert(err, "JSON")
 	}
 	deploy.Reset()
 }
@@ -46,7 +45,7 @@ func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
 	switch err := ws.ReadJSON(apptask); {
 	case err != nil:
 		if e, ok := err.(net.Error); !ok || !e.Timeout() {
-			log.Fatal("Read Fail:", err)
+			logger.Assert(err, "Websocket")
 		}
 	case err == nil:
 		if apptask.Id != "" {
@@ -60,16 +59,16 @@ func (self *Levi) Close() {
 	self.finish = true
 }
 
-func (self *Levi) Report(ws *websocket.Conn, sleep *int) {
+func (self *Levi) Report(ws *websocket.Conn, sleep int) {
 	for !self.finish {
 		if err := ws.WriteJSON(&self.containers); err != nil {
-			log.Fatal("Write Fail:", err)
+			logger.Assert(err, "JSON")
 		}
-		time.Sleep(time.Duration(*sleep) * time.Second)
+		time.Sleep(time.Duration(sleep) * time.Second)
 	}
 }
 
-func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx, registry *string) {
+func (self *Levi) Loop(ws *websocket.Conn, num, wait int) {
 	var got_task bool
 	deploy := &Deploy{
 		make(map[string][]interface{}),
@@ -77,20 +76,18 @@ func (self *Levi) Loop(ws *websocket.Conn, wait, num *int, dst, ngx, registry *s
 		&sync.WaitGroup{},
 		&self.containers,
 		&Nginx{
-			*ngx, *dst,
 			make(map[string]*Upstream),
 		},
 		self.client,
-		registry,
 	}
 	for !self.finish {
 		apptask := AppTask{}
-		ws.SetReadDeadline(time.Now().Add(time.Duration(*wait) * time.Second))
-		fmt.Println(time.Now())
+		ws.SetReadDeadline(time.Now().Add(time.Duration(wait) * time.Second))
+		logger.Debug(time.Now())
 		if got_task = self.Read(ws, &apptask); got_task {
 			deploy.tasks.PushBack(apptask)
 		}
-		if (deploy.tasks.Len() != 0 && !got_task) || deploy.tasks.Len() >= *num {
+		if (deploy.tasks.Len() != 0 && !got_task) || deploy.tasks.Len() >= num {
 			self.Process(ws, deploy)
 			self.Load()
 		}
