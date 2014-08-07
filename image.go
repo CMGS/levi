@@ -4,24 +4,23 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/CMGS/go-dockerclient"
-	"levi/logger"
 	"path"
 	"strconv"
 )
 
 type Image struct {
-	client      *docker.Client
-	appname     string
-	version     string
-	config_path string
-	port        int64
+	client     *docker.Client
+	appname    string
+	version    string
+	configPath string
+	port       int64
 }
 
 func (self *Image) Pull() error {
-	url := fmt.Sprintf("%s/%s", reg_endpoint, self.appname)
+	url := fmt.Sprintf("%s/%s", RegEndpoint, self.appname)
 	buf := bytes.Buffer{}
 	if err := self.client.PullImage(
-		docker.PullImageOptions{url, reg_endpoint, self.version, &buf},
+		docker.PullImageOptions{url, RegEndpoint, self.version, &buf},
 		docker.AuthConfiguration{}); err != nil {
 		logger.Debug(buf.String())
 		return err
@@ -31,7 +30,7 @@ func (self *Image) Pull() error {
 }
 
 func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
-	image := fmt.Sprintf("%s/%s:%s", reg_endpoint, self.appname, self.version)
+	image := fmt.Sprintf("%s/%s:%s", RegEndpoint, self.appname, self.version)
 
 	exposedPorts := make(map[docker.Port]struct{})
 	port := docker.Port(fmt.Sprintf("%d/tcp", job.Port))
@@ -60,14 +59,14 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 		HostIp:   "0.0.0.0",
 		HostPort: strconv.FormatInt(job.Bind, 10),
 	}}
-	permdir := path.Join(permdirs, self.appname)
+	permdir := path.Join(Permdirs, self.appname)
 	hostConfig := docker.HostConfig{
 		Binds: []string{
-			fmt.Sprintf("%s:%s", self.config_path, fmt.Sprintf("/%s/config.yaml", self.appname)),
+			fmt.Sprintf("%s:%s", self.configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
 			fmt.Sprintf("%s:%s", permdir, fmt.Sprintf("/%s/permdir", self.appname)),
 		},
 		PortBindings: portBindings,
-		NetworkMode:  network_mode,
+		NetworkMode:  NetworkMode,
 	}
 	if err := self.client.StartContainer(container.ID, &hostConfig); err != nil {
 		return nil, err

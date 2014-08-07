@@ -3,7 +3,6 @@ package main
 import (
 	"container/list"
 	"github.com/CMGS/go-dockerclient"
-	"levi/logger"
 	"strconv"
 	"strings"
 	"sync"
@@ -117,8 +116,8 @@ func (self *Deploy) DoDeploy() {
 
 func (self *Deploy) GenerateInfo() {
 	for _, container := range *self.containers {
-		split_names := strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
-		appname, apport := split_names[0], split_names[1]
+		var appinfo = strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
+		appname, apport := appinfo[0], appinfo[1]
 		self.nginx.New(appname, container.ID, apport)
 	}
 }

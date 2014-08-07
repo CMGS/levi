@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/CMGS/websocket"
-	"levi/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,22 +15,22 @@ func exit(levi *Levi, c chan os.Signal) {
 }
 
 func main() {
-	var master_endpoint, docker_endpoint string
-	var levi_wait, levi_sleep, levi_num int
+	var MasterEndpoint, DockerEndpoint string
+	var TaskWait, ReportSleep, TaskNum int
 
-	flag.StringVar(&master_endpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
-	flag.StringVar(&docker_endpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
-	flag.StringVar(&ngx_dir, "nginx-dir", "/tmp", "nginx conf dir")
-	flag.StringVar(&ngx_tmpl, "nginx-tmpl", "/etc/site.tmpl", "nginx config file template location")
-	flag.StringVar(&ngx_endpoint, "nginx-endpoint", "/usr/local/nginx/sbin/nginx", "nginx location")
-	flag.StringVar(&reg_endpoint, "registry", "127.0.0.1", "registry location")
-	flag.StringVar(&network_mode, "network", "bridge", "network mode")
-	flag.StringVar(&permdirs, "permdirs", "/mnt/mfs/permdirs", "permdirs location")
-	flag.StringVar(&home_path, "home", "/tmp", "homes dir path")
-	flag.BoolVar(&logger.DebugMode, "DEBUG", false, "enable debug")
-	flag.IntVar(&levi_wait, "wait", 15, "wait task time")
-	flag.IntVar(&levi_sleep, "sleep", 15, "report sleep time")
-	flag.IntVar(&levi_num, "num", 3, "max tasks")
+	flag.StringVar(&MasterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
+	flag.StringVar(&DockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
+	flag.StringVar(&NgxEndpoint, "nginx-endpoint", "/usr/local/nginx/sbin/nginx", "nginx location")
+	flag.StringVar(&RegEndpoint, "registry", "127.0.0.1", "registry location")
+	flag.StringVar(&NgxDir, "nginx-dir", "/tmp", "nginx conf dir")
+	flag.StringVar(&NgxTmpl, "nginx-tmpl", "/etc/site.tmpl", "nginx config file template location")
+	flag.StringVar(&NetworkMode, "network", "bridge", "network mode")
+	flag.StringVar(&Permdirs, "permdirs", "/mnt/mfs/permdirs", "permdirs location")
+	flag.StringVar(&HomePath, "home", "/tmp", "homes dir path")
+	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
+	flag.IntVar(&TaskWait, "wait", 15, "wait task time")
+	flag.IntVar(&ReportSleep, "sleep", 15, "report sleep time")
+	flag.IntVar(&TaskNum, "num", 3, "max tasks")
 	flag.Parse()
 
 	var levi = Levi{}
@@ -45,15 +44,14 @@ func main() {
 		WriteBufferSize: 1024,
 	}
 
-	ws, _, err := dialer.Dial(master_endpoint, http.Header{})
+	ws, _, err := dialer.Dial(MasterEndpoint, http.Header{})
 	if err != nil {
 		logger.Assert(err, "Master")
 	}
 	defer ws.Close()
 
-	levi.Connect(docker_endpoint)
+	levi.Connect(DockerEndpoint)
 	levi.Load()
-	go levi.Report(ws, levi_sleep)
-	//levi.Loop(ws, wait, num, dst, ngx, registry)
-	levi.Loop(ws, levi_num, levi_wait)
+	go levi.Report(ws, ReportSleep)
+	levi.Loop(ws, TaskNum, TaskNum)
 }
