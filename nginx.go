@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"levi/logger"
 	"os"
 	"os/exec"
 	"path"
@@ -14,8 +15,7 @@ type Upstream struct {
 }
 
 type Nginx struct {
-	bin, conf_path string
-	upstreams      map[string]*Upstream
+	upstreams map[string]*Upstream
 }
 
 func (self *Nginx) New(appname, cid, port string) {
@@ -40,24 +40,24 @@ func (self *Nginx) Remove(appname, cid string) {
 
 func (self *Nginx) Save() {
 	for appname, upstream := range self.upstreams {
-		conf_path := path.Join(self.conf_path, fmt.Sprintf("%s.conf", appname))
+		conf_path := path.Join(ngx_dir, fmt.Sprintf("%s.conf", appname))
 		f, err := os.Create(conf_path)
 		defer f.Close()
 		if err != nil {
-			fmt.Println("Create upstream conf failed", err)
+			logger.Info("Create upstream conf failed", err)
 		}
-		tmpl := template.Must(template.ParseFiles(NGINX_CONF_TMPL))
+		tmpl := template.Must(template.ParseFiles(ngx_tmpl))
 		err = tmpl.Execute(f, upstream)
 		if err != nil {
-			fmt.Println("Generate upstream conf failed", err)
+			logger.Info("Generate upstream conf failed", err)
 		}
 	}
 }
 
 func (self *Nginx) Restart() {
-	cmd := exec.Command(self.bin, "-s", "reload")
+	cmd := exec.Command(ngx_endpoint, "-s", "reload")
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		logger.Info("Restart nginx failed", err)
 	}
 }
