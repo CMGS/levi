@@ -7,5 +7,7 @@ const (
 	CONTAINER_STOP_TIMEOUT = 15
 )
 
-var ngx_dir, ngx_endpoint, reg_endpoint string
-var network_mode, permdirs, ngx_tmpl, home_path string
+var logger = Logger{}
+
+var NgxDir, NgxEndpoint, NgxTmpl, RegEndpoint string
+var NetworkMode, Permdirs, HomePath string

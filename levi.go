@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"github.com/CMGS/go-dockerclient"
 	"github.com/CMGS/websocket"
-	"levi/logger"
 	"net"
 	"sync"
 	"time"
@@ -69,7 +68,7 @@ func (self *Levi) Report(ws *websocket.Conn, sleep int) {
 }
 
 func (self *Levi) Loop(ws *websocket.Conn, num, wait int) {
-	var got_task bool
+	var newtask bool
 	deploy := &Deploy{
 		make(map[string][]interface{}),
 		list.New(),
@@ -84,10 +83,10 @@ func (self *Levi) Loop(ws *websocket.Conn, num, wait int) {
 		apptask := AppTask{}
 		ws.SetReadDeadline(time.Now().Add(time.Duration(wait) * time.Second))
 		logger.Debug(time.Now())
-		if got_task = self.Read(ws, &apptask); got_task {
+		if newtask = self.Read(ws, &apptask); newtask {
 			deploy.tasks.PushBack(apptask)
 		}
-		if (deploy.tasks.Len() != 0 && !got_task) || deploy.tasks.Len() >= num {
+		if (deploy.tasks.Len() != 0 && !newtask) || deploy.tasks.Len() >= num {
 			self.Process(ws, deploy)
 			self.Load()
 		}

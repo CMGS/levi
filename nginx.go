@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"levi/logger"
 	"os"
 	"os/exec"
 	"path"
@@ -40,13 +39,13 @@ func (self *Nginx) Remove(appname, cid string) {
 
 func (self *Nginx) Save() {
 	for appname, upstream := range self.upstreams {
-		conf_path := path.Join(ngx_dir, fmt.Sprintf("%s.conf", appname))
-		f, err := os.Create(conf_path)
+		var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
+		f, err := os.Create(configPath)
 		defer f.Close()
 		if err != nil {
 			logger.Info("Create upstream conf failed", err)
 		}
-		tmpl := template.Must(template.ParseFiles(ngx_tmpl))
+		tmpl := template.Must(template.ParseFiles(NgxTmpl))
 		err = tmpl.Execute(f, upstream)
 		if err != nil {
 			logger.Info("Generate upstream conf failed", err)
@@ -55,7 +54,7 @@ func (self *Nginx) Save() {
 }
 
 func (self *Nginx) Restart() {
-	cmd := exec.Command(ngx_endpoint, "-s", "reload")
+	cmd := exec.Command(NgxEndpoint, "-s", "reload")
 	err := cmd.Run()
 	if err != nil {
 		logger.Info("Restart nginx failed", err)
