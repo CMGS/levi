@@ -36,7 +36,7 @@ func main() {
 	flag.StringVar(&NetworkMode, "network", "bridge", "network mode")
 	flag.StringVar(&Permdirs, "permdirs", "/mnt/mfs/permdirs", "permdirs location")
 	flag.StringVar(&HomePath, "home", "/tmp", "homes dir path")
-	flag.StringVar(&PidFile, "pidfile", "/var/run/levl.pid", "pid file")
+	flag.StringVar(&PidFile, "pidfile", "/var/run/levi.pid", "pid file")
 	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
 	flag.IntVar(&TaskWait, "wait", 15, "wait task time")
 	flag.IntVar(&ReportSleep, "sleep", 15, "report sleep time")
