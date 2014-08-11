@@ -34,7 +34,7 @@ func (self *Nginx) Remove(appname, cid string) {
 	}
 	if len(upstream.Ports) == 0 {
 		delete(self.upstreams, appname)
-		Clear(appname)
+		self.Clear(appname)
 	}
 }
 
