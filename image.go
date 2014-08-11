@@ -62,7 +62,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 	permdir := path.Join(Permdirs, self.appname)
 	hostConfig := docker.HostConfig{
 		Binds: []string{
-			fmt.Sprintf("%s:%s", self.configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
+			fmt.Sprintf("%s:%s:ro", self.configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
 			fmt.Sprintf("%s:%s", permdir, fmt.Sprintf("/%s/permdir", self.appname)),
 		},
 		PortBindings: portBindings,

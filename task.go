@@ -9,6 +9,7 @@ type Task struct {
 	Memory    float64
 	Cpus      int64
 	Config    interface{}
+	Daemon    bool
 }
 
 type AppTask struct {
