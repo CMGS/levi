@@ -34,6 +34,14 @@ func (self *Nginx) Remove(appname, cid string) {
 	}
 	if len(upstream.Ports) == 0 {
 		delete(self.upstreams, appname)
+		Clear(appname)
+	}
+}
+
+func (self *Nginx) Clear(appname string) {
+	var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
+	if err := os.Remove(configPath); err != nil {
+		logger.Info(err)
 	}
 }
 
