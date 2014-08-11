@@ -66,7 +66,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 	}
 
 	opts := docker.CreateContainerOptions{
-		fmt.Sprintf("%s_%d", self.appname, job.ident),
+		fmt.Sprintf("%s_%s", self.appname, job.ident),
 		&config,
 	}
 
