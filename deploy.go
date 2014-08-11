@@ -2,8 +2,8 @@ package main
 
 import (
 	"container/list"
+	"fmt"
 	"github.com/CMGS/go-dockerclient"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -23,7 +23,6 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		self.client,
 		apptask.Name,
 		job.Version,
-		GenerateConfigPath(apptask.Name, job.Bind),
 		job.Bind,
 	}
 	if err := image.Pull(); err != nil {
@@ -36,7 +35,9 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		return ""
 	}
 	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
-	self.nginx.New(apptask.Name, container.ID, strconv.FormatInt(job.Bind, 10))
+	if job.Bind != 0 {
+		self.nginx.New(apptask.Name, container.ID, job.ident)
+	}
 	return container.ID
 }
 
@@ -108,6 +109,12 @@ func (self *Deploy) DoDeploy() {
 				f = self.RemoveContainer
 			}
 			for index, job := range apptask.Tasks {
+				switch {
+				case job.Daemon != "":
+					job.ident = fmt.Sprintf("daemon_%s", job.Daemon)
+				case job.Daemon == "" && job.Bind != 0:
+					job.ident = fmt.Sprintf("%d", job.Bind)
+				}
 				go f(index, job, apptask, &env)
 			}
 		}(apptask.Value.(AppTask))
@@ -117,6 +124,9 @@ func (self *Deploy) DoDeploy() {
 func (self *Deploy) GenerateInfo() {
 	for _, container := range *self.containers {
 		var appinfo = strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
+		if strings.Contains(appinfo[1], "daemon_") {
+			continue
+		}
 		appname, apport := appinfo[0], appinfo[1]
 		self.nginx.New(appname, container.ID, apport)
 	}

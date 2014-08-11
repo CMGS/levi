@@ -11,8 +11,8 @@ import (
 	"strconv"
 )
 
-func GenerateConfigPath(appname string, apport int64) string {
-	filename := fmt.Sprintf("%s_%d.yaml", appname, apport)
+func GenerateConfigPath(appname string, ident string) string {
+	filename := fmt.Sprintf("%s_%s.yaml", appname, ident)
 	filepath := path.Join(HomePath, appname, filename)
 	return filepath
 }
@@ -47,7 +47,7 @@ func (self *Env) CreateUser() {
 }
 
 func (self *Env) CreateConfigFile(job *Task) error {
-	var configPath = GenerateConfigPath(self.appname, job.Bind)
+	configPath := GenerateConfigPath(self.appname, job.ident)
 	out, err := yaml.Marshal(job.Config)
 	if err != nil {
 		logger.Info("Get app config failed", err)
