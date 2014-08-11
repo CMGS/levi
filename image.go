@@ -9,11 +9,10 @@ import (
 )
 
 type Image struct {
-	client     *docker.Client
-	appname    string
-	version    string
-	configPath string
-	port       int64
+	client  *docker.Client
+	appname string
+	version string
+	port    int64
 }
 
 func (self *Image) Pull() error {
@@ -31,6 +30,7 @@ func (self *Image) Pull() error {
 
 func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", RegEndpoint, self.appname, self.version)
+	configPath := GenerateConfigPath(self.appname, job.ident)
 
 	config := docker.Config{
 		CpuShares:  job.Cpus,
@@ -44,14 +44,14 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 
 	hostConfig := docker.HostConfig{
 		Binds: []string{
-			fmt.Sprintf("%s:%s:ro", self.configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
+			fmt.Sprintf("%s:%s:ro", configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
 			fmt.Sprintf("%s:%s", path.Join(Permdirs, self.appname), fmt.Sprintf("/%s/permdir", self.appname)),
 			"/var/run:/var/run",
 		},
 		NetworkMode: NetworkMode,
 	}
 
-	if !job.Daemon {
+	if job.Daemon == "" {
 		port := docker.Port(fmt.Sprintf("%d/tcp", job.Port))
 		exposedPorts := make(map[docker.Port]struct{})
 		exposedPorts[port] = struct{}{}
@@ -66,7 +66,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 	}
 
 	opts := docker.CreateContainerOptions{
-		fmt.Sprintf("%s_%d", self.appname, job.Bind),
+		fmt.Sprintf("%s_%d", self.appname, job.ident),
 		&config,
 	}
 
