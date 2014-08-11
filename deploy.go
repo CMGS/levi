@@ -35,7 +35,7 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		return ""
 	}
 	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
-	if job.Bind != 0 {
+	if job.Daemon == "" {
 		self.nginx.New(apptask.Name, container.ID, job.ident)
 	}
 	return container.ID
