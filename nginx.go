@@ -15,6 +15,14 @@ type Upstream struct {
 
 type Nginx struct {
 	upstreams map[string]*Upstream
+	update    map[string]struct{}
+}
+
+func (self *Nginx) SetUpdate(appname string) {
+	_, ok := self.update[appname]
+	if !ok {
+		self.update[appname] = struct{}{}
+	}
 }
 
 func (self *Nginx) New(appname, cid, port string) {
@@ -24,10 +32,10 @@ func (self *Nginx) New(appname, cid, port string) {
 	self.upstreams[appname].Ports[cid] = port
 }
 
-func (self *Nginx) Remove(appname, cid string) {
+func (self *Nginx) Remove(appname, cid string) bool {
 	upstream, ok := self.upstreams[appname]
 	if !ok {
-		return
+		return false
 	}
 	if len(upstream.Ports) > 0 {
 		delete(upstream.Ports, cid)
@@ -36,6 +44,7 @@ func (self *Nginx) Remove(appname, cid string) {
 		delete(self.upstreams, appname)
 		self.Clear(appname)
 	}
+	return true
 }
 
 func (self *Nginx) Clear(appname string) {
@@ -46,7 +55,8 @@ func (self *Nginx) Clear(appname string) {
 }
 
 func (self *Nginx) Save() {
-	for appname, upstream := range self.upstreams {
+	for appname, _ := range self.update {
+		upstream := self.upstreams[appname]
 		var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
 		f, err := os.Create(configPath)
 		defer f.Close()
@@ -62,6 +72,11 @@ func (self *Nginx) Save() {
 }
 
 func (self *Nginx) Restart() {
+	if len(self.update) == 0 {
+		logger.Info("No nginx config file update, nginx will not restart")
+		return
+	}
+	logger.Debug("Reload by", self.update)
 	cmd := exec.Command(NgxEndpoint, "-s", "reload")
 	err := cmd.Run()
 	if err != nil {
