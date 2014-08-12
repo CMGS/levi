@@ -2,7 +2,6 @@ package main
 
 import (
 	"container/list"
-	"fmt"
 	"github.com/CMGS/go-dockerclient"
 	"strings"
 	"sync"
@@ -35,8 +34,8 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		return ""
 	}
 	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
-	if !job.ident.IsDaemon(apptask.Name) {
-		self.nginx.New(apptask.Name, container.ID, job.ident.String())
+	if !job.CheckDaemon() {
+		self.nginx.New(apptask.Name, container.ID, job.ident)
 	}
 	return container.ID
 }
@@ -109,11 +108,10 @@ func (self *Deploy) DoDeploy() {
 				f = self.RemoveContainer
 			}
 			for index, job := range apptask.Tasks {
-				switch {
-				case job.Daemon != "":
-					job.ident = Ident(fmt.Sprintf("daemon_%s", job.Daemon))
-				case job.Daemon == "" && job.Bind != 0:
-					job.ident = Ident(fmt.Sprintf("%d", job.Bind))
+				if job.IsDaemon() {
+					job.SetAsDaemon()
+				} else {
+					job.SetAsService()
 				}
 				go f(index, job, apptask, &env)
 			}
