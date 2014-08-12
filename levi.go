@@ -77,6 +77,7 @@ func (self *Levi) Loop(ws *websocket.Conn, num, wait int) {
 		&self.containers,
 		&Nginx{
 			make(map[string]*Upstream),
+			make(map[string]struct{}),
 		},
 		self.client,
 	}

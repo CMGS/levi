@@ -36,6 +36,7 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
 	if !job.CheckDaemon() {
 		self.nginx.New(apptask.Name, container.ID, job.ident)
+		self.nginx.SetUpdate(apptask.Name)
 	}
 	return container.ID
 }
@@ -55,7 +56,9 @@ func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 		logger.Info("Remove Container", job.Container, "failed", err)
 		return false
 	}
-	self.nginx.Remove(apptask.Name, job.Container)
+	if ok := self.nginx.Remove(apptask.Name, job.Container); ok {
+		self.nginx.SetUpdate(apptask.Name)
+	}
 	return true
 }
 
