@@ -1,16 +1,10 @@
-// +build
-
 package main
 
 import (
 	"fmt"
 	"gopkg.in/yaml.v1"
 	"io/ioutil"
-	"os"
-	"os/exec"
-	"os/user"
 	"path"
-	"strconv"
 )
 
 func GenerateConfigPath(appname string, ident string) string {
@@ -24,28 +18,8 @@ type Env struct {
 	appuid  int
 }
 
-func (self *Env) CheckUser() bool {
-	if _, err := user.LookupId(strconv.Itoa(self.appuid)); err != nil {
-		return false
-	}
-	return true
-}
-
 func (self *Env) CreateUser() {
-	if self.CheckUser() {
-		logger.Info("User", self.appname, "exist")
-		return
-	}
-	cmd := exec.Command(
-		"useradd", self.appname, "-d",
-		path.Join(HomePath, self.appname),
-		"-m", "-s", "/sbin/nologin", "-u",
-		strconv.Itoa(self.appuid),
-	)
-	err := cmd.Run()
-	if err != nil {
-		logger.Info(err)
-	}
+	logger.Info("OSX have no useradd command.")
 }
 
 func (self *Env) SaveFile(configPath string, out []byte) error {
@@ -53,10 +27,7 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 		logger.Info("Save app config failed", err)
 		return err
 	}
-	if err := os.Chown(configPath, self.appuid, self.appuid); err != nil {
-		logger.Info("Set owner as app failed", err)
-		return err
-	}
+	logger.Info("OSX can not set app owner")
 	return nil
 }
 

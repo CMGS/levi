@@ -47,6 +47,7 @@ func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
 			logger.Assert(err, "Websocket")
 		}
 	case err == nil:
+		logger.Debug(apptask)
 		if apptask.Id != "" {
 			return true
 		}
