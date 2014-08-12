@@ -30,7 +30,7 @@ func (self *Image) Pull() error {
 
 func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", RegEndpoint, self.appname, self.version)
-	configPath := GenerateConfigPath(self.appname, job.ident)
+	configPath := GenerateConfigPath(self.appname, job.ident.String())
 
 	config := docker.Config{
 		CpuShares:  job.Cpus,
