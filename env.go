@@ -61,7 +61,7 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 }
 
 func (self *Env) CreateConfigFile(job *Task) error {
-	configPath := GenerateConfigPath(self.appname, job.ident.String())
+	configPath := GenerateConfigPath(self.appname, job.ident)
 	if job.Config == nil {
 		ret := self.SaveFile(configPath, []byte{})
 		return ret

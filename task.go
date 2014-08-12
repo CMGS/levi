@@ -2,19 +2,7 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
-
-type Ident string
-
-func (self Ident) IsDaemon(appname string) bool {
-	prefix := fmt.Sprintf("%s_daemon_", appname)
-	return strings.HasPrefix(self.String(), prefix)
-}
-
-func (self Ident) String() string {
-	return string(self)
-}
 
 type Task struct {
 	Version   string
@@ -26,7 +14,24 @@ type Task struct {
 	Cpus      int64
 	Config    interface{}
 	Daemon    string
-	ident     Ident
+	ident     string
+}
+
+func (self *Task) IsDaemon() bool {
+	return self.Daemon != ""
+}
+
+func (self *Task) CheckDaemon() bool {
+	daemon_ident := fmt.Sprintf("daemon_%s", self.Daemon)
+	return daemon_ident == self.ident
+}
+
+func (self *Task) SetAsDaemon() {
+	self.ident = fmt.Sprintf("daemon_%s", self.Daemon)
+}
+
+func (self *Task) SetAsService() {
+	self.ident = fmt.Sprintf("%d", self.Bind)
 }
 
 type AppTask struct {
