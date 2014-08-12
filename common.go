@@ -10,4 +10,4 @@ const (
 var logger = Logger{}
 
 var NgxDir, NgxEndpoint, NgxTmpl, RegEndpoint string
-var NetworkMode, Permdirs, HomePath string
+var NetworkMode, Permdirs, HomePath, PidFile string
