@@ -56,17 +56,20 @@ func (self *Nginx) Clear(appname string) {
 
 func (self *Nginx) Save() {
 	for appname, _ := range self.update {
-		upstream := self.upstreams[appname]
+		upstream, ok := self.upstreams[appname]
+		if !ok {
+			continue
+		}
 		var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
 		f, err := os.Create(configPath)
 		defer f.Close()
 		if err != nil {
-			logger.Info("Create upstream conf failed", err)
+			logger.Info("Create upstream config failed", err)
 		}
 		tmpl := template.Must(template.ParseFiles(NgxTmpl))
 		err = tmpl.Execute(f, upstream)
 		if err != nil {
-			logger.Info("Generate upstream conf failed", err)
+			logger.Info("Generate upstream config failed", err)
 		}
 	}
 }
