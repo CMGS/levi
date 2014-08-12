@@ -35,8 +35,8 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 		return ""
 	}
 	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
-	if job.Daemon == "" {
-		self.nginx.New(apptask.Name, container.ID, job.ident)
+	if !job.ident.IsDaemon(apptask.Name) {
+		self.nginx.New(apptask.Name, container.ID, job.ident.String())
 	}
 	return container.ID
 }
@@ -111,9 +111,9 @@ func (self *Deploy) DoDeploy() {
 			for index, job := range apptask.Tasks {
 				switch {
 				case job.Daemon != "":
-					job.ident = fmt.Sprintf("daemon_%s", job.Daemon)
+					job.ident = Ident(fmt.Sprintf("daemon_%s", job.Daemon))
 				case job.Daemon == "" && job.Bind != 0:
-					job.ident = fmt.Sprintf("%d", job.Bind)
+					job.ident = Ident(fmt.Sprintf("%d", job.Bind))
 				}
 				go f(index, job, apptask, &env)
 			}
