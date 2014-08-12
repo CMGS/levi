@@ -1,4 +1,4 @@
-// +build
+// +build !windows
 
 package main
 
