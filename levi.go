@@ -35,7 +35,8 @@ func (self *Levi) Process(ws *websocket.Conn, deploy *Deploy) {
 	deploy.Deploy()
 	result := deploy.Result()
 	if err := ws.WriteJSON(&result); err != nil {
-		logger.Assert(err, "JSON")
+		self.Close()
+		logger.Info(err)
 	}
 	deploy.Reset()
 }
@@ -44,7 +45,8 @@ func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
 	switch err := ws.ReadJSON(apptask); {
 	case err != nil:
 		if e, ok := err.(net.Error); !ok || !e.Timeout() {
-			logger.Assert(err, "Websocket")
+			self.Close()
+			logger.Info(err)
 		}
 	case err == nil:
 		logger.Debug(apptask)

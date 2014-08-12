@@ -11,9 +11,8 @@ import (
 	"syscall"
 )
 
-func exit(levi *Levi, pid string, c chan os.Signal) {
+func exit(levi *Levi, c chan os.Signal) {
 	logger.Info("Catch", <-c)
-	os.Remove(pid)
 	levi.Close()
 }
 
@@ -24,7 +23,7 @@ func pid(path string) {
 }
 
 func main() {
-	var MasterEndpoint, DockerEndpoint, PidFile string
+	var MasterEndpoint, DockerEndpoint string
 	var TaskWait, ReportSleep, TaskNum int
 
 	flag.StringVar(&MasterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
@@ -48,7 +47,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
 	signal.Notify(c, syscall.SIGHUP)
-	go exit(&levi, PidFile, c)
+	go exit(&levi, c)
 
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -59,11 +58,13 @@ func main() {
 	if err != nil {
 		logger.Assert(err, "Master")
 	}
+	pid(PidFile)
+
+	defer os.Remove(PidFile)
 	defer ws.Close()
 
 	levi.Connect(DockerEndpoint)
 	levi.Load()
 	go levi.Report(ws, ReportSleep)
-	go pid(PidFile)
 	levi.Loop(ws, TaskNum, TaskNum)
 }
