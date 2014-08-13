@@ -28,7 +28,7 @@ func main() {
 
 	flag.StringVar(&MasterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
 	flag.StringVar(&DockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
-	flag.StringVar(&NgxEndpoint, "nginx-endpoint", "/usr/local/nginx/sbin/nginx", "nginx location")
+	flag.StringVar(&DyUpstreamUrl, "upstream-url", "127.0.0.1:10090/upstream", "nginx dynamic upstream url")
 	flag.StringVar(&RegEndpoint, "registry", "127.0.0.1", "registry location")
 	flag.StringVar(&NgxDir, "nginx-dir", "/tmp", "nginx conf dir")
 	flag.StringVar(&NgxTmpl, "nginx-tmpl", "/etc/site.tmpl", "nginx config file template location")

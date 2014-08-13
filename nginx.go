@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
-	"os/exec"
 	"path"
+	"strings"
 	"text/template"
 )
 
@@ -42,13 +43,13 @@ func (self *Nginx) Remove(appname, cid string) bool {
 	}
 	if len(upstream.Ports) == 0 {
 		delete(self.upstreams, appname)
-		self.Clear(appname)
 	}
 	return true
 }
 
 func (self *Nginx) Clear(appname string) {
 	var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
+	logger.Info("Clear config file", configPath)
 	if err := os.Remove(configPath); err != nil {
 		logger.Info(err)
 	}
@@ -58,8 +59,11 @@ func (self *Nginx) Save() {
 	for appname, _ := range self.update {
 		upstream, ok := self.upstreams[appname]
 		if !ok {
+			self.Clear(appname)
+			go self.DeleteStream(appname)
 			continue
 		}
+		go self.UpdateStream(upstream)
 		var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
 		f, err := os.Create(configPath)
 		defer f.Close()
@@ -74,15 +78,35 @@ func (self *Nginx) Save() {
 	}
 }
 
-func (self *Nginx) Restart() {
-	if len(self.update) == 0 {
-		logger.Info("No nginx config file update, nginx will not restart")
-		return
-	}
-	logger.Debug("Reload by", self.update)
-	cmd := exec.Command(NgxEndpoint, "-s", "reload")
-	err := cmd.Run()
+func (self *Nginx) DeleteStream(appname string) {
+	url := fmt.Sprintf("http://%s/%s", DyUpstreamUrl, appname)
+	logger.Debug(url)
+	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
-		logger.Info("Restart nginx failed", err)
+		logger.Info(err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Info(err)
+	} else {
+		defer resp.Body.Close()
+	}
+}
+
+func (self *Nginx) UpdateStream(upstream *Upstream) {
+	url := fmt.Sprintf("http://%s/%s", DyUpstreamUrl, upstream.Appname)
+	logger.Debug(upstream.Ports, url)
+	var s []string = []string{}
+	for _, port := range upstream.Ports {
+		s = append(s, fmt.Sprintf("server 127.0.0.1:%s", port))
+	}
+	data := fmt.Sprintf("%s;", strings.Join(s, ";"))
+	logger.Debug(data)
+	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data))
+	if err != nil {
+		logger.Info(err)
+	} else {
+		defer resp.Body.Close()
 	}
 }

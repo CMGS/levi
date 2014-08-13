@@ -142,8 +142,6 @@ func (self *Deploy) Deploy() {
 	self.Wait()
 	//Save Nginx Config
 	self.nginx.Save()
-	//Restart Nginx
-	self.nginx.Restart()
 }
 
 func (self *Deploy) Result() map[string][]interface{} {
