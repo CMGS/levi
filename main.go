@@ -25,6 +25,7 @@ func pid(path string) {
 func main() {
 	var MasterEndpoint, DockerEndpoint string
 	var TaskWait, ReportSleep, TaskNum int
+	var pidFile string
 
 	flag.StringVar(&MasterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
 	flag.StringVar(&DockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
@@ -35,7 +36,7 @@ func main() {
 	flag.StringVar(&NetworkMode, "network", "bridge", "network mode")
 	flag.StringVar(&Permdirs, "permdirs", "/mnt/mfs/permdirs", "permdirs location")
 	flag.StringVar(&HomePath, "home", "/tmp", "homes dir path")
-	flag.StringVar(&PidFile, "pidfile", "/var/run/levi.pid", "pid file")
+	flag.StringVar(&pidFile, "pidfile", "/var/run/levi.pid", "pid file")
 	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
 	flag.IntVar(&TaskWait, "wait", 15, "wait task time")
 	flag.IntVar(&ReportSleep, "sleep", 15, "report sleep time")
@@ -58,9 +59,9 @@ func main() {
 	if err != nil {
 		logger.Assert(err, "Master")
 	}
-	pid(PidFile)
+	pid(pidFile)
 
-	defer os.Remove(PidFile)
+	defer os.Remove(pidFile)
 	defer ws.Close()
 
 	levi.Connect(DockerEndpoint)
