@@ -18,7 +18,7 @@ func exit(levi *Levi, c chan os.Signal) {
 
 func pid(path string) {
 	if err := ioutil.WriteFile(path, []byte(strconv.Itoa(os.Getpid())), 0755); err != nil {
-		logger.Info("Save app config failed", err)
+		logger.Info("Save pid file failed", err)
 	}
 }
 
