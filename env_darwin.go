@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/coreos/go-etcd/etcd"
 	"gopkg.in/yaml.v1"
 	"io/ioutil"
 	"path"
