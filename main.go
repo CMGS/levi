@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -25,7 +26,7 @@ func pid(path string) {
 func main() {
 	var MasterEndpoint, DockerEndpoint string
 	var TaskWait, ReportSleep, TaskNum int
-	var pidFile string
+	var pidFile, etcdMachines string
 
 	flag.StringVar(&MasterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
 	flag.StringVar(&DockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
@@ -37,12 +38,14 @@ func main() {
 	flag.StringVar(&Permdirs, "permdirs", "/mnt/mfs/permdirs", "permdirs location")
 	flag.StringVar(&HomePath, "home", "/tmp", "homes dir path")
 	flag.StringVar(&pidFile, "pidfile", "/var/run/levi.pid", "pid file")
+	flag.StringVar(&etcdMachines, "etcd", "http://127.0.0.1:4001", "etcd machines, seprate by comma")
 	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
 	flag.IntVar(&TaskWait, "wait", 15, "wait task time")
 	flag.IntVar(&ReportSleep, "sleep", 15, "report sleep time")
 	flag.IntVar(&TaskNum, "num", 3, "max tasks")
 	flag.Parse()
 
+	Etcd = NewEtcdClient(strings.Split(etcdMachines, ","))
 	var levi = Levi{}
 	var c = make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

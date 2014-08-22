@@ -12,7 +12,6 @@ type Task struct {
 	Cmd       []string
 	Memory    float64
 	Cpus      int64
-	Config    interface{}
 	Daemon    string
 	ident     string
 }

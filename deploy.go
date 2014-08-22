@@ -65,6 +65,7 @@ func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 func (self *Deploy) AddContainer(index int, job Task, apptask AppTask, env *Env) {
 	defer self.wg.Done()
 	if err := env.CreateConfigFile(&job); err != nil {
+		logger.Info("Create app config failed", err)
 		return
 	}
 	cid := self.add(index, job, apptask)
