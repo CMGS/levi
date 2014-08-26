@@ -8,6 +8,8 @@ import (
 	"strconv"
 )
 
+var Permdirs, RegEndpoint, NetworkMode string
+
 type Image struct {
 	client  *docker.Client
 	appname string

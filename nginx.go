@@ -9,6 +9,8 @@ import (
 	"text/template"
 )
 
+var NgxDir, NgxTmpl, DyUpstreamUrl string
+
 type Upstream struct {
 	Appname string
 	Ports   map[string]string
