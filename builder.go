@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/libgit2/git2go"
-	"io/ioutil"
 	"os"
 	"path"
 )
@@ -17,8 +16,8 @@ type Builder struct {
 }
 
 func (self *Builder) FetchCode() error {
-	repoUrl := path.Join(GitEndpoint, fmt.Sprintf("%s.git", self.git.Name))
-	storePath := path.Join(self.workdir, self.git.Name)
+	repoUrl := path.Join(GitEndpoint, self.git.Group, fmt.Sprintf("%s.git", self.git.Name))
+	storePath := path.Join(self.workdir, self.name)
 	repo, err := git.Clone(repoUrl, storePath, &git.CloneOptions{})
 	if err != nil {
 		return err
@@ -37,6 +36,17 @@ func (self *Builder) FetchCode() error {
 }
 
 func (self *Builder) CreateDockerFile() error {
+	filePath := path.Join(self.workdir, "Dockerfile")
+	codePath := path.Join(self.workdir, self.name)
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	f.WriteString(fmt.Sprintf("FROM %s\n\n", self.git.Base))
+	f.WriteString(fmt.Sprintf("ADD %s /%s\n\n", codePath, self.name))
+
 	return nil
 }
 

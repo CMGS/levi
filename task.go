@@ -5,6 +5,7 @@ import (
 )
 
 type GitInfo struct {
+	Group   string
 	Name    string
 	Version string
 	Base    string
