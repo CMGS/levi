@@ -3,6 +3,7 @@ package main
 import (
 	"container/list"
 	"github.com/CMGS/go-dockerclient"
+	"path"
 	"strings"
 	"sync"
 )
@@ -96,12 +97,12 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	self.result[apptask.Id][index] = ""
 	builder := Builder{
 		apptask.Name,
+		path.Join(GitWorkDir, apptask.Name),
 		&job.Git,
 	}
-	if ret, err := builder.Build(); err == nil {
-		self.result[apptask.Id][index] = ret
-	} else {
+	if err := builder.FetchCode(); err != nil {
 		logger.Info(err)
+		return
 	}
 }
 
