@@ -4,15 +4,16 @@ import (
 	"fmt"
 )
 
-type GitInfo struct {
+type BuildInfo struct {
 	Group   string
 	Name    string
 	Version string
 	Base    string
+	Build   string
 }
 
 type Task struct {
-	Git       GitInfo
+	Build     BuildInfo
 	Version   string
 	Bind      int64
 	Port      int64

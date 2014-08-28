@@ -98,9 +98,19 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	builder := Builder{
 		apptask.Name,
 		path.Join(GitWorkDir, apptask.Name),
-		&job.Git,
+		&job.Build,
 	}
+
+	defer builder.Clear()
 	if err := builder.FetchCode(); err != nil {
+		logger.Info(err)
+		return
+	}
+	if err := builder.CreateDockerFile(); err != nil {
+		logger.Info(err)
+		return
+	}
+	if err := builder.CreateTar(); err != nil {
 		logger.Info(err)
 		return
 	}
