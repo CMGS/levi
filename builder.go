@@ -40,7 +40,7 @@ func (self *Builder) checkout(repo *git.Repository, opts *git.CheckoutOpts) erro
 
 func (self *Builder) FetchCode() error {
 	repoUrl := UrlJoin(GitEndpoint, self.build.Group, fmt.Sprintf("%s.git", self.build.Name))
-	storePath := path.Join(self.workdir, self.build.Version)
+	storePath := path.Join(self.workdir, self.name)
 	repo, err := git.Clone(repoUrl, storePath, &git.CloneOptions{})
 	logger.Debug(repoUrl, storePath)
 	if err != nil {
@@ -57,7 +57,8 @@ func (self *Builder) FetchCode() error {
 
 func (self *Builder) CreateDockerFile() error {
 	filePath := path.Join(self.workdir, "Dockerfile")
-	logger.Debug(filePath)
+	codePath := path.Join(self.workdir, self.name)
+	logger.Debug(filePath, codePath)
 	f, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -66,7 +67,7 @@ func (self *Builder) CreateDockerFile() error {
 
 	f.WriteString(fmt.Sprintf("FROM %s\n\n", self.build.Base))
 	f.WriteString("ENV NBE 1\n")
-	f.WriteString(fmt.Sprintf("ADD %s /%s\n", self.build.Version, self.name))
+	f.WriteString(fmt.Sprintf("ADD %s /%s\n", self.name, self.name))
 	f.WriteString(fmt.Sprintf("WORKDIR /%s\n", self.name))
 	f.WriteString(fmt.Sprintf("RUN %s\n", self.build.Build))
 
@@ -80,7 +81,7 @@ func (self *Builder) CreateDockerFile() error {
 func (self *Builder) CreateTar() error {
 	tarPath := path.Join(self.workdir, fmt.Sprintf("%s.tar.gz", self.name))
 	filePath := path.Join(self.workdir, "Dockerfile")
-	codePath := path.Join(self.workdir, self.build.Version)
+	codePath := path.Join(self.workdir, self.name)
 	logger.Debug(tarPath)
 
 	file, _ := os.Create(tarPath)
@@ -96,7 +97,6 @@ func (self *Builder) Clear() {
 	images, err := Docker.ListImages(false)
 	if err != nil {
 		logger.Debug(err)
-		return
 	}
 	for _, image := range images {
 		flag := false
