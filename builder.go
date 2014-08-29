@@ -57,8 +57,7 @@ func (self *Builder) FetchCode() error {
 
 func (self *Builder) CreateDockerFile() error {
 	filePath := path.Join(self.workdir, "Dockerfile")
-	codePath := path.Join(self.workdir, self.name)
-	logger.Debug(filePath, codePath)
+	logger.Debug(filePath)
 	f, err := os.Create(filePath)
 	if err != nil {
 		return err

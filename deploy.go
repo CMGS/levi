@@ -94,7 +94,7 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	self.result[apptask.Id][index] = ""
 	builder := Builder{
 		apptask.Name,
-		path.Join(GitWorkDir, apptask.Name),
+		path.Join(GitWorkDir, apptask.Name, job.Build.Version),
 		&job.Build,
 	}
 
