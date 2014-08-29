@@ -13,9 +13,27 @@ import (
 var GitEndpoint, GitWorkDir string
 
 type Builder struct {
-	name    string
-	workdir string
-	build   *BuildInfo
+	name           string
+	workDir        string
+	codeDir        string
+	dockerFilePath string
+	tarPath        string
+	repoURL        string
+	registryURL    string
+	repoTag        string
+	build          *BuildInfo
+}
+
+func NewBuilder(name string, build *BuildInfo) *Builder {
+	builder := Builder{name: name, build: build}
+	builder.workDir = path.Join(GitWorkDir, name, build.Version)
+	builder.repoURL = UrlJoin(GitEndpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
+	builder.codeDir = path.Join(builder.workDir, name)
+	builder.dockerFilePath = path.Join(builder.workDir, "Dockerfile")
+	builder.tarPath = path.Join(builder.workDir, fmt.Sprintf("%s.tar.gz", name))
+	builder.registryURL = UrlJoin(RegEndpoint, name)
+	builder.repoTag = fmt.Sprintf("%s:%s", builder.registryURL, build.Version)
+	return &builder
 }
 
 func (self *Builder) checkout(repo *git.Repository, opts *git.CheckoutOpts) error {
@@ -40,11 +58,30 @@ func (self *Builder) checkout(repo *git.Repository, opts *git.CheckoutOpts) erro
 	return nil
 }
 
-func (self *Builder) FetchCode() error {
-	repoUrl := UrlJoin(GitEndpoint, self.build.Group, fmt.Sprintf("%s.git", self.build.Name))
-	storePath := path.Join(self.workdir, self.name)
-	repo, err := git.Clone(repoUrl, storePath, &git.CloneOptions{})
-	logger.Debug(repoUrl, storePath)
+func (self *Builder) Build() error {
+	defer self.clear()
+
+	if err := self.fetchCode(); err != nil {
+		return err
+	}
+	if err := self.createDockerFile(); err != nil {
+		return err
+	}
+	if err := self.createTar(); err != nil {
+		return err
+	}
+	if err := self.buildImage(); err != nil {
+		return err
+	}
+	if err := self.pushImage(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (self *Builder) fetchCode() error {
+	repo, err := git.Clone(self.repoURL, self.codeDir, &git.CloneOptions{})
+	logger.Debug(self.repoURL, self.codeDir)
 	if err != nil {
 		return err
 	}
@@ -54,13 +91,12 @@ func (self *Builder) FetchCode() error {
 		return err
 	}
 
-	return os.RemoveAll(path.Join(storePath, ".git"))
+	return os.RemoveAll(path.Join(self.codeDir, ".git"))
 }
 
-func (self *Builder) CreateDockerFile() error {
-	filePath := path.Join(self.workdir, "Dockerfile")
-	logger.Debug(filePath)
-	f, err := os.Create(filePath)
+func (self *Builder) createDockerFile() error {
+	logger.Debug(self.dockerFilePath)
+	f, err := os.Create(self.dockerFilePath)
 	if err != nil {
 		return err
 	}
@@ -79,22 +115,58 @@ func (self *Builder) CreateDockerFile() error {
 	return nil
 }
 
-func (self *Builder) CreateTar() error {
-	tarPath := path.Join(self.workdir, fmt.Sprintf("%s.tar.gz", self.name))
-	filePath := path.Join(self.workdir, "Dockerfile")
-	codePath := path.Join(self.workdir, self.name)
-	logger.Debug(tarPath)
+func (self *Builder) createTar() error {
+	logger.Debug(self.tarPath)
 
-	file, _ := os.Create(tarPath)
+	file, _ := os.Create(self.tarPath)
 	defer file.Close()
-	if _, err := tar.TarFiles([]string{filePath, codePath}, file, self.workdir); err != nil {
+	if _, err := tar.TarFiles([]string{self.dockerFilePath, self.codeDir}, file, self.workDir); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (self *Builder) Clear() {
-	defer os.RemoveAll(self.workdir)
+func (self *Builder) buildImage() error {
+	buf := bytes.Buffer{}
+	file, err := os.Open(self.tarPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	opts := docker.BuildImageOptions{
+		Name:                self.repoTag,
+		NoCache:             false,
+		SuppressOutput:      true,
+		RmTmpContainer:      true,
+		ForceRmTmpContainer: true,
+		InputStream:         file,
+		OutputStream:        &buf,
+	}
+
+	if err := Docker.BuildImage(opts); err != nil {
+		logger.Info(buf.String())
+		return err
+	}
+	logger.Debug(buf.String())
+	return nil
+}
+
+func (self *Builder) pushImage() error {
+	buf := bytes.Buffer{}
+	url := UrlJoin(RegEndpoint, self.name)
+	if err := Docker.PushImage(
+		docker.PushImageOptions{url, self.build.Version, RegEndpoint, &buf},
+		docker.AuthConfiguration{}); err != nil {
+		logger.Info(buf.String())
+		return err
+	}
+	logger.Debug(buf.String())
+	return nil
+}
+
+func (self *Builder) clear() {
+	defer os.RemoveAll(self.workDir)
 	images, err := Docker.ListImages(false)
 	if err != nil {
 		logger.Debug(err)
@@ -102,7 +174,7 @@ func (self *Builder) Clear() {
 	for _, image := range images {
 		flag := false
 		for _, tag := range image.RepoTags {
-			if tag == "<none>:<none>" {
+			if tag == "<none>:<none>" || tag == self.repoTag {
 				flag = true
 			}
 		}
@@ -111,40 +183,4 @@ func (self *Builder) Clear() {
 			Docker.RemoveImage(image.ID)
 		}
 	}
-}
-
-func (self *Builder) BuildImage() error {
-	tarPath := path.Join(self.workdir, fmt.Sprintf("%s.tar.gz", self.name))
-	file, err := os.Open(tarPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	name := fmt.Sprintf("%s:%s", UrlJoin(RegEndpoint, self.name), self.build.Version)
-
-	opts := docker.BuildImageOptions{
-		Name:                name,
-		NoCache:             false,
-		SuppressOutput:      true,
-		RmTmpContainer:      true,
-		ForceRmTmpContainer: true,
-		InputStream:         file,
-		OutputStream:        os.Stdout,
-	}
-
-	if err := client.BuildImage(opts); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (self *Builder) PushImage() error {
-	url := UrlJoin(RegEndpoint, self.name)
-	buf := bytes.Buffer{}
-	defer logger.Debug(buf.String())
-	if err := Docker.PushImage(docker.PushImageOptions{url, self.build.Version, RegEndpoint, &buf}, nil); err != nil {
-		return err
-	}
-	return nil
 }

@@ -19,12 +19,13 @@ type Image struct {
 func (self *Image) Pull() error {
 	url := UrlJoin(RegEndpoint, self.appname)
 	buf := bytes.Buffer{}
-	defer logger.Debug(buf.String())
 	if err := Docker.PullImage(
 		docker.PullImageOptions{url, RegEndpoint, self.version, &buf},
 		docker.AuthConfiguration{}); err != nil {
+		logger.Info(buf.String())
 		return err
 	}
+	logger.Debug(buf.String())
 	return nil
 }
 
