@@ -11,7 +11,6 @@ import (
 var Permdirs, RegEndpoint, NetworkMode string
 
 type Image struct {
-	client  *docker.Client
 	appname string
 	version string
 	port    int64
@@ -20,7 +19,7 @@ type Image struct {
 func (self *Image) Pull() error {
 	url := fmt.Sprintf("%s/%s", RegEndpoint, self.appname)
 	buf := bytes.Buffer{}
-	if err := self.client.PullImage(
+	if err := Docker.PullImage(
 		docker.PullImageOptions{url, RegEndpoint, self.version, &buf},
 		docker.AuthConfiguration{}); err != nil {
 		logger.Debug(buf.String())
@@ -72,12 +71,12 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 		&config,
 	}
 
-	container, err := self.client.CreateContainer(opts)
+	container, err := Docker.CreateContainer(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := self.client.StartContainer(container.ID, &hostConfig); err != nil {
+	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
 		return nil, err
 	}
 	return container, nil

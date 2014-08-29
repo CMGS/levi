@@ -32,7 +32,7 @@ func main() {
 	flag.StringVar(&dockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
 	flag.StringVar(&GitEndpoint, "git", "http://git.hunantv.com", "git repos endpoint")
 	flag.StringVar(&GitWorkDir, "git-work-dir", "/tmp", "where to save repos")
-	flag.StringVar(&DyUpstreamUrl, "upstream-url", "127.0.0.1:10090/upstream", "nginx dynamic upstream url")
+	flag.StringVar(&DyUpstreamUrl, "upstream-url", "http://127.0.0.1:10090/upstream", "nginx dynamic upstream url")
 	flag.StringVar(&RegEndpoint, "registry", "127.0.0.1", "registry location")
 	flag.StringVar(&NgxDir, "nginx-dir", "/tmp", "nginx conf dir")
 	flag.StringVar(&NgxTmpl, "nginx-tmpl", "/etc/site.tmpl", "nginx config file template location")

@@ -14,13 +14,11 @@ type Deploy struct {
 	wg         *sync.WaitGroup
 	containers *[]docker.APIContainers
 	nginx      *Nginx
-	client     *docker.Client
 }
 
 func (self *Deploy) add(index int, job Task, apptask *AppTask) string {
 	logger.Info("Add Container", apptask.Name, "@", job.Version)
 	image := Image{
-		self.client,
 		apptask.Name,
 		job.Version,
 		job.Bind,
@@ -45,7 +43,6 @@ func (self *Deploy) add(index int, job Task, apptask *AppTask) string {
 func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 	logger.Info("Remove Container", apptask.Name, job.Container)
 	container := Container{
-		client:  self.client,
 		id:      job.Container,
 		appname: apptask.Name,
 	}

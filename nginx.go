@@ -81,7 +81,7 @@ func (self *Nginx) Save() {
 }
 
 func (self *Nginx) DeleteStream(appname string) {
-	url := fmt.Sprintf("http://%s/%s", DyUpstreamUrl, appname)
+	url := UrlJoin(DyUpstreamUrl, appname)
 	logger.Debug(url)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -97,7 +97,7 @@ func (self *Nginx) DeleteStream(appname string) {
 }
 
 func (self *Nginx) UpdateStream(upstream *Upstream) {
-	url := fmt.Sprintf("http://%s/%s", DyUpstreamUrl, upstream.Appname)
+	url := UrlJoin(DyUpstreamUrl, upstream.Appname)
 	logger.Debug(upstream.Ports, url)
 	var s []string = []string{}
 	for _, port := range upstream.Ports {

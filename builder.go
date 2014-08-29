@@ -39,7 +39,7 @@ func (self *Builder) checkout(repo *git.Repository, opts *git.CheckoutOpts) erro
 }
 
 func (self *Builder) FetchCode() error {
-	repoUrl := fmt.Sprintf("%s/%s/%s.git", GitEndpoint, self.build.Group, self.build.Name)
+	repoUrl := UrlJoin(GitEndpoint, self.build.Group, fmt.Sprintf("%s.git", self.build.Name))
 	storePath := path.Join(self.workdir, self.name)
 	repo, err := git.Clone(repoUrl, storePath, &git.CloneOptions{})
 	logger.Debug(repoUrl, storePath)
@@ -68,8 +68,8 @@ func (self *Builder) CreateDockerFile() error {
 	f.WriteString(fmt.Sprintf("FROM %s\n\n", self.build.Base))
 	f.WriteString("ENV NBE 1\n")
 	f.WriteString(fmt.Sprintf("ADD %s /%s\n", self.name, self.name))
-	f.WriteString(fmt.Sprintf("RUN %s\n", self.build.Build))
 	f.WriteString(fmt.Sprintf("WORKDIR /%s\n", self.name))
+	f.WriteString(fmt.Sprintf("RUN %s\n", self.build.Build))
 
 	if err := f.Sync(); err != nil {
 		return err
@@ -92,8 +92,24 @@ func (self *Builder) CreateTar() error {
 	return nil
 }
 
-func (self *Builder) Clear() error {
-	return os.RemoveAll(self.workdir)
+func (self *Builder) Clear() {
+	defer os.RemoveAll(self.workdir)
+	images, err := Docker.ListImages(false)
+	if err != nil {
+		logger.Debug(err)
+	}
+	for _, image := range images {
+		flag := false
+		for _, tag := range image.RepoTags {
+			if tag == "<none>:<none>" {
+				flag = true
+			}
+		}
+		if flag {
+			logger.Debug(image)
+			Docker.RemoveImage(image.ID)
+		}
+	}
 }
 
 func (self *Builder) BuildImage() (string, error) {
