@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/CMGS/go-dockerclient"
 	"github.com/juju/utils/tar"
 	"github.com/libgit2/git2go"
 	"os"
@@ -111,10 +113,38 @@ func (self *Builder) Clear() {
 	}
 }
 
-func (self *Builder) BuildImage() (string, error) {
-	return "", nil
+func (self *Builder) BuildImage() error {
+	tarPath := path.Join(self.workdir, fmt.Sprintf("%s.tar.gz", self.name))
+	file, err := os.Open(tarPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	name := fmt.Sprintf("%s:%s", UrlJoin(RegEndpoint, self.name), self.build.Version)
+
+	opts := docker.BuildImageOptions{
+		Name:                name,
+		NoCache:             false,
+		SuppressOutput:      true,
+		RmTmpContainer:      true,
+		ForceRmTmpContainer: true,
+		InputStream:         file,
+		OutputStream:        os.Stdout,
+	}
+
+	if err := client.BuildImage(opts); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (self *Builder) PushImage() error {
+	url := UrlJoin(RegEndpoint, self.name)
+	buf := bytes.Buffer{}
+	defer logger.Debug(buf.String())
+	if err := Docker.PushImage(docker.PushImageOptions{url, self.build.Version, RegEndpoint, &buf}, nil); err != nil {
+		return err
+	}
 	return nil
 }
