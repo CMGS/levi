@@ -12,6 +12,8 @@ func GenerateConfigPath(appname string, ident string) string {
 	return filepath
 }
 
+var HomePath string
+
 type Env struct {
 	appname string
 	appuid  int

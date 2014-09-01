@@ -13,13 +13,11 @@ type Deploy struct {
 	wg         *sync.WaitGroup
 	containers *[]docker.APIContainers
 	nginx      *Nginx
-	client     *docker.Client
 }
 
-func (self *Deploy) add(index int, job Task, apptask AppTask) string {
+func (self *Deploy) add(index int, job Task, apptask *AppTask) string {
 	logger.Info("Add Container", apptask.Name, "@", job.Version)
 	image := Image{
-		self.client,
 		apptask.Name,
 		job.Version,
 		job.Bind,
@@ -41,10 +39,9 @@ func (self *Deploy) add(index int, job Task, apptask AppTask) string {
 	return container.ID
 }
 
-func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
+func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 	logger.Info("Remove Container", apptask.Name, job.Container)
 	container := Container{
-		client:  self.client,
 		id:      job.Container,
 		appname: apptask.Name,
 	}
@@ -62,7 +59,7 @@ func (self *Deploy) remove(index int, job Task, apptask AppTask) bool {
 	return true
 }
 
-func (self *Deploy) AddContainer(index int, job Task, apptask AppTask, env *Env) {
+func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env) {
 	defer self.wg.Done()
 	if err := env.CreateConfigFile(&job); err != nil {
 		logger.Info("Create app config failed", err)
@@ -72,13 +69,13 @@ func (self *Deploy) AddContainer(index int, job Task, apptask AppTask, env *Env)
 	self.result[apptask.Id][index] = cid
 }
 
-func (self *Deploy) RemoveContainer(index int, job Task, apptask AppTask, _ *Env) {
+func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *Env) {
 	defer self.wg.Done()
 	result := self.remove(index, job, apptask)
 	self.result[apptask.Id][index] = result
 }
 
-func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask, env *Env) {
+func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	defer self.wg.Done()
 	self.result[apptask.Id][index] = ""
 	if result := self.remove(index, job, apptask); !result {
@@ -91,6 +88,17 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask AppTask, env *Env) {
 	self.result[apptask.Id][index] = cid
 }
 
+func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
+	defer self.wg.Done()
+	self.result[apptask.Id][index] = ""
+	builder := NewBuilder(apptask.Name, &job.Build)
+	if err := builder.Build(); err != nil {
+		logger.Info(err)
+		return
+	}
+	self.result[apptask.Id][index] = builder.repoTag
+}
+
 func (self *Deploy) DoDeploy() {
 	for apptask := self.tasks.Front(); apptask != nil; apptask = apptask.Next() {
 		self.wg.Add(1)
@@ -100,8 +108,10 @@ func (self *Deploy) DoDeploy() {
 			self.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
 			self.wg.Add(len(apptask.Tasks))
 			env := Env{apptask.Name, apptask.Uid}
-			var f func(index int, job Task, apptask AppTask, env *Env)
+			var f func(index int, job Task, apptask *AppTask, env *Env)
 			switch apptask.Type {
+			case BUILD_IMAGE:
+				f = self.BuildImage
 			case ADD_CONTAINER:
 				env.CreateUser()
 				f = self.AddContainer
@@ -117,7 +127,7 @@ func (self *Deploy) DoDeploy() {
 				} else {
 					job.SetAsService()
 				}
-				go f(index, job, apptask, &env)
+				go f(index, job, &apptask, &env)
 			}
 		}(apptask.Value.(AppTask))
 	}

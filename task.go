@@ -4,7 +4,16 @@ import (
 	"fmt"
 )
 
+type BuildInfo struct {
+	Group   string
+	Name    string
+	Version string
+	Base    string
+	Build   string
+}
+
 type Task struct {
+	Build     BuildInfo
 	Version   string
 	Bind      int64
 	Port      int64

@@ -24,13 +24,15 @@ func pid(path string) {
 }
 
 func main() {
-	var MasterEndpoint, DockerEndpoint string
-	var TaskWait, ReportSleep, TaskNum int
+	var masterEndpoint, dockerEndpoint string
+	var taskWait, reportSleep, taskNum int
 	var pidFile, etcdMachines string
 
-	flag.StringVar(&MasterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
-	flag.StringVar(&DockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
-	flag.StringVar(&DyUpstreamUrl, "upstream-url", "127.0.0.1:10090/upstream", "nginx dynamic upstream url")
+	flag.StringVar(&masterEndpoint, "addr", "ws://127.0.0.1:8888/", "master service address")
+	flag.StringVar(&dockerEndpoint, "endpoint", "unix:///var/run/docker.sock", "docker endpoint")
+	flag.StringVar(&GitEndpoint, "git", "http://git.hunantv.com", "git repos endpoint")
+	flag.StringVar(&GitWorkDir, "git-work-dir", "/tmp", "where to save repos")
+	flag.StringVar(&DyUpstreamUrl, "upstream-url", "http://127.0.0.1:10090/upstream", "nginx dynamic upstream url")
 	flag.StringVar(&RegEndpoint, "registry", "127.0.0.1", "registry location")
 	flag.StringVar(&NgxDir, "nginx-dir", "/tmp", "nginx conf dir")
 	flag.StringVar(&NgxTmpl, "nginx-tmpl", "/etc/site.tmpl", "nginx config file template location")
@@ -40,9 +42,9 @@ func main() {
 	flag.StringVar(&pidFile, "pidfile", "/var/run/levi.pid", "pid file")
 	flag.StringVar(&etcdMachines, "etcd", "http://127.0.0.1:4001", "etcd machines, seprate by comma")
 	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
-	flag.IntVar(&TaskWait, "wait", 15, "wait task time")
-	flag.IntVar(&ReportSleep, "sleep", 15, "report sleep time")
-	flag.IntVar(&TaskNum, "num", 3, "max tasks")
+	flag.IntVar(&taskWait, "wait", 15, "wait task time")
+	flag.IntVar(&reportSleep, "sleep", 15, "report sleep time")
+	flag.IntVar(&taskNum, "num", 3, "max tasks")
 	flag.Parse()
 
 	Etcd = NewEtcdClient(strings.Split(etcdMachines, ","))
@@ -58,7 +60,7 @@ func main() {
 		WriteBufferSize: 1024,
 	}
 
-	ws, _, err := dialer.Dial(MasterEndpoint, http.Header{})
+	ws, _, err := dialer.Dial(masterEndpoint, http.Header{})
 	if err != nil {
 		logger.Assert(err, "Master")
 	}
@@ -67,8 +69,8 @@ func main() {
 	defer os.Remove(pidFile)
 	defer ws.Close()
 
-	levi.Connect(DockerEndpoint)
+	levi.Connect(dockerEndpoint)
 	levi.Load()
-	go levi.Report(ws, ReportSleep)
-	levi.Loop(ws, TaskNum, TaskNum)
+	go levi.Report(ws, reportSleep)
+	levi.Loop(ws, taskNum, taskNum)
 }

@@ -9,15 +9,16 @@ import (
 	"time"
 )
 
+var Docker *docker.Client
+
 type Levi struct {
-	client     *docker.Client
 	containers []docker.APIContainers
 	finish     bool
 }
 
 func (self *Levi) Connect(endpoint string) {
 	var err error
-	self.client, err = docker.NewClient(endpoint)
+	Docker, err = docker.NewClient(endpoint)
 	if err != nil {
 		logger.Assert(err, "Docker")
 	}
@@ -25,7 +26,7 @@ func (self *Levi) Connect(endpoint string) {
 
 func (self *Levi) Load() {
 	var err error
-	self.containers, err = self.client.ListContainers(docker.ListContainersOptions{})
+	self.containers, err = Docker.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
 		logger.Assert(err, "Docker")
 	}
@@ -81,7 +82,6 @@ func (self *Levi) Loop(ws *websocket.Conn, num, wait int) {
 			make(map[string]*Upstream),
 			make(map[string]struct{}),
 		},
-		self.client,
 	}
 	for !self.finish {
 		apptask := AppTask{}
