@@ -6,17 +6,15 @@ import (
 	"path"
 )
 
-func GenerateConfigPath(appname string, ident string) string {
-	filename := fmt.Sprintf("%s_%s.yaml", appname, ident)
-	filepath := path.Join(HomePath, appname, filename)
-	return filepath
-}
-
-var HomePath string
-
 type Env struct {
 	appname string
 	appuid  int
+}
+
+func GenerateConfigPath(appname string, ident string) string {
+	filename := fmt.Sprintf("%s_%s.yaml", appname, ident)
+	filepath := path.Join(config.App.Home, appname, filename)
+	return filepath
 }
 
 func (self *Env) CreateConfigFile(job *Task) error {

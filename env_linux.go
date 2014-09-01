@@ -23,7 +23,7 @@ func (self *Env) CreateUser() {
 	}
 	cmd := exec.Command(
 		"useradd", self.appname, "-d",
-		path.Join(HomePath, self.appname),
+		path.Join(config.App.Home, self.appname),
 		"-m", "-s", "/sbin/nologin", "-u",
 		strconv.Itoa(self.appuid),
 	)

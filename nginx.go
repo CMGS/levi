@@ -9,8 +9,6 @@ import (
 	"text/template"
 )
 
-var NgxDir, NgxTmpl, DyUpstreamUrl string
-
 type Upstream struct {
 	Appname string
 	Ports   map[string]string
@@ -50,7 +48,7 @@ func (self *Nginx) Remove(appname, cid string) bool {
 }
 
 func (self *Nginx) Clear(appname string) {
-	var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
+	var configPath = path.Join(config.Nginx.Configs, fmt.Sprintf("%s.conf", appname))
 	logger.Info("Clear config file", configPath)
 	if err := os.Remove(configPath); err != nil {
 		logger.Info(err)
@@ -66,13 +64,13 @@ func (self *Nginx) Save() {
 			continue
 		}
 		go self.UpdateStream(upstream)
-		var configPath = path.Join(NgxDir, fmt.Sprintf("%s.conf", appname))
+		var configPath = path.Join(config.Nginx.Configs, fmt.Sprintf("%s.conf", appname))
 		f, err := os.Create(configPath)
 		defer f.Close()
 		if err != nil {
 			logger.Info("Create upstream config failed", err)
 		}
-		tmpl := template.Must(template.ParseFiles(NgxTmpl))
+		tmpl := template.Must(template.ParseFiles(config.Nginx.Template))
 		err = tmpl.Execute(f, upstream)
 		if err != nil {
 			logger.Info("Generate upstream config failed", err)
@@ -81,7 +79,7 @@ func (self *Nginx) Save() {
 }
 
 func (self *Nginx) DeleteStream(appname string) {
-	url := UrlJoin(DyUpstreamUrl, appname)
+	url := UrlJoin(config.Nginx.DyUpstream, appname)
 	logger.Debug(url)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -97,7 +95,7 @@ func (self *Nginx) DeleteStream(appname string) {
 }
 
 func (self *Nginx) UpdateStream(upstream *Upstream) {
-	url := UrlJoin(DyUpstreamUrl, upstream.Appname)
+	url := UrlJoin(config.Nginx.DyUpstream, upstream.Appname)
 	logger.Debug(upstream.Ports, url)
 	var s []string = []string{}
 	for _, port := range upstream.Ports {

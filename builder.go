@@ -10,8 +10,6 @@ import (
 	"path"
 )
 
-var GitEndpoint, GitWorkDir string
-
 type Builder struct {
 	name           string
 	workDir        string
@@ -26,12 +24,12 @@ type Builder struct {
 
 func NewBuilder(name string, build *BuildInfo) *Builder {
 	builder := Builder{name: name, build: build}
-	builder.workDir = path.Join(GitWorkDir, name, build.Version)
-	builder.repoURL = UrlJoin(GitEndpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
+	builder.workDir = path.Join(config.Git.WorkDir, name, build.Version)
+	builder.repoURL = UrlJoin(config.Git.Endpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
 	builder.codeDir = path.Join(builder.workDir, name)
 	builder.dockerFilePath = path.Join(builder.workDir, "Dockerfile")
 	builder.tarPath = path.Join(builder.workDir, fmt.Sprintf("%s.tar.gz", name))
-	builder.registryURL = UrlJoin(RegEndpoint, name)
+	builder.registryURL = UrlJoin(config.Docker.Registry, name)
 	builder.repoTag = fmt.Sprintf("%s:%s", builder.registryURL, build.Version)
 	return &builder
 }
@@ -154,9 +152,9 @@ func (self *Builder) buildImage() error {
 
 func (self *Builder) pushImage() error {
 	buf := bytes.Buffer{}
-	url := UrlJoin(RegEndpoint, self.name)
+	url := UrlJoin(config.Docker.Registry, self.name)
 	if err := Docker.PushImage(
-		docker.PushImageOptions{url, self.build.Version, RegEndpoint, &buf},
+		docker.PushImageOptions{url, self.build.Version, config.Docker.Registry, &buf},
 		docker.AuthConfiguration{}); err != nil {
 		logger.Info(buf.String())
 		return err

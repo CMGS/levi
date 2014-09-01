@@ -8,8 +8,6 @@ import (
 	"strconv"
 )
 
-var Permdirs, RegEndpoint, NetworkMode string
-
 type Image struct {
 	appname string
 	version string
@@ -17,10 +15,10 @@ type Image struct {
 }
 
 func (self *Image) Pull() error {
-	url := UrlJoin(RegEndpoint, self.appname)
+	url := UrlJoin(config.Docker.Registry, self.appname)
 	buf := bytes.Buffer{}
 	if err := Docker.PullImage(
-		docker.PullImageOptions{url, RegEndpoint, self.version, &buf},
+		docker.PullImageOptions{url, config.Docker.Registry, self.version, &buf},
 		docker.AuthConfiguration{}); err != nil {
 		logger.Info(buf.String())
 		return err
@@ -30,10 +28,10 @@ func (self *Image) Pull() error {
 }
 
 func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
-	image := fmt.Sprintf("%s/%s:%s", RegEndpoint, self.appname, self.version)
+	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
 
-	config := docker.Config{
+	containerConfig := docker.Config{
 		CpuShares:  job.Cpus,
 		Memory:     job.Memory,
 		User:       strconv.Itoa(uid),
@@ -46,17 +44,17 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 	hostConfig := docker.HostConfig{
 		Binds: []string{
 			fmt.Sprintf("%s:%s:ro", configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
-			fmt.Sprintf("%s:%s", path.Join(Permdirs, self.appname), fmt.Sprintf("/%s/permdir", self.appname)),
+			fmt.Sprintf("%s:%s", path.Join(config.App.Permdirs, self.appname), fmt.Sprintf("/%s/permdir", self.appname)),
 			"/var/run:/var/run",
 		},
-		NetworkMode: NetworkMode,
+		NetworkMode: config.Docker.Network,
 	}
 
 	if job.Daemon == "" {
 		port := docker.Port(fmt.Sprintf("%d/tcp", job.Port))
 		exposedPorts := make(map[docker.Port]struct{})
 		exposedPorts[port] = struct{}{}
-		config.ExposedPorts = exposedPorts
+		containerConfig.ExposedPorts = exposedPorts
 
 		portBindings := make(map[docker.Port][]docker.PortBinding)
 		portBindings[port] = []docker.PortBinding{{
@@ -68,7 +66,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 
 	opts := docker.CreateContainerOptions{
 		fmt.Sprintf("%s_%s", self.appname, job.ident),
-		&config,
+		&containerConfig,
 	}
 
 	container, err := Docker.CreateContainer(opts)
