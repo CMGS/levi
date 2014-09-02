@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/CMGS/go-dockerclient"
 	"github.com/juju/utils/tar"
@@ -125,7 +124,6 @@ func (self *Builder) createTar() error {
 }
 
 func (self *Builder) buildImage() error {
-	buf := bytes.Buffer{}
 	file, err := os.Open(self.tarPath)
 	if err != nil {
 		return err
@@ -139,27 +137,22 @@ func (self *Builder) buildImage() error {
 		RmTmpContainer:      true,
 		ForceRmTmpContainer: true,
 		InputStream:         file,
-		OutputStream:        &buf,
+		OutputStream:        GetBuffer(),
 	}
 
 	if err := Docker.BuildImage(opts); err != nil {
-		logger.Info(buf.String())
 		return err
 	}
-	logger.Debug(buf.String())
 	return nil
 }
 
 func (self *Builder) pushImage() error {
-	buf := bytes.Buffer{}
 	url := UrlJoin(config.Docker.Registry, self.name)
 	if err := Docker.PushImage(
-		docker.PushImageOptions{url, self.build.Version, config.Docker.Registry, &buf},
+		docker.PushImageOptions{url, self.build.Version, config.Docker.Registry, GetBuffer()},
 		docker.AuthConfiguration{}); err != nil {
-		logger.Info(buf.String())
 		return err
 	}
-	logger.Debug(buf.String())
 	return nil
 }
 

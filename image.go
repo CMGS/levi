@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/CMGS/go-dockerclient"
 	"path"
@@ -16,14 +15,11 @@ type Image struct {
 
 func (self *Image) Pull() error {
 	url := UrlJoin(config.Docker.Registry, self.appname)
-	buf := bytes.Buffer{}
 	if err := Docker.PullImage(
-		docker.PullImageOptions{url, config.Docker.Registry, self.version, &buf},
+		docker.PullImageOptions{url, config.Docker.Registry, self.version, GetBuffer()},
 		docker.AuthConfiguration{}); err != nil {
-		logger.Info(buf.String())
 		return err
 	}
-	logger.Debug(buf.String())
 	return nil
 }
 
