@@ -67,12 +67,14 @@ func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env
 	}
 	cid := self.add(index, job, apptask)
 	self.result[apptask.Id][index] = cid
+	logger.Info("Add Finished", cid)
 }
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *Env) {
 	defer self.wg.Done()
 	result := self.remove(index, job, apptask)
 	self.result[apptask.Id][index] = result
+	logger.Info("Remove Finished", result)
 }
 
 func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
@@ -86,6 +88,7 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	}
 	cid := self.add(index, job, apptask)
 	self.result[apptask.Id][index] = cid
+	logger.Info("Update Finished", cid)
 }
 
 func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
@@ -97,6 +100,7 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 		return
 	}
 	self.result[apptask.Id][index] = builder.repoTag
+	logger.Info("Build Finished", builder.repoTag)
 }
 
 func (self *Deploy) DoDeploy() {
@@ -111,14 +115,18 @@ func (self *Deploy) DoDeploy() {
 			var f func(index int, job Task, apptask *AppTask, env *Env)
 			switch apptask.Type {
 			case BUILD_IMAGE:
+				logger.Info("Build Task")
 				f = self.BuildImage
 			case ADD_CONTAINER:
+				logger.Info("Add Task")
 				env.CreateUser()
 				f = self.AddContainer
 			case UPDATE_CONTAINER:
+				logger.Info("Update Task")
 				env.CreateUser()
 				f = self.UpdateApp
 			case REMOVE_CONTAINER:
+				logger.Info("Remove Task")
 				f = self.RemoveContainer
 			}
 			for index, job := range apptask.Tasks {
