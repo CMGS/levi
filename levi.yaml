@@ -1,0 +1,32 @@
+master: ws://127.0.0.1:8888/
+pidfile: /tmp/levi.pid
+
+tasknum: 1
+taskinterval: 3
+checkinterval: 2
+
+git:
+  endpoint: http://git.hunantv.com
+  workdir: /tmp
+
+nginx:
+  configs: /tmp/levi/nginx
+  template: ./etc/site.tmpl
+  dyupstream: http://127.0.0.1:10090/upstream
+
+docker:
+  endpoint: tcp://192.168.59.103:2375
+  registry: 10.1.201.16:8882
+  network: bridge
+
+app:
+  home: /tmp/levi
+  permdirs: /tmp/levi/permdirs
+
+etcd:
+  sync: True
+  machines:
+    - http://127.0.0.1:4001
+    - http://127.0.0.1:4002
+    - http://127.0.0.1:4003
+
