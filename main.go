@@ -36,5 +36,6 @@ func main() {
 		logger.Info("Catch", <-c)
 		levi.Close()
 	}()
+	go levi.Status()
 	levi.Loop(ws)
 }
