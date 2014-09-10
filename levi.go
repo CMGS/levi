@@ -79,8 +79,8 @@ func (self *Levi) NewDeploy() *Deploy {
 func (self *Levi) Loop(ws *websocket.Conn) {
 	var newtask bool
 	var deploy *Deploy
+	deploy = self.NewDeploy()
 	for !self.finish {
-		deploy = self.NewDeploy()
 		apptask := AppTask{wg: &sync.WaitGroup{}}
 		ws.SetReadDeadline(time.Now().Add(time.Duration(config.TaskInterval) * time.Second))
 		logger.Debug(time.Now())
@@ -89,6 +89,7 @@ func (self *Levi) Loop(ws *websocket.Conn) {
 		}
 		if (len(deploy.tasks) != 0 && !newtask) || len(deploy.tasks) == cap(deploy.tasks) {
 			deploy.Deploy(ws)
+			deploy = self.NewDeploy()
 		}
 	}
 }

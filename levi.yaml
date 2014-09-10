@@ -1,7 +1,7 @@
 master: ws://127.0.0.1:8888/
 pidfile: /tmp/levi.pid
 
-tasknum: 1
+tasknum: 3
 taskinterval: 3
 checkinterval: 2
 
