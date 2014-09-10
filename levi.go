@@ -13,6 +13,7 @@ var Docker *docker.Client
 
 type Levi struct {
 	finish bool
+	events chan *docker.APIEvents
 }
 
 func (self *Levi) Connect(endpoint string) {
@@ -21,6 +22,8 @@ func (self *Levi) Connect(endpoint string) {
 	if err != nil {
 		logger.Assert(err, "Docker")
 	}
+	self.events = make(chan *docker.APIEvents)
+	logger.Assert(Docker.AddEventListener(self.events), "Attacher")
 }
 
 func (self *Levi) Load() []docker.APIContainers {
@@ -50,6 +53,25 @@ func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
 
 func (self *Levi) Close() {
 	self.finish = true
+	Docker.RemoveEventListener(self.events)
+}
+
+func (self *Levi) Status() {
+	logger.Debug("Status Listener Start")
+	for msg := range self.events {
+		id := msg.ID[:12]
+		logger.Debug("event:", id, msg.Status)
+		switch msg.Status {
+		case "start":
+			if err := Start(id); err != nil {
+				logger.Info(err)
+			}
+		case "stop":
+			if err := Die(id); err != nil {
+				logger.Info(err)
+			}
+		}
+	}
 }
 
 func (self *Levi) NewNginx() *Nginx {
@@ -83,7 +105,7 @@ func (self *Levi) Loop(ws *websocket.Conn) {
 	for !self.finish {
 		apptask := AppTask{wg: &sync.WaitGroup{}}
 		ws.SetReadDeadline(time.Now().Add(time.Duration(config.TaskInterval) * time.Second))
-		logger.Debug(time.Now())
+		logger.Debug("Timeout check")
 		if newtask = self.Read(ws, &apptask); newtask {
 			deploy.tasks = append(deploy.tasks, &apptask)
 		}
