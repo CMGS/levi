@@ -1,10 +1,10 @@
 package main
 
 import (
-	"container/list"
 	"github.com/CMGS/go-dockerclient"
 	"github.com/CMGS/websocket"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -12,8 +12,7 @@ import (
 var Docker *docker.Client
 
 type Levi struct {
-	containers []docker.APIContainers
-	finish     bool
+	finish bool
 }
 
 func (self *Levi) Connect(endpoint string) {
@@ -24,22 +23,13 @@ func (self *Levi) Connect(endpoint string) {
 	}
 }
 
-func (self *Levi) Load() {
-	var err error
-	self.containers, err = Docker.ListContainers(docker.ListContainersOptions{})
+func (self *Levi) Load() []docker.APIContainers {
+	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
-		logger.Assert(err, "Docker")
-	}
-}
-
-func (self *Levi) Process(ws *websocket.Conn, deploy *Deploy) {
-	deploy.Deploy()
-	result := deploy.Result()
-	if err := ws.WriteJSON(&result); err != nil {
-		self.Close()
 		logger.Info(err)
+		self.Close()
 	}
-	deploy.Reset()
+	return containers
 }
 
 func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
@@ -62,37 +52,44 @@ func (self *Levi) Close() {
 	self.finish = true
 }
 
-func (self *Levi) Report(ws *websocket.Conn, sleep int) {
-	for !self.finish {
-		if err := ws.WriteJSON(&self.containers); err != nil {
-			logger.Assert(err, "JSON")
+func (self *Levi) NewNginx() *Nginx {
+	nginx := &Nginx{
+		make(map[string]*Upstream),
+		make(map[string]struct{}),
+	}
+	for _, container := range self.Load() {
+		var appinfo = strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
+		if strings.Contains(appinfo[1], "daemon_") {
+			continue
 		}
-		time.Sleep(time.Duration(sleep) * time.Second)
+		appname, apport := appinfo[0], appinfo[1]
+		nginx.New(appname, container.ID, apport)
+	}
+	return nginx
+}
+
+func (self *Levi) NewDeploy() *Deploy {
+	return &Deploy{
+		make([]*AppTask, 0, config.TaskNum),
+		&sync.WaitGroup{},
+		self.NewNginx(),
 	}
 }
 
-func (self *Levi) Loop(ws *websocket.Conn, num, wait int) {
+func (self *Levi) Loop(ws *websocket.Conn) {
 	var newtask bool
-	deploy := &Deploy{
-		make(map[string][]interface{}),
-		list.New(),
-		&sync.WaitGroup{},
-		&self.containers,
-		&Nginx{
-			make(map[string]*Upstream),
-			make(map[string]struct{}),
-		},
-	}
+	var deploy *Deploy
+	deploy = self.NewDeploy()
 	for !self.finish {
-		apptask := AppTask{}
-		ws.SetReadDeadline(time.Now().Add(time.Duration(wait) * time.Second))
+		apptask := AppTask{wg: &sync.WaitGroup{}}
+		ws.SetReadDeadline(time.Now().Add(time.Duration(config.TaskInterval) * time.Second))
 		logger.Debug(time.Now())
 		if newtask = self.Read(ws, &apptask); newtask {
-			deploy.tasks.PushBack(apptask)
+			deploy.tasks = append(deploy.tasks, &apptask)
 		}
-		if (deploy.tasks.Len() != 0 && !newtask) || deploy.tasks.Len() >= num {
-			self.Process(ws, deploy)
-			self.Load()
+		if (len(deploy.tasks) != 0 && !newtask) || len(deploy.tasks) == cap(deploy.tasks) {
+			deploy.Deploy(ws)
+			deploy = self.NewDeploy()
 		}
 	}
 }

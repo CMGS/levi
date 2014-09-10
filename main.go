@@ -28,8 +28,6 @@ func main() {
 	defer ws.Close()
 
 	levi.Connect(config.Docker.Endpoint)
-	levi.Load()
-	go levi.Report(ws, config.CheckInterval)
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
@@ -38,5 +36,5 @@ func main() {
 		logger.Info("Catch", <-c)
 		levi.Close()
 	}()
-	levi.Loop(ws, config.TaskNum, config.TaskInterval)
+	levi.Loop(ws)
 }

@@ -1,18 +1,14 @@
 package main
 
 import (
-	"container/list"
-	"github.com/CMGS/go-dockerclient"
-	"strings"
+	"github.com/CMGS/websocket"
 	"sync"
 )
 
 type Deploy struct {
-	result     map[string][]interface{}
-	tasks      *list.List
-	wg         *sync.WaitGroup
-	containers *[]docker.APIContainers
-	nginx      *Nginx
+	tasks []*AppTask
+	wg    *sync.WaitGroup
+	nginx *Nginx
 }
 
 func (self *Deploy) add(index int, job Task, apptask *AppTask) string {
@@ -60,26 +56,26 @@ func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 }
 
 func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env) {
-	defer self.wg.Done()
+	defer apptask.wg.Done()
 	if err := env.CreateConfigFile(&job); err != nil {
 		logger.Info("Create app config failed", err)
 		return
 	}
 	cid := self.add(index, job, apptask)
-	self.result[apptask.Id][index] = cid
+	apptask.result[apptask.Id][index] = cid
 	logger.Info("Add Finished", cid)
 }
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *Env) {
-	defer self.wg.Done()
+	defer apptask.wg.Done()
 	result := self.remove(index, job, apptask)
-	self.result[apptask.Id][index] = result
+	apptask.result[apptask.Id][index] = result
 	logger.Info("Remove Finished", result)
 }
 
 func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
-	defer self.wg.Done()
-	self.result[apptask.Id][index] = ""
+	defer apptask.wg.Done()
+	apptask.result[apptask.Id][index] = ""
 	if result := self.remove(index, job, apptask); !result {
 		return
 	}
@@ -87,30 +83,32 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 		return
 	}
 	cid := self.add(index, job, apptask)
-	self.result[apptask.Id][index] = cid
+	apptask.result[apptask.Id][index] = cid
 	logger.Info("Update Finished", cid)
 }
 
 func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
-	defer self.wg.Done()
-	self.result[apptask.Id][index] = ""
+	defer apptask.wg.Done()
+	apptask.result[apptask.Id][index] = ""
 	builder := NewBuilder(apptask.Name, &job.Build)
 	if err := builder.Build(); err != nil {
 		logger.Info(err)
 		return
 	}
-	self.result[apptask.Id][index] = builder.repoTag
+	apptask.result[apptask.Id][index] = builder.repoTag
 	logger.Info("Build Finished", builder.repoTag)
 }
 
-func (self *Deploy) DoDeploy() {
-	for apptask := self.tasks.Front(); apptask != nil; apptask = apptask.Next() {
-		self.wg.Add(1)
-		go func(apptask AppTask) {
+func (self *Deploy) DoDeploy(ws *websocket.Conn) {
+	self.wg.Add(len(self.tasks))
+	for _, apptask := range self.tasks {
+		go func(apptask *AppTask) {
 			defer self.wg.Done()
 			logger.Info("Appname", apptask.Name)
-			self.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
-			self.wg.Add(len(apptask.Tasks))
+			apptask.result = make(map[string][]interface{}, 1)
+			apptask.result[apptask.Id] = make([]interface{}, len(apptask.Tasks))
+			apptask.wg = &sync.WaitGroup{}
+			apptask.wg.Add(len(apptask.Tasks))
 			env := Env{apptask.Name, apptask.Uid}
 			var f func(index int, job Task, apptask *AppTask, env *Env)
 			switch apptask.Type {
@@ -135,43 +133,25 @@ func (self *Deploy) DoDeploy() {
 				} else {
 					job.SetAsService()
 				}
-				go f(index, job, &apptask, &env)
+				go f(index, job, apptask, &env)
 			}
-		}(apptask.Value.(AppTask))
+			apptask.wg.Wait()
+			if err := ws.WriteJSON(&apptask.result); err != nil {
+				logger.Info(err)
+			}
+		}(apptask)
 	}
 }
 
-func (self *Deploy) GenerateInfo() {
-	for _, container := range *self.containers {
-		var appinfo = strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
-		if strings.Contains(appinfo[1], "daemon_") {
-			continue
-		}
-		appname, apport := appinfo[0], appinfo[1]
-		self.nginx.New(appname, container.ID, apport)
-	}
-}
-
-func (self *Deploy) Deploy() {
-	//Generate Container Info
-	self.GenerateInfo()
+func (self *Deploy) Deploy(ws *websocket.Conn) {
 	//Do Deploy
-	self.DoDeploy()
+	self.DoDeploy(ws)
 	//Wait For Container Control Finish
 	self.Wait()
 	//Save Nginx Config
 	self.nginx.Save()
 }
 
-func (self *Deploy) Result() map[string][]interface{} {
-	return self.result
-}
-
 func (self *Deploy) Wait() {
 	self.wg.Wait()
-}
-
-func (self *Deploy) Reset() {
-	self.tasks.Init()
-	self.result = make(map[string][]interface{})
 }
