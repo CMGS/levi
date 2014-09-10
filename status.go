@@ -15,6 +15,7 @@ func getPath(name string) string {
 	} else {
 		p = path.Join("/NBE/_Apps", appinfo[0], "apps")
 	}
+	Etcd.Create(p, "", 0)
 	return p
 }
 

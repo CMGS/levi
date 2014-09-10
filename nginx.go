@@ -96,13 +96,13 @@ func (self *Nginx) DeleteStream(appname string) {
 
 func (self *Nginx) UpdateStream(upstream *Upstream) {
 	url := UrlJoin(config.Nginx.DyUpstream, upstream.Appname)
-	logger.Debug(upstream.Ports, url)
+	logger.Debug("Upstream Info", upstream.Ports, url)
 	var s []string = []string{}
 	for _, port := range upstream.Ports {
 		s = append(s, fmt.Sprintf("server 127.0.0.1:%s", port))
 	}
 	data := fmt.Sprintf("%s;", strings.Join(s, ";"))
-	logger.Debug(data)
+	logger.Debug("Upstream Data", data)
 	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data))
 	if err != nil {
 		logger.Info(err)
