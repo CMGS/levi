@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
 type BuildInfo struct {
@@ -43,9 +44,11 @@ func (self *Task) SetAsService() {
 }
 
 type AppTask struct {
-	Id    string
-	Uid   int
-	Name  string
-	Type  int
-	Tasks []Task
+	Id     string
+	Uid    int
+	Name   string
+	Type   int
+	Tasks  []Task
+	wg     *sync.WaitGroup
+	result map[string][]interface{}
 }
