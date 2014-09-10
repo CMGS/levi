@@ -20,7 +20,7 @@ func GenerateConfigPath(appname string, ident string) string {
 func (self *Env) CreateConfigFile(job *Task) error {
 	configPath := GenerateConfigPath(self.appname, job.ident)
 
-	resp, err := Etcd.Get(path.Join("/NBE", self.appname, job.Version), false, false)
+	resp, err := Etcd.Get(path.Join("/NBE", self.appname, job.Version, "config.yaml"), false, false)
 	if err != nil {
 		return err
 	}
