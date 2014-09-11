@@ -61,13 +61,8 @@ func (self *Levi) Status() {
 	for msg := range self.events {
 		id := msg.ID[:12]
 		logger.Debug("event:", id, msg.Status)
-		switch msg.Status {
-		case "start":
+		if msg.Status == "start" {
 			if err := Start(id); err != nil {
-				logger.Info(err)
-			}
-		case "stop":
-			if err := Die(id); err != nil {
 				logger.Info(err)
 			}
 		}

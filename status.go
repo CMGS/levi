@@ -15,7 +15,6 @@ func getPath(name string) string {
 	} else {
 		p = path.Join("/NBE/_Apps", appinfo[0], "apps")
 	}
-	Etcd.Create(p, "", 0)
 	return p
 }
 
@@ -45,12 +44,8 @@ func Start(id string) error {
 	return nil
 }
 
-func Die(id string) error {
-	container, err := Docker.InspectContainer(id)
-	if err != nil {
-		return err
-	}
-	p := getPath(container.Name)
+func Die(id, name string) error {
+	p := getPath(name)
 	resp, err := Etcd.Get(p, false, false)
 	if err != nil {
 		return err

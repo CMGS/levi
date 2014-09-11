@@ -26,6 +26,9 @@ func (self *Container) Remove() error {
 	if err != nil {
 		return err
 	}
+	if err := Die(container.ID[:12], container.Name); err != nil {
+		return err
+	}
 	configPath := container.Volumes[path.Join("/", self.appname, "config.yaml")]
 	if err := os.Remove(configPath); err != nil {
 		return err
