@@ -8,8 +8,9 @@ import (
 )
 
 type GitConfig struct {
-	Endpoint string
-	WorkDir  string
+	Endpoint  string
+	WorkDir   string
+	StaticDir string
 }
 
 type NginxConfig struct {

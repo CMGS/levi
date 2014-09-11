@@ -11,6 +11,7 @@ type BuildInfo struct {
 	Version string
 	Base    string
 	Build   string
+	Static  string
 }
 
 type Task struct {
