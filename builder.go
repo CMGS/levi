@@ -12,6 +12,7 @@ import (
 type Builder struct {
 	name           string
 	workDir        string
+	staticDir      string
 	codeDir        string
 	dockerFilePath string
 	tarPath        string
@@ -23,6 +24,7 @@ type Builder struct {
 
 func NewBuilder(name string, build *BuildInfo) *Builder {
 	builder := Builder{name: name, build: build}
+	builder.staticDir = path.Join(config.Git.StaticDir, name, build.Version)
 	builder.workDir = path.Join(config.Git.WorkDir, name, build.Version)
 	builder.repoURL = UrlJoin(config.Git.Endpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
 	builder.codeDir = path.Join(builder.workDir, name)
@@ -88,6 +90,9 @@ func (self *Builder) fetchCode() error {
 		return err
 	}
 
+	if err := CopyDir(path.Join(self.codeDir, self.build.Static), self.staticDir); err != nil {
+		return err
+	}
 	return os.RemoveAll(path.Join(self.codeDir, ".git"))
 }
 
