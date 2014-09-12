@@ -8,7 +8,7 @@ taskinterval: 3
 git:
   endpoint: http://git.hunantv.com
   workdir: /tmp
-  staticdir: /tmp/statics
+  extenddir: /tmp/extend
 
 nginx:
   configs: /tmp/levi/nginx
