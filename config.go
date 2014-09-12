@@ -10,7 +10,7 @@ import (
 type GitConfig struct {
 	Endpoint  string
 	WorkDir   string
-	StaticDir string
+	ExtendDir string
 }
 
 type NginxConfig struct {

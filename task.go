@@ -12,6 +12,7 @@ type BuildInfo struct {
 	Base    string
 	Build   string
 	Static  string
+	Schema  string
 }
 
 type Task struct {
