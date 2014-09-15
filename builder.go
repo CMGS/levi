@@ -93,10 +93,10 @@ func (self *Builder) fetchCode() error {
 	if err := os.MkdirAll(self.extendDir, 0755); err != nil {
 		return err
 	}
-	if err := CopyDir(path.Join(self.codeDir, self.build.Static), path.Join(self.extendDir, self.build.Static)); err != nil {
+	if err := CopyFiles(path.Join(self.codeDir, self.build.Static), path.Join(self.extendDir, self.build.Static)); err != nil {
 		return err
 	}
-	if err := CopyFile(path.Join(self.codeDir, self.build.Schema), path.Join(self.extendDir, self.build.Schema)); err != nil {
+	if err := CopyFiles(path.Join(self.codeDir, self.build.Schema), path.Join(self.extendDir, self.build.Schema)); err != nil {
 		return err
 	}
 	return os.RemoveAll(path.Join(self.codeDir, ".git"))
