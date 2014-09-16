@@ -36,11 +36,13 @@ type EtcdConfig struct {
 }
 
 type LeviConfig struct {
-	Name         string
-	Master       string
-	PidFile      string
-	TaskNum      int
-	TaskInterval int
+	Name            string
+	Master          string
+	PidFile         string
+	TaskNum         int
+	TaskInterval    int
+	ReadBufferSize  int
+	WriteBufferSize int
 
 	Git    GitConfig
 	Nginx  NginxConfig

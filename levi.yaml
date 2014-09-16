@@ -5,6 +5,9 @@ pidfile: /tmp/levi.pid
 tasknum: 3
 taskinterval: 3
 
+readbuffersize: 10240
+writebuffersize: 10240
+
 git:
   endpoint: http://git.hunantv.com
   workdir: /tmp
