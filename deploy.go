@@ -61,9 +61,10 @@ func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env
 		logger.Info("Create app config failed", err)
 		return
 	}
-	cid := self.add(index, job, apptask, PRODUCTION)
-	apptask.result[apptask.Id][index] = cid
-	logger.Info("Add Finished", cid)
+	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
+		apptask.result[apptask.Id][index] = cid
+		logger.Info("Add Finished", cid)
+	}
 }
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *Env) {
@@ -82,14 +83,14 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	if err := env.CreateConfigFile(&job); err != nil {
 		return
 	}
-	cid := self.add(index, job, apptask, PRODUCTION)
-	apptask.result[apptask.Id][index] = cid
-	logger.Info("Update Finished", cid)
+	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
+		apptask.result[apptask.Id][index] = cid
+		logger.Info("Update Finished", cid)
+	}
 }
 
 func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	defer apptask.wg.Done()
-	apptask.result[apptask.Id][index] = ""
 	builder := NewBuilder(apptask.Name, &job.Build)
 	if err := builder.Build(); err != nil {
 		logger.Info(err)
@@ -105,9 +106,10 @@ func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
 		logger.Info("Create app test config failed", err)
 		return
 	}
-	cid := self.add(index, job, apptask, TESTING)
-	apptask.result[apptask.Id][index] = cid
-	logger.Info("Testing Start", cid)
+	if cid := self.add(index, job, apptask, TESTING); cid != "" {
+		apptask.result[apptask.Id][index] = cid
+		logger.Info("Start Testing", cid)
+	}
 }
 
 func (self *Deploy) DoDeploy(ws *websocket.Conn) {

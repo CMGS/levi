@@ -8,17 +8,16 @@ import (
 )
 
 func getPath(name string) string {
-	appinfo := strings.SplitN(strings.TrimLeft(name, "/"), "_", 2)
-	var p string
-	switch {
-	case strings.Contains(appinfo[1], "_daemon_"):
-		p = path.Join("/NBE/_Apps", appinfo[0], "daemons")
-	case strings.Contains(appinfo[1], "_test_"):
-		p = path.Join("/NBE/_Apps", appinfo[0], "tests")
-	default:
-		p = path.Join("/NBE/_Apps", appinfo[0], "apps")
+	name = strings.TrimLeft(name, "/")
+	if pos := strings.Index(name, "_daemon_"); pos > -1 {
+		return path.Join("/NBE/_Apps", name[:pos], "daemons")
 	}
-	return p
+	if pos := strings.Index(name, "_test_"); pos > -1 {
+		return path.Join("/NBE/_Apps", name[:pos], "tests")
+	}
+	info := strings.Split(name, "_")
+	appname := name[:strings.Index(name, info[len(info)-1])-1]
+	return path.Join("/NBE/_Apps", appname, "apps")
 }
 
 func Start(id string) error {
@@ -27,6 +26,7 @@ func Start(id string) error {
 		return err
 	}
 	p := getPath(container.Name)
+	logger.Debug(container.Name, p)
 	resp, err := Etcd.Get(p, false, false)
 	if err != nil {
 		return err

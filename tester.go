@@ -17,15 +17,17 @@ type Tester struct {
 }
 
 func (self *Tester) WaitForTester() {
-	result := make(map[string][]Result, 1)
-	result[self.id] = make([]Result, len(self.cids[self.id]))
+	result := make(map[string][]*Result, 1)
+	result[self.id] = make([]*Result, len(self.cids[self.id]))
 
 	for index, v := range self.cids[self.id] {
-		if cid, ok := v.(string); v != nil && ok {
-			r := Result{}
+		if cid, ok := v.(string); v != nil && ok && cid != "" {
+			r := &Result{}
 			r.ExitCode, r.Err = Docker.WaitContainer(cid)
 			result[self.id][index] = r
 			self.remove(cid, self.appname)
+		} else {
+			result[self.id][index] = &Result{ExitCode: -1}
 		}
 	}
 
@@ -35,6 +37,7 @@ func (self *Tester) WaitForTester() {
 }
 
 func (self *Tester) remove(id, appname string) bool {
+	logger.Debug(appname, id)
 	container := Container{
 		id:      id,
 		appname: appname,
