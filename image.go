@@ -23,7 +23,7 @@ func (self *Image) Pull() error {
 	return nil
 }
 
-func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
+func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
 
@@ -33,7 +33,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 		User:       strconv.Itoa(uid),
 		Image:      image,
 		Cmd:        job.Cmd,
-		Env:        []string{"RUNENV=PROD"},
+		Env:        []string{fmt.Sprintf("RUNENV=%s", runenv)},
 		WorkingDir: fmt.Sprintf("/%s", self.appname),
 	}
 
@@ -46,7 +46,7 @@ func (self *Image) Run(job *Task, uid int) (*docker.Container, error) {
 		NetworkMode: config.Docker.Network,
 	}
 
-	if job.Daemon == "" {
+	if job.ShouldExpose() {
 		port := docker.Port(fmt.Sprintf("%d/tcp", job.Port))
 		exposedPorts := make(map[docker.Port]struct{})
 		exposedPorts[port] = struct{}{}

@@ -17,8 +17,8 @@ func main() {
 
 	var levi = Levi{}
 	var dialer = websocket.Dialer{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  config.ReadBufferSize,
+		WriteBufferSize: config.WriteBufferSize,
 	}
 
 	ws, _, err := dialer.Dial(config.Master, http.Header{})

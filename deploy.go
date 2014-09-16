@@ -11,7 +11,7 @@ type Deploy struct {
 	nginx *Nginx
 }
 
-func (self *Deploy) add(index int, job Task, apptask *AppTask) string {
+func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) string {
 	logger.Info("Add Container", apptask.Name, "@", job.Version)
 	image := Image{
 		apptask.Name,
@@ -22,13 +22,13 @@ func (self *Deploy) add(index int, job Task, apptask *AppTask) string {
 		logger.Info("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
-	container, err := image.Run(&job, apptask.Uid)
+	container, err := image.Run(&job, apptask.Uid, runenv)
 	if err != nil {
 		logger.Info("Run Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
 	logger.Info("Run Image", apptask.Name, "@", job.Version, "Succeed", container.ID)
-	if !job.CheckDaemon() {
+	if !job.CheckDaemon() && !job.CheckTest() {
 		self.nginx.New(apptask.Name, container.ID, job.ident)
 		self.nginx.SetUpdate(apptask.Name)
 	}
@@ -61,9 +61,10 @@ func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env
 		logger.Info("Create app config failed", err)
 		return
 	}
-	cid := self.add(index, job, apptask)
-	apptask.result[apptask.Id][index] = cid
-	logger.Info("Add Finished", cid)
+	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
+		apptask.result[apptask.Id][index] = cid
+		logger.Info("Add Finished", cid)
+	}
 }
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *Env) {
@@ -82,14 +83,14 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	if err := env.CreateConfigFile(&job); err != nil {
 		return
 	}
-	cid := self.add(index, job, apptask)
-	apptask.result[apptask.Id][index] = cid
-	logger.Info("Update Finished", cid)
+	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
+		apptask.result[apptask.Id][index] = cid
+		logger.Info("Update Finished", cid)
+	}
 }
 
 func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	defer apptask.wg.Done()
-	apptask.result[apptask.Id][index] = ""
 	builder := NewBuilder(apptask.Name, &job.Build)
 	if err := builder.Build(); err != nil {
 		logger.Info(err)
@@ -97,6 +98,18 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	}
 	apptask.result[apptask.Id][index] = builder.repoTag
 	logger.Info("Build Finished", builder.repoTag)
+}
+
+func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
+	defer apptask.wg.Done()
+	if err := env.CreateTestConfigFile(&job); err != nil {
+		logger.Info("Create app test config failed", err)
+		return
+	}
+	if cid := self.add(index, job, apptask, TESTING); cid != "" {
+		apptask.result[apptask.Id][index] = cid
+		logger.Info("Start Testing", cid)
+	}
 }
 
 func (self *Deploy) DoDeploy(ws *websocket.Conn) {
@@ -115,6 +128,10 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 			case BUILD_IMAGE:
 				logger.Info("Build Task")
 				f = self.BuildImage
+			case TEST_IMAGE:
+				logger.Info("Test Task")
+				f = self.TestImage
+				env.CreateUser()
 			case ADD_CONTAINER:
 				logger.Info("Add Task")
 				env.CreateUser()
@@ -128,9 +145,12 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 				f = self.RemoveContainer
 			}
 			for index, job := range apptask.Tasks {
-				if job.IsDaemon() {
+				switch {
+				case job.IsTest():
+					job.SetAsTest()
+				case job.IsDaemon():
 					job.SetAsDaemon()
-				} else {
+				case !job.IsDaemon():
 					job.SetAsService()
 				}
 				go f(index, job, apptask, &env)
@@ -138,6 +158,15 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 			apptask.wg.Wait()
 			if err := ws.WriteJSON(&apptask.result); err != nil {
 				logger.Info(err)
+			}
+			if apptask.Type == TEST_IMAGE {
+				tester := Tester{
+					appname: apptask.Name,
+					id:      apptask.Id,
+					ws:      ws,
+					cids:    apptask.result,
+				}
+				go tester.WaitForTester()
 			}
 		}(apptask)
 	}

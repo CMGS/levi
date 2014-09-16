@@ -25,6 +25,7 @@ type Task struct {
 	Memory    float64
 	Cpus      int64
 	Daemon    string
+	Test      string
 	ident     string
 }
 
@@ -32,9 +33,26 @@ func (self *Task) IsDaemon() bool {
 	return self.Daemon != ""
 }
 
+func (self *Task) IsTest() bool {
+	return self.Test != ""
+}
+
+func (self *Task) ShouldExpose() bool {
+	return self.Daemon == "" && self.Test == ""
+}
+
+func (self *Task) CheckTest() bool {
+	test_ident := fmt.Sprintf("test_%s", self.Test)
+	return test_ident == self.ident
+}
+
 func (self *Task) CheckDaemon() bool {
 	daemon_ident := fmt.Sprintf("daemon_%s", self.Daemon)
 	return daemon_ident == self.ident
+}
+
+func (self *Task) SetAsTest() {
+	self.ident = fmt.Sprintf("test_%s", self.Test)
 }
 
 func (self *Task) SetAsDaemon() {
