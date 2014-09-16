@@ -157,6 +157,15 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 			if err := ws.WriteJSON(&apptask.result); err != nil {
 				logger.Info(err)
 			}
+			if apptask.Type == TEST_IMAGE {
+				tester := Tester{
+					appname: apptask.Name,
+					id:      apptask.Id,
+					ws:      ws,
+					cids:    apptask.result,
+				}
+				go tester.WaitForTester()
+			}
 		}(apptask)
 	}
 }
