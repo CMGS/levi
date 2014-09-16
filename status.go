@@ -10,9 +10,12 @@ import (
 func getPath(name string) string {
 	appinfo := strings.SplitN(strings.TrimLeft(name, "/"), "_", 2)
 	var p string
-	if strings.Contains(appinfo[1], "daemon_") {
+	switch {
+	case strings.Contains(appinfo[1], "_daemon_"):
 		p = path.Join("/NBE/_Apps", appinfo[0], "daemons")
-	} else {
+	case strings.Contains(appinfo[1], "_test_"):
+		p = path.Join("/NBE/_Apps", appinfo[0], "tests")
+	default:
 		p = path.Join("/NBE/_Apps", appinfo[0], "apps")
 	}
 	return p
