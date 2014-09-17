@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/CMGS/go-dockerclient"
+	"github.com/fsouza/go-dockerclient"
 	"path"
 	"strconv"
 )
@@ -16,7 +16,7 @@ type Image struct {
 func (self *Image) Pull() error {
 	url := UrlJoin(config.Docker.Registry, self.appname)
 	if err := Docker.PullImage(
-		docker.PullImageOptions{url, config.Docker.Registry, self.version, GetBuffer()},
+		docker.PullImageOptions{url, config.Docker.Registry, self.version, GetBuffer(), false},
 		docker.AuthConfiguration{}); err != nil {
 		return err
 	}

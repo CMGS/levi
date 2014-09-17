@@ -22,7 +22,7 @@ type Task struct {
 	Port      int64
 	Container string
 	Cmd       []string
-	Memory    float64
+	Memory    int64
 	Cpus      int64
 	Daemon    string
 	Test      string

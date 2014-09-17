@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/CMGS/go-dockerclient"
+	"github.com/fsouza/go-dockerclient"
 	"os"
 	"path"
 )

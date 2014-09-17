@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/CMGS/go-dockerclient"
 	"github.com/CMGS/websocket"
+	"github.com/fsouza/go-dockerclient"
 	"net"
 	"strings"
 	"sync"
