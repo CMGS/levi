@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/fsouza/go-dockerclient"
 	"net/http"
 	"os"
 	"path"
@@ -17,6 +18,31 @@ type Upstream struct {
 type Nginx struct {
 	upstreams map[string]*Upstream
 	update    map[string]struct{}
+}
+
+func NewNginx() *Nginx {
+	nginx := &Nginx{
+		make(map[string]*Upstream),
+		make(map[string]struct{}),
+	}
+	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
+	if err != nil {
+		logger.Info(err)
+	}
+	for _, container := range containers {
+		name := strings.TrimLeft(container.Names[0], "/")
+		if pos := strings.Index(name, "_daemon_"); pos > -1 {
+			continue
+		}
+		if pos := strings.Index(name, "_test_"); pos > -1 {
+			continue
+		}
+		info := strings.Split(name, "_")
+		appname := name[:strings.Index(name, info[len(info)-1])-1]
+		appport := name[strings.Index(name, info[len(info)-1]):]
+		nginx.New(appname, container.ID, appport)
+	}
+	return nginx
 }
 
 func (self *Nginx) SetUpdate(appname string) {

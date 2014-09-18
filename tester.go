@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/CMGS/websocket"
+	"github.com/gorilla/websocket"
 )
 
 type Result struct {
@@ -12,11 +12,10 @@ type Result struct {
 type Tester struct {
 	appname string
 	id      string
-	ws      *websocket.Conn
 	cids    map[string][]interface{}
 }
 
-func (self *Tester) WaitForTester() {
+func (self *Tester) WaitForTester(ws *websocket.Conn) {
 	result := make(map[string][]*Result, 1)
 	result[self.id] = make([]*Result, len(self.cids[self.id]))
 
@@ -31,7 +30,7 @@ func (self *Tester) WaitForTester() {
 		}
 	}
 
-	if err := self.ws.WriteJSON(&result); err != nil {
+	if err := ws.WriteJSON(&result); err != nil {
 		logger.Info(err)
 	}
 }

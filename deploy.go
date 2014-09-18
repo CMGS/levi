@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/CMGS/websocket"
+	"github.com/gorilla/websocket"
 	"sync"
 )
 
 type Deploy struct {
-	tasks []*AppTask
 	wg    *sync.WaitGroup
+	ws    *websocket.Conn
 	nginx *Nginx
+	tasks []*AppTask
 }
 
 func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) string {
@@ -112,7 +113,7 @@ func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
 	}
 }
 
-func (self *Deploy) DoDeploy(ws *websocket.Conn) {
+func (self *Deploy) DoDeploy() {
 	self.wg.Add(len(self.tasks))
 	for _, apptask := range self.tasks {
 		go func(apptask *AppTask) {
@@ -156,31 +157,39 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 				go f(index, job, apptask, &env)
 			}
 			apptask.wg.Wait()
-			if err := ws.WriteJSON(&apptask.result); err != nil {
+			if err := self.ws.WriteJSON(&apptask.result); err != nil {
 				logger.Info(err)
 			}
 			if apptask.Type == TEST_IMAGE {
 				tester := Tester{
 					appname: apptask.Name,
 					id:      apptask.Id,
-					ws:      ws,
 					cids:    apptask.result,
 				}
-				go tester.WaitForTester()
+				go tester.WaitForTester(self.ws)
 			}
 		}(apptask)
 	}
 }
 
-func (self *Deploy) Deploy(ws *websocket.Conn) {
+func (self *Deploy) Deploy() {
+	logger.Debug("Got tasks", len(self.tasks))
+	logger.Debug(self.nginx.upstreams)
 	//Do Deploy
-	self.DoDeploy(ws)
+	self.DoDeploy()
 	//Wait For Container Control Finish
 	self.Wait()
 	//Save Nginx Config
 	self.nginx.Save()
+	//Clean Task Queue
+	self.Init()
 }
 
 func (self *Deploy) Wait() {
 	self.wg.Wait()
+}
+
+func (self *Deploy) Init() {
+	self.tasks = make([]*AppTask, 0, config.TaskNum)
+	self.nginx = NewNginx()
 }
