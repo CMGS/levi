@@ -23,7 +23,8 @@ type Task struct {
 	Container string
 	Cmd       []string
 	Memory    int64
-	Cpus      int64
+	CpuShares int64
+	CpuSet    string
 	Daemon    string
 	Test      string
 	ident     string

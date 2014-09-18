@@ -41,6 +41,13 @@ func GetBuffer() io.Writer {
 	}
 }
 
+func MakeDir(p string) error {
+	if err := os.MkdirAll(p, 0755); err != nil {
+		return err
+	}
+	return nil
+}
+
 func CopyDir(source string, dest string) (err error) {
 	// get properties of source dir
 	sourceinfo, err := os.Stat(source)
