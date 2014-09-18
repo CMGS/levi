@@ -25,7 +25,7 @@ docker:
 
 app:
   home: /tmp/levi
-  permdirs: /tmp/levi/permdirs
+  permdirs: /tmp/permdirs
 
 etcd:
   sync: True

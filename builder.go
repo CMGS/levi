@@ -90,7 +90,7 @@ func (self *Builder) fetchCode() error {
 		return err
 	}
 
-	if err := os.MkdirAll(self.extendDir, 0755); err != nil {
+	if err := MakeDir(self.extendDir); err != nil {
 		return err
 	}
 
