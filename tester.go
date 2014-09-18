@@ -24,7 +24,9 @@ func (self *Tester) WaitForTester(ws *websocket.Conn) {
 			r := &Result{}
 			r.ExitCode, r.Err = Docker.WaitContainer(cid)
 			result[self.id][index] = r
-			self.remove(cid, self.appname)
+			if err := Remove(cid, self.appname, true); err != nil {
+				logger.Info(err)
+			}
 		} else {
 			result[self.id][index] = &Result{ExitCode: -1}
 		}
@@ -33,19 +35,4 @@ func (self *Tester) WaitForTester(ws *websocket.Conn) {
 	if err := ws.WriteJSON(&result); err != nil {
 		logger.Info(err)
 	}
-}
-
-func (self *Tester) remove(id, appname string) bool {
-	logger.Debug(appname, id)
-	container := Container{
-		id:      id,
-		appname: appname,
-	}
-
-	if err := container.Remove(); err != nil {
-		logger.Info("Remove Container", id, "failed", err)
-		return false
-	}
-
-	return true
 }

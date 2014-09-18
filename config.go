@@ -27,6 +27,7 @@ type DockerConfig struct {
 
 type AppConfig struct {
 	Home     string
+	Tmpdirs  string
 	Permdirs string
 }
 

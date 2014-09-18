@@ -3,7 +3,7 @@ master: ws://127.0.0.1:8888/
 pidfile: /tmp/levi.pid
 
 tasknum: 3
-taskinterval: 10
+taskinterval: 3
 
 readbuffersize: 10240
 writebuffersize: 10240
@@ -25,6 +25,7 @@ docker:
 
 app:
   home: /tmp/levi
+  tmpdirs: /tmp/tmpdirs
   permdirs: /tmp/permdirs
 
 etcd:

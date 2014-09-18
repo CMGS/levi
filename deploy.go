@@ -62,6 +62,10 @@ func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env
 		logger.Info("Create app config failed", err)
 		return
 	}
+	if err := env.CreatePermdir(&job, false); err != nil {
+		logger.Info("Create app permdir failed", err)
+		return
+	}
 	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
 		apptask.result[apptask.Id][index] = cid
 		logger.Info("Add Finished", cid)
@@ -82,6 +86,10 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 		return
 	}
 	if err := env.CreateConfigFile(&job); err != nil {
+		return
+	}
+	if err := env.CreatePermdir(&job, false); err != nil {
+		logger.Info("Create app permdir failed", err)
 		return
 	}
 	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
@@ -105,6 +113,10 @@ func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
 	if err := env.CreateTestConfigFile(&job); err != nil {
 		logger.Info("Create app test config failed", err)
+		return
+	}
+	if err := env.CreatePermdir(&job, true); err != nil {
+		logger.Info("Create app permdir failed", err)
 		return
 	}
 	if cid := self.add(index, job, apptask, TESTING); cid != "" {
