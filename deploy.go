@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/CMGS/websocket"
+	"github.com/gorilla/websocket"
 	"sync"
 )
 
 type Deploy struct {
-	tasks []*AppTask
 	wg    *sync.WaitGroup
+	ws    *websocket.Conn
 	nginx *Nginx
+	tasks []*AppTask
 }
 
 func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) string {
@@ -57,8 +58,13 @@ func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 
 func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
+	env.CreateUser()
 	if err := env.CreateConfigFile(&job); err != nil {
 		logger.Info("Create app config failed", err)
+		return
+	}
+	if err := env.CreatePermdir(&job, false); err != nil {
+		logger.Info("Create app permdir failed", err)
 		return
 	}
 	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
@@ -76,11 +82,16 @@ func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *En
 
 func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
+	env.CreateUser()
 	apptask.result[apptask.Id][index] = ""
 	if result := self.remove(index, job, apptask); !result {
 		return
 	}
 	if err := env.CreateConfigFile(&job); err != nil {
+		return
+	}
+	if err := env.CreatePermdir(&job, false); err != nil {
+		logger.Info("Create app permdir failed", err)
 		return
 	}
 	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
@@ -102,8 +113,13 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 
 func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
+	env.CreateUser()
 	if err := env.CreateTestConfigFile(&job); err != nil {
 		logger.Info("Create app test config failed", err)
+		return
+	}
+	if err := env.CreatePermdir(&job, true); err != nil {
+		logger.Info("Create app permdir failed", err)
 		return
 	}
 	if cid := self.add(index, job, apptask, TESTING); cid != "" {
@@ -112,7 +128,7 @@ func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
 	}
 }
 
-func (self *Deploy) DoDeploy(ws *websocket.Conn) {
+func (self *Deploy) DoDeploy() {
 	self.wg.Add(len(self.tasks))
 	for _, apptask := range self.tasks {
 		go func(apptask *AppTask) {
@@ -131,14 +147,11 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 			case TEST_IMAGE:
 				logger.Info("Test Task")
 				f = self.TestImage
-				env.CreateUser()
 			case ADD_CONTAINER:
 				logger.Info("Add Task")
-				env.CreateUser()
 				f = self.AddContainer
 			case UPDATE_CONTAINER:
 				logger.Info("Update Task")
-				env.CreateUser()
 				f = self.UpdateApp
 			case REMOVE_CONTAINER:
 				logger.Info("Remove Task")
@@ -156,31 +169,39 @@ func (self *Deploy) DoDeploy(ws *websocket.Conn) {
 				go f(index, job, apptask, &env)
 			}
 			apptask.wg.Wait()
-			if err := ws.WriteJSON(&apptask.result); err != nil {
-				logger.Info(err)
+			if err := self.ws.WriteJSON(&apptask.result); err != nil {
+				logger.Info(err, apptask.result)
 			}
 			if apptask.Type == TEST_IMAGE {
 				tester := Tester{
 					appname: apptask.Name,
 					id:      apptask.Id,
-					ws:      ws,
 					cids:    apptask.result,
 				}
-				go tester.WaitForTester()
+				go tester.WaitForTester(self.ws)
 			}
 		}(apptask)
 	}
 }
 
-func (self *Deploy) Deploy(ws *websocket.Conn) {
+func (self *Deploy) Deploy() {
+	logger.Debug("Got tasks", len(self.tasks))
+	logger.Debug(self.nginx.upstreams)
 	//Do Deploy
-	self.DoDeploy(ws)
+	self.DoDeploy()
 	//Wait For Container Control Finish
 	self.Wait()
 	//Save Nginx Config
 	self.nginx.Save()
+	//Clean Task Queue
+	self.Init()
 }
 
 func (self *Deploy) Wait() {
 	self.wg.Wait()
+}
+
+func (self *Deploy) Init() {
+	self.tasks = make([]*AppTask, 0, config.TaskNum)
+	self.nginx = NewNginx()
 }

@@ -1,9 +1,8 @@
 package main
 
 import (
-	"github.com/CMGS/websocket"
 	"github.com/fsouza/go-dockerclient"
-	"net"
+	"github.com/gorilla/websocket"
 	"strings"
 	"sync"
 	"time"
@@ -12,47 +11,42 @@ import (
 var Docker *docker.Client
 
 type Levi struct {
+	deploy *Deploy
+	ws     *websocket.Conn
 	finish bool
+	task   chan *AppTask
+	err    chan error
 	events chan *docker.APIEvents
 }
 
-func (self *Levi) Connect(endpoint string) {
+func NewLevi(ws *websocket.Conn, endpoint string) *Levi {
+	var levi *Levi = &Levi{ws: ws}
 	var err error
+
 	Docker, err = docker.NewClient(endpoint)
 	if err != nil {
 		logger.Assert(err, "Docker")
 	}
-	self.events = make(chan *docker.APIEvents)
-	logger.Assert(Docker.AddEventListener(self.events), "Attacher")
-}
 
-func (self *Levi) Load() []docker.APIContainers {
-	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
-	if err != nil {
-		logger.Info(err)
-		self.Close()
+	levi.err = make(chan error)
+	levi.task = make(chan *AppTask)
+	levi.events = make(chan *docker.APIEvents)
+	levi.finish = false
+	levi.deploy = &Deploy{
+		ws: ws,
+		wg: &sync.WaitGroup{},
 	}
-	return containers
+	levi.deploy.Init()
+
+	logger.Assert(Docker.AddEventListener(levi.events), "Attacher")
+	return levi
 }
 
-func (self *Levi) Read(ws *websocket.Conn, apptask *AppTask) bool {
-	switch err := ws.ReadJSON(apptask); {
-	case err != nil:
-		if e, ok := err.(net.Error); !ok || !e.Timeout() {
-			self.Close()
-			logger.Info(err)
-		}
-	case err == nil:
-		logger.Debug(apptask)
-		if apptask.Id != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (self *Levi) Close() {
+func (self *Levi) Exit() {
 	self.finish = true
+}
+
+func (self *Levi) Clean() {
 	Docker.RemoveEventListener(self.events)
 }
 
@@ -69,44 +63,37 @@ func (self *Levi) Status() {
 	}
 }
 
-func (self *Levi) NewNginx() *Nginx {
-	nginx := &Nginx{
-		make(map[string]*Upstream),
-		make(map[string]struct{}),
-	}
-	for _, container := range self.Load() {
-		var appinfo = strings.SplitN(strings.TrimLeft(container.Names[0], "/"), "_", 2)
-		if strings.Contains(appinfo[1], "daemon_") {
+func (self *Levi) Read() {
+	for {
+		apptask := &AppTask{wg: &sync.WaitGroup{}}
+		if err := self.ws.ReadJSON(apptask); err != nil {
+			self.err <- err
 			continue
 		}
-		appname, apport := appinfo[0], appinfo[1]
-		nginx.New(appname, container.ID, apport)
-	}
-	return nginx
-}
-
-func (self *Levi) NewDeploy() *Deploy {
-	return &Deploy{
-		make([]*AppTask, 0, config.TaskNum),
-		&sync.WaitGroup{},
-		self.NewNginx(),
+		self.task <- apptask
 	}
 }
 
-func (self *Levi) Loop(ws *websocket.Conn) {
-	var newtask bool
-	var deploy *Deploy
-	deploy = self.NewDeploy()
+func (self *Levi) Loop() {
 	for !self.finish {
-		apptask := AppTask{wg: &sync.WaitGroup{}}
-		ws.SetReadDeadline(time.Now().Add(time.Duration(config.TaskInterval) * time.Second))
-		logger.Debug("Timeout check")
-		if newtask = self.Read(ws, &apptask); newtask {
-			deploy.tasks = append(deploy.tasks, &apptask)
-		}
-		if (len(deploy.tasks) != 0 && !newtask) || len(deploy.tasks) == cap(deploy.tasks) {
-			deploy.Deploy(ws)
-			deploy = self.NewDeploy()
+		select {
+		case err := <-self.err:
+			logger.Info(err)
+			if len(self.deploy.tasks) != 0 {
+				self.deploy.Deploy()
+			}
+			self.Exit()
+		case task := <-self.task:
+			self.deploy.tasks = append(self.deploy.tasks, task)
+			if len(self.deploy.tasks) == cap(self.deploy.tasks) {
+				self.deploy.Deploy()
+			}
+		case <-time.After(time.Second * time.Duration(config.TaskInterval)):
+			logger.Debug("Time Check")
+			if len(self.deploy.tasks) != 0 {
+				self.deploy.Deploy()
+			}
 		}
 	}
+	self.Clean()
 }

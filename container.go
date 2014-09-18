@@ -22,18 +22,27 @@ func (self *Container) Stop() error {
 }
 
 func (self *Container) Remove() error {
-	container, err := Docker.InspectContainer(self.id)
+	return Remove(self.id, self.appname, false)
+}
+
+func Remove(id, appname string, test bool) error {
+	container, err := Docker.InspectContainer(id)
 	if err != nil {
 		return err
 	}
 	if err := Die(container.ID[:12], container.Name); err != nil {
 		return err
 	}
-	configPath := container.Volumes[path.Join("/", self.appname, "config.yaml")]
+	configPath := container.Volumes[path.Join("/", appname, "config.yaml")]
 	if err := os.Remove(configPath); err != nil {
 		return err
 	}
-	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: self.id}); err != nil {
+	if permdirPath := container.Volumes[path.Join("/", appname, "permdir")]; test {
+		if err := os.Remove(permdirPath); err != nil {
+			return err
+		}
+	}
+	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
 		return err
 	}
 	return nil

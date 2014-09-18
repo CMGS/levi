@@ -25,6 +25,7 @@ docker:
 
 app:
   home: /tmp/levi
+  tmpdirs: /tmp/tmpdirs
   permdirs: /tmp/permdirs
 
 etcd:

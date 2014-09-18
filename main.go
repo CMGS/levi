@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/CMGS/websocket"
+	"github.com/gorilla/websocket"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,27 +15,26 @@ func main() {
 	defer os.Remove(config.PidFile)
 	WritePid(config.PidFile)
 
-	var levi = Levi{}
 	var dialer = websocket.Dialer{
 		ReadBufferSize:  config.ReadBufferSize,
 		WriteBufferSize: config.WriteBufferSize,
 	}
-
 	ws, _, err := dialer.Dial(config.Master, http.Header{})
 	if err != nil {
 		logger.Assert(err, "Master")
 	}
 	defer ws.Close()
 
-	levi.Connect(config.Docker.Endpoint)
+	levi := NewLevi(ws, config.Docker.Endpoint)
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 		signal.Notify(c, syscall.SIGTERM)
 		signal.Notify(c, syscall.SIGHUP)
 		logger.Info("Catch", <-c)
-		levi.Close()
+		levi.Exit()
 	}()
 	go levi.Status()
-	levi.Loop(ws)
+	go levi.Read()
+	levi.Loop()
 }

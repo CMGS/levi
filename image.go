@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/fsouza/go-dockerclient"
-	"path"
 	"strconv"
 )
 
@@ -26,11 +25,7 @@ func (self *Image) Pull() error {
 func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
-
-	permdir := path.Join(config.App.Permdirs, self.appname)
-	if err := MakeDir(permdir); err != nil {
-		return nil, err
-	}
+	permdir := GeneratePermdirPath(self.appname, job.ident, runenv == TESTING)
 
 	containerConfig := docker.Config{
 		CpuShares: job.CpuShares,
