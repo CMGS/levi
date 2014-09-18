@@ -39,6 +39,7 @@ func Start(id string) error {
 		yaml.Unmarshal([]byte(resp.Node.Value), &record)
 		record[config.Name][id] = container
 	}
+	logger.Debug(p, record)
 	out, err := yaml.Marshal(record)
 	if err != nil {
 		return err
@@ -60,6 +61,7 @@ func Die(id, name string) error {
 		if len(record[config.Name]) == 0 {
 			delete(record, config.Name)
 		}
+		logger.Debug(p, record)
 		if len(record) == 0 {
 			Etcd.Set(p, "", 0)
 		} else {
