@@ -58,6 +58,7 @@ func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 
 func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
+	env.CreateUser()
 	if err := env.CreateConfigFile(&job); err != nil {
 		logger.Info("Create app config failed", err)
 		return
@@ -81,6 +82,7 @@ func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *En
 
 func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
+	env.CreateUser()
 	apptask.result[apptask.Id][index] = ""
 	if result := self.remove(index, job, apptask); !result {
 		return
@@ -111,6 +113,7 @@ func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 
 func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
+	env.CreateUser()
 	if err := env.CreateTestConfigFile(&job); err != nil {
 		logger.Info("Create app test config failed", err)
 		return
@@ -144,14 +147,11 @@ func (self *Deploy) DoDeploy() {
 			case TEST_IMAGE:
 				logger.Info("Test Task")
 				f = self.TestImage
-				env.CreateUser()
 			case ADD_CONTAINER:
 				logger.Info("Add Task")
-				env.CreateUser()
 				f = self.AddContainer
 			case UPDATE_CONTAINER:
 				logger.Info("Update Task")
-				env.CreateUser()
 				f = self.UpdateApp
 			case REMOVE_CONTAINER:
 				logger.Info("Remove Task")
@@ -170,7 +170,7 @@ func (self *Deploy) DoDeploy() {
 			}
 			apptask.wg.Wait()
 			if err := self.ws.WriteJSON(&apptask.result); err != nil {
-				logger.Info(err)
+				logger.Info(err, apptask.result)
 			}
 			if apptask.Type == TEST_IMAGE {
 				tester := Tester{
