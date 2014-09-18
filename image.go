@@ -26,6 +26,7 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
 	permdir := GeneratePermdirPath(self.appname, job.ident, runenv == TESTING)
+	mPermdir := fmt.Sprintf("/%s/permdir", self.appname)
 
 	containerConfig := docker.Config{
 		CpuShares: job.CpuShares,
@@ -36,7 +37,7 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 		Cmd:       job.Cmd,
 		Env: []string{
 			fmt.Sprintf("NBE_RUNENV=%s", runenv),
-			fmt.Sprintf("NBE_PERMDIR=%s", permdir),
+			fmt.Sprintf("NBE_PERMDIR=%s", mPermdir),
 		},
 		WorkingDir: fmt.Sprintf("/%s", self.appname),
 	}
@@ -44,7 +45,7 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 	hostConfig := docker.HostConfig{
 		Binds: []string{
 			fmt.Sprintf("%s:%s:ro", configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
-			fmt.Sprintf("%s:%s", permdir, fmt.Sprintf("/%s/permdir", self.appname)),
+			fmt.Sprintf("%s:%s", permdir, mPermdir),
 			"/var/run:/var/run",
 		},
 		NetworkMode: config.Docker.Network,
