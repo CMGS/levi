@@ -38,7 +38,7 @@ func Remove(id, appname string, test bool) error {
 		return err
 	}
 	if permdirPath := container.Volumes[path.Join("/", appname, "permdir")]; test {
-		if err := os.Remove(permdirPath); err != nil {
+		if err := os.RemoveAll(permdirPath); err != nil {
 			return err
 		}
 	}
