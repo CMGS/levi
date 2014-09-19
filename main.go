@@ -34,7 +34,6 @@ func main() {
 		logger.Info("Catch", <-c)
 		levi.Exit()
 	}()
-	go levi.Status()
 	go levi.Read()
 	levi.Loop()
 }
