@@ -31,10 +31,10 @@ func NewNginx() *Nginx {
 	}
 	for _, container := range containers {
 		name := strings.TrimLeft(container.Names[0], "/")
-		if pos := strings.Index(name, "_daemon_"); pos > -1 {
+		if pos := strings.LastIndex(name, "_daemon_"); pos > -1 {
 			continue
 		}
-		if pos := strings.Index(name, "_test_"); pos > -1 {
+		if pos := strings.LastIndex(name, "_test_"); pos > -1 {
 			continue
 		}
 		info := strings.Split(name, "_")

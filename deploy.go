@@ -46,10 +46,6 @@ func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 		logger.Info("Stop Container", job.Container, "failed", err)
 		return false
 	}
-	if err := container.Remove(); err != nil {
-		logger.Info("Remove Container", job.Container, "failed", err)
-		return false
-	}
 	if ok := self.nginx.Remove(apptask.Name, job.Container); ok {
 		self.nginx.SetUpdate(apptask.Name)
 	}

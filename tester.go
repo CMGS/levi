@@ -24,9 +24,6 @@ func (self *Tester) WaitForTester(ws *websocket.Conn) {
 			r := &Result{}
 			r.ExitCode, r.Err = Docker.WaitContainer(cid)
 			result[self.id][index] = r
-			if err := Remove(cid, self.appname, true); err != nil {
-				logger.Info(err)
-			}
 		} else {
 			result[self.id][index] = &Result{ExitCode: -1}
 		}
