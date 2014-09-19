@@ -37,10 +37,7 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 	if err := ioutil.WriteFile(configPath, out, 0600); err != nil {
 		return err
 	}
-	if err := os.Chown(configPath, self.appuid, self.appuid); err != nil {
-		return err
-	}
-	return nil
+	return os.Chown(configPath, self.appuid, self.appuid)
 }
 
 func (self *Env) CreatePermdir(job *Task, test bool) error {
@@ -48,8 +45,5 @@ func (self *Env) CreatePermdir(job *Task, test bool) error {
 	if err := MakeDir(permdir); err != nil {
 		return err
 	}
-	if err := os.Chown(permdir, self.appuid, self.appuid); err != nil {
-		return err
-	}
-	return nil
+	return os.Chown(permdir, self.appuid, self.appuid)
 }
