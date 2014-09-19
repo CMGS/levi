@@ -32,7 +32,8 @@ func (self *Tester) WaitForTester(ws *websocket.Conn) {
 		}
 	}
 
+	logger.Info("Test finished", self.id)
 	if err := ws.WriteJSON(&result); err != nil {
-		logger.Info(err, result)
+		logger.Info(err)
 	}
 }

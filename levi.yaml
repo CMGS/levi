@@ -19,7 +19,7 @@ nginx:
   dyupstream: http://127.0.0.1:10090/upstream
 
 docker:
-  endpoint: tcp://10.1.201.16:80
+  endpoint: tcp://10.1.201.16:88
   registry: 10.1.201.16:8882
   network: bridge
 
