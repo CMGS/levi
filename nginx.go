@@ -27,7 +27,7 @@ func NewNginx() *Nginx {
 	}
 	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
-		logger.Info(err)
+		logger.Assert(err, "Load")
 	}
 	for _, container := range containers {
 		name := strings.TrimLeft(container.Names[0], "/")

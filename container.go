@@ -30,14 +30,12 @@ func Remove(id, appname string, test bool) error {
 	if err != nil {
 		return err
 	}
-	if err := Die(container.ID[:12], container.Name); err != nil {
-		return err
-	}
 	configPath := container.Volumes[path.Join("/", appname, "config.yaml")]
 	if err := os.Remove(configPath); err != nil {
 		return err
 	}
-	if permdirPath := container.Volumes[path.Join("/", appname, "permdir")]; test {
+	if test {
+		permdirPath := container.Volumes[path.Join("/", appname, "permdir")]
 		if err := os.RemoveAll(permdirPath); err != nil {
 			return err
 		}

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"gopkg.in/yaml.v1"
-	"os"
 	"path"
 )
 
@@ -24,17 +23,6 @@ func GeneratePermdirPath(appname, ident string, test bool) string {
 	}
 	name := fmt.Sprintf("%s_%s", appname, ident)
 	return path.Join(config.App.Tmpdirs, name)
-}
-
-func (self *Env) CreatePermdir(job *Task, test bool) error {
-	permdir := GeneratePermdirPath(self.appname, job.ident, test)
-	if err := MakeDir(permdir); err != nil {
-		return err
-	}
-	if err := os.Chown(permdir, self.appuid, self.appuid); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (self *Env) CreateConfigFile(job *Task) error {

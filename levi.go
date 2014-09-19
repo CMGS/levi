@@ -55,8 +55,18 @@ func (self *Levi) Status() {
 	for msg := range self.events {
 		id := msg.ID[:12]
 		logger.Debug("event:", id, msg.Status)
-		if msg.Status == "start" && strings.HasPrefix(msg.From, config.Docker.Registry) {
+		if !strings.HasPrefix(msg.From, config.Docker.Registry) {
+			continue
+		}
+		switch msg.Status {
+		case "start":
 			if err := Start(id); err != nil {
+				logger.Info(err)
+			}
+		case "die":
+			appinfo := strings.Split(msg.From, "/")
+			appname := strings.Split(appinfo[len(appinfo)-1], ":")[0]
+			if err := Die(id, appname); err != nil {
 				logger.Info(err)
 			}
 		}
