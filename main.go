@@ -26,6 +26,8 @@ func main() {
 	defer ws.Close()
 
 	levi := NewLevi(ws, config.Docker.Endpoint)
+	status := NewStatus()
+	go status.Listen()
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
@@ -34,7 +36,6 @@ func main() {
 		logger.Info("Catch", <-c)
 		levi.Exit()
 	}()
-	go levi.Status()
 	go levi.Read()
 	levi.Loop()
 }

@@ -186,7 +186,6 @@ func (self *Builder) clear() {
 			}
 		}
 		if flag {
-			logger.Debug(image)
 			Docker.RemoveImage(image.ID)
 		}
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gorilla/websocket"
-	"strings"
 	"sync"
 	"time"
 )
@@ -16,7 +15,6 @@ type Levi struct {
 	finish bool
 	task   chan *AppTask
 	err    chan error
-	events chan *docker.APIEvents
 }
 
 func NewLevi(ws *websocket.Conn, endpoint string) *Levi {
@@ -30,7 +28,6 @@ func NewLevi(ws *websocket.Conn, endpoint string) *Levi {
 
 	levi.err = make(chan error)
 	levi.task = make(chan *AppTask)
-	levi.events = make(chan *docker.APIEvents)
 	levi.finish = false
 	levi.deploy = &Deploy{
 		ws: ws,
@@ -38,7 +35,6 @@ func NewLevi(ws *websocket.Conn, endpoint string) *Levi {
 	}
 	levi.deploy.Init()
 
-	logger.Assert(Docker.AddEventListener(levi.events), "Attacher")
 	return levi
 }
 
@@ -47,20 +43,6 @@ func (self *Levi) Exit() {
 }
 
 func (self *Levi) Clean() {
-	Docker.RemoveEventListener(self.events)
-}
-
-func (self *Levi) Status() {
-	logger.Debug("Status Listener Start")
-	for msg := range self.events {
-		id := msg.ID[:12]
-		logger.Debug("event:", id, msg.Status)
-		if msg.Status == "start" && strings.HasPrefix(msg.From, config.Docker.Registry) {
-			if err := Start(id); err != nil {
-				logger.Info(err)
-			}
-		}
-	}
 }
 
 func (self *Levi) Read() {

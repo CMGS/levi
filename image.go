@@ -76,6 +76,7 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 	}
 
 	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
+		RemoveContainer(container.ID, false)
 		return nil, err
 	}
 	return container, nil

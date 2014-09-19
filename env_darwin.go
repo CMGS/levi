@@ -15,3 +15,12 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 	logger.Info("OSX will not chown config file.")
 	return nil
 }
+
+func (self *Env) CreatePermdir(job *Task, test bool) error {
+	permdir := GeneratePermdirPath(self.appname, job.ident, test)
+	if err := MakeDir(permdir); err != nil {
+		return err
+	}
+	logger.Info("OSX will not chown permdir.")
+	return nil
+}

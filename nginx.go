@@ -27,14 +27,14 @@ func NewNginx() *Nginx {
 	}
 	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
-		logger.Info(err)
+		logger.Assert(err, "Load")
 	}
 	for _, container := range containers {
 		name := strings.TrimLeft(container.Names[0], "/")
-		if pos := strings.Index(name, "_daemon_"); pos > -1 {
+		if pos := strings.LastIndex(name, "_daemon_"); pos > -1 {
 			continue
 		}
-		if pos := strings.Index(name, "_test_"); pos > -1 {
+		if pos := strings.LastIndex(name, "_test_"); pos > -1 {
 			continue
 		}
 		info := strings.Split(name, "_")
