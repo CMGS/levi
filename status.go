@@ -18,6 +18,18 @@ func NewStatus() *Status {
 	return status
 }
 
+func (self *Status) Load() {
+	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
+	if err != nil {
+		logger.Assert(err, "Load")
+	}
+	logger.Info("Load container")
+	for _, container := range containers {
+		logger.Debug("Cid, ", container.ID)
+		self.add(container.ID)
+	}
+}
+
 func (self *Status) Listen() {
 	logger.Debug("Status Listener Start")
 	for msg := range self.events {
