@@ -52,7 +52,8 @@ func (self *Status) add(id string) {
 		logger.Info("Status inspect docker failed", err)
 		return
 	}
-	p := self.getPath(container.Name)
+	appname, p := self.getInfo(container.Name)
+	logger.Info("Status Add: ", appname, id)
 	Etcd.CreateDir(p, 0)
 	out, err := yaml.Marshal(container)
 	if err != nil {
@@ -68,7 +69,8 @@ func (self *Status) clean(id string) {
 		logger.Info("Status inspect docker failed", err)
 		return
 	}
-	p := self.getPath(container.Name)
+	appname, p := self.getInfo(container.Name)
+	logger.Info("Status Remove: ", appname, id)
 	resp, err := Etcd.Get(p, false, false)
 	if err != nil {
 		logger.Info("Status get levi dir failed", err)
@@ -84,13 +86,16 @@ func (self *Status) clean(id string) {
 	RemoveContainer(id, strings.LastIndex(container.Name, "_test_") > -1)
 }
 
-func (self *Status) getPath(containerName string) string {
+func (self *Status) getInfo(containerName string) (string, string) {
 	if pos := strings.LastIndex(containerName, "_daemon_"); pos > -1 {
-		return path.Join("/NBE/_Apps", containerName[:pos], "daemons", config.Name)
+		appname := containerName[:pos]
+		return appname, path.Join("/NBE/_Apps", appname, "daemons", config.Name)
 	}
 	if pos := strings.LastIndex(containerName, "_test_"); pos > -1 {
-		return path.Join("/NBE/_Apps", containerName[:pos], "tests", config.Name)
+		appname := containerName[:pos]
+		return appname, path.Join("/NBE/_Apps", appname, "tests", config.Name)
 	}
 	appinfo := strings.Split(containerName, "_")
-	return path.Join("/NBE/_Apps", strings.Join(appinfo[:len(appinfo)-1], "_"), "apps", config.Name)
+	appname := strings.Join(appinfo[:len(appinfo)-1], "_")
+	return appname, path.Join("/NBE/_Apps", appname, "apps", config.Name)
 }
