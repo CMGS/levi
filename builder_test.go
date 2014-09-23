@@ -14,7 +14,7 @@ var builder *Builder
 var info *BuildInfo
 
 func init() {
-	LoadConfig()
+	load("levi.yaml")
 	Docker, _ = docker.NewClient(config.Docker.Endpoint)
 	info = &BuildInfo{
 		Group:   "platform",
