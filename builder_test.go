@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 	"testing"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 var builder *Builder

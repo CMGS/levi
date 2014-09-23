@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 	"text/template"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 type Upstream struct {

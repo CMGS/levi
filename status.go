@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient"
-	"gopkg.in/yaml.v1"
 	"path"
 	"strings"
+
+	"github.com/fsouza/go-dockerclient"
+	"gopkg.in/yaml.v1"
 )
 
 type Status struct {

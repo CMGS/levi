@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient"
-	"github.com/gorilla/websocket"
 	"sync"
 	"time"
+
+	"github.com/fsouza/go-dockerclient"
+	"github.com/gorilla/websocket"
 )
 
 var Docker *docker.Client

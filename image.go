@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
 	"strconv"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 type Image struct {

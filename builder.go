@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path"
+
+	"github.com/BurntSushi/wingo/logger"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/juju/utils/tar"
 	"github.com/libgit2/git2go"
-	"os"
-	"path"
 )
 
 type Builder struct {

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v1"
 	"path"
+
+	"gopkg.in/yaml.v1"
 )
 
 type Env struct {
