@@ -163,9 +163,11 @@ func (self *Builder) buildImage() error {
 }
 
 func (self *Builder) pushImage() error {
-	url := UrlJoin(config.Docker.Registry, self.name)
 	if err := Docker.PushImage(
-		docker.PushImageOptions{url, self.build.Version, config.Docker.Registry, GetBuffer()},
+		docker.PushImageOptions{
+			self.registryURL, self.build.Version,
+			self.registryURL, GetBuffer(),
+		},
 		docker.AuthConfiguration{}); err != nil {
 		return err
 	}
@@ -174,6 +176,7 @@ func (self *Builder) pushImage() error {
 
 func (self *Builder) clear() {
 	defer os.RemoveAll(self.workDir)
+	defer os.RemoveAll(self.extendDir)
 	images, err := Docker.ListImages(false)
 	if err != nil {
 		logger.Debug(err)
