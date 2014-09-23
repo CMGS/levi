@@ -38,7 +38,7 @@ func (self *Status) Load() {
 func (self *Status) Listen() {
 	logger.Debug("Status Listener Start")
 	for event := range self.events {
-		logger.Debug(event.ID, event.From)
+		logger.Debug("Status:", event.Status, event.ID, event.From)
 		id := event.ID[:12]
 		if !strings.HasPrefix(event.From, config.Docker.Registry) {
 			continue
