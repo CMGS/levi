@@ -25,19 +25,25 @@ func (self *Status) Load() {
 	}
 	logger.Info("Load container")
 	for _, container := range containers {
-		logger.Debug("Cid, ", container.ID)
-		self.add(container.ID)
+		event := &docker.APIEvents{
+			Status: "start",
+			ID:     container.ID,
+			From:   container.Image,
+			Time:   container.Created,
+		}
+		self.events <- event
 	}
 }
 
 func (self *Status) Listen() {
 	logger.Debug("Status Listener Start")
-	for msg := range self.events {
-		id := msg.ID[:12]
-		if !strings.HasPrefix(msg.From, config.Docker.Registry) {
+	for event := range self.events {
+		logger.Debug(event.ID, event.From)
+		id := event.ID[:12]
+		if !strings.HasPrefix(event.From, config.Docker.Registry) {
 			continue
 		}
-		switch msg.Status {
+		switch event.Status {
 		case "start":
 			self.add(id)
 		case "die":
@@ -53,7 +59,7 @@ func (self *Status) add(id string) {
 		return
 	}
 	appname, p := self.getInfo(container.Name)
-	logger.Info("Status Add: ", appname, id)
+	logger.Info("Status Add:", appname, id)
 	Etcd.CreateDir(p, 0)
 	out, err := yaml.Marshal(container)
 	if err != nil {
@@ -70,7 +76,7 @@ func (self *Status) clean(id string) {
 		return
 	}
 	appname, p := self.getInfo(container.Name)
-	logger.Info("Status Remove: ", appname, id)
+	logger.Info("Status Remove:", appname, id)
 	resp, err := Etcd.Get(p, false, false)
 	if err != nil {
 		logger.Info("Status get levi dir failed", err)
@@ -87,6 +93,7 @@ func (self *Status) clean(id string) {
 }
 
 func (self *Status) getInfo(containerName string) (string, string) {
+	containerName = strings.TrimLeft(containerName, "/")
 	if pos := strings.LastIndex(containerName, "_daemon_"); pos > -1 {
 		appname := containerName[:pos]
 		return appname, path.Join("/NBE/_Apps", appname, "daemons", config.Name)

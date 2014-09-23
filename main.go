@@ -27,8 +27,8 @@ func main() {
 
 	levi := NewLevi(ws, config.Docker.Endpoint)
 	status := NewStatus()
-	status.Load()
 	go status.Listen()
+	go status.Load()
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
