@@ -8,7 +8,24 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var Docker *docker.Client
+var Docker interface {
+	ListImages(bool) ([]docker.APIImages, error)
+	BuildImage(docker.BuildImageOptions) error
+	PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
+	PushImage(docker.PushImageOptions, docker.AuthConfiguration) error
+	RemoveImage(string) error
+
+	AddEventListener(chan<- *docker.APIEvents) error
+
+	ListContainers(docker.ListContainersOptions) ([]docker.APIContainers, error)
+	CreateContainer(docker.CreateContainerOptions) (*docker.Container, error)
+	InspectContainer(string) (*docker.Container, error)
+	KillContainer(docker.KillContainerOptions) error
+	RemoveContainer(docker.RemoveContainerOptions) error
+	StopContainer(string, uint) error
+	StartContainer(string, *docker.HostConfig) error
+	WaitContainer(string) (int, error)
+}
 
 type Levi struct {
 	deploy *Deploy

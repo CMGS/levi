@@ -14,9 +14,20 @@ import (
 var builder *Builder
 var info *BuildInfo
 
+type builderTestDocker struct{ *docker.Client }
+
+func (d builderTestDocker) BuildImage(opts docker.BuildImageOptions) error {
+	return nil //FIXME
+}
+
+func (d builderTestDocker) PushImage(opts docker.PushImageOptions, auth docker.AuthConfiguration) error {
+	return nil //FIXME
+}
+
 func init() {
 	LoadConfig()
 	Docker, _ = docker.NewClient(config.Docker.Endpoint)
+	Docker = builderTestDocker{Docker.(*docker.Client)}
 	info = &BuildInfo{
 		Group:   "platform",
 		Name:    "nbetest",
