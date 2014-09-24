@@ -19,7 +19,7 @@ var Docker *DockerWrapper
 
 func NewLevi(ws *websocket.Conn, endpoint string) *Levi {
 	var levi *Levi = &Levi{ws: ws}
-	Docker = NewDocker(endpoint, false)
+	Docker = NewDocker(endpoint)
 
 	levi.err = make(chan error)
 	levi.task = make(chan *AppTask)

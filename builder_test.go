@@ -14,7 +14,8 @@ var info *BuildInfo
 
 func init() {
 	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint, true)
+	Docker = NewDocker(config.Docker.Endpoint)
+	MockDocker(Docker)
 	info = &BuildInfo{
 		Group:   "platform",
 		Name:    "nbetest",

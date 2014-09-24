@@ -11,30 +11,21 @@ type DockerWrapper struct {
 	BuildImage func(docker.BuildImageOptions) error
 }
 
-func NewDocker(endpoint string, mock bool) *DockerWrapper {
+func NewDocker(endpoint string) *DockerWrapper {
 	client, err := docker.NewClient(endpoint)
 	if err != nil {
 		logger.Assert(err, "Docker")
 	}
 	d := &DockerWrapper{Client: client}
-	if !mock {
-		originDocker(d)
-	} else {
-		mockDocker(d)
-	}
-	return d
-}
-
-func originDocker(d *DockerWrapper) {
 	v := reflect.ValueOf(d).Elem()
 	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {
 		field := v.Field(i)
 		f := reflect.ValueOf(d.Client).MethodByName(v.Type().Field(i).Name)
 		field.Set(f)
 	}
+	return d
 }
-
-func mockDocker(d *DockerWrapper) {
+func MockDocker(d *DockerWrapper) {
 	errorType := reflect.TypeOf(make([]error, 1)).Elem()
 	v := reflect.ValueOf(d).Elem()
 	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {

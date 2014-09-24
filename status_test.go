@@ -9,7 +9,8 @@ var status *Status
 
 func init() {
 	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint, true)
+	Docker = NewDocker(config.Docker.Endpoint)
+	MockDocker(Docker)
 	Etcd = NewEtcdClient(config.Etcd.Machines)
 	status = NewStatus()
 }
