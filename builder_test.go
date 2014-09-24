@@ -7,8 +7,6 @@ import (
 	"path"
 	"strings"
 	"testing"
-
-	"github.com/fsouza/go-dockerclient"
 )
 
 var builder *Builder
@@ -16,8 +14,7 @@ var info *BuildInfo
 
 func init() {
 	load("levi.yaml")
-	Docker, _ = docker.NewClient(config.Docker.Endpoint)
-	Docker = builderTestDocker{Docker.(*docker.Client)}
+	Docker = NewDocker(config.Docker.Endpoint, true)
 	info = &BuildInfo{
 		Group:   "platform",
 		Name:    "nbetest",
