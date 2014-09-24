@@ -59,7 +59,10 @@ func LoadConfig() {
 	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
 	flag.StringVar(&configPath, "c", "levi.yaml", "config file")
 	flag.Parse()
+	load(configPath)
+}
 
+func load(configPath string) {
 	if _, err := os.Stat(configPath); err != nil {
 		logger.Assert(err, "config file invaild")
 	}
