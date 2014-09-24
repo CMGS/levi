@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient"
 	"path"
 	"testing"
 )
@@ -10,7 +9,8 @@ var status *Status
 
 func init() {
 	load("levi.yaml")
-	Docker, _ = docker.NewClient(config.Docker.Endpoint)
+	Docker = NewDocker(config.Docker.Endpoint)
+	MockDocker(Docker)
 	Etcd = NewEtcdClient(config.Etcd.Machines)
 	status = NewStatus()
 }
