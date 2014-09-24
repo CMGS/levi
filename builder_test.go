@@ -14,16 +14,6 @@ import (
 var builder *Builder
 var info *BuildInfo
 
-type builderTestDocker struct{ *docker.Client }
-
-func (d builderTestDocker) BuildImage(opts docker.BuildImageOptions) error {
-	return nil //FIXME
-}
-
-func (d builderTestDocker) PushImage(opts docker.PushImageOptions, auth docker.AuthConfiguration) error {
-	return nil //FIXME
-}
-
 func init() {
 	load("levi.yaml")
 	Docker, _ = docker.NewClient(config.Docker.Endpoint)
