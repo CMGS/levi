@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"gopkg.in/yaml.v1"
 	"io/ioutil"
 	"os"
+
+	"gopkg.in/yaml.v1"
 )
 
 type GitConfig struct {

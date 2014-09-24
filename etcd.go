@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/coreos/go-etcd/etcd"
 	"strings"
+
+	"github.com/coreos/go-etcd/etcd"
 )
 
 var Etcd *etcd.Client

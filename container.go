@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient"
 	"os"
 	"strings"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 type Container struct {
