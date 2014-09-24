@@ -18,22 +18,23 @@ func NewDocker(endpoint string, mock bool) *DockerWrapper {
 	}
 	d := &DockerWrapper{Client: client}
 	if !mock {
-		return originDocker(d)
+		originDocker(d)
+	} else {
+		mockDocker(d)
 	}
-	return mockDocker(d)
+	return d
 }
 
-func originDocker(d *DockerWrapper) *DockerWrapper {
+func originDocker(d *DockerWrapper) {
 	v := reflect.ValueOf(d).Elem()
 	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {
 		field := v.Field(i)
 		f := reflect.ValueOf(d.Client).MethodByName(v.Type().Field(i).Name)
 		field.Set(f)
 	}
-	return d
 }
 
-func mockDocker(d *DockerWrapper) *DockerWrapper {
+func mockDocker(d *DockerWrapper) {
 	errorType := reflect.TypeOf(make([]error, 1)).Elem()
 	v := reflect.ValueOf(d).Elem()
 	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {
@@ -43,5 +44,4 @@ func mockDocker(d *DockerWrapper) *DockerWrapper {
 		})
 		field.Set(f)
 	}
-	return d
 }
