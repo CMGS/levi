@@ -177,7 +177,6 @@ func (self *Builder) pushImage() error {
 
 func (self *Builder) clear() {
 	defer os.RemoveAll(self.workDir)
-	defer os.RemoveAll(self.extendDir)
 	images, err := Docker.ListImages(false)
 	if err != nil {
 		logger.Debug(err)
