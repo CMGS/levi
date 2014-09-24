@@ -93,9 +93,6 @@ func Test_Clean(t *testing.T) {
 	if _, err := os.Stat(builder.workDir); err == nil {
 		t.Error("Clean work dir failed")
 	}
-	if _, err := os.Stat(builder.extendDir); err == nil {
-		t.Error("Clean extend dir failed")
-	}
 	images, err := Docker.ListImages(false)
 	if err != nil {
 		t.Error(err)
