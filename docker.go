@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/fsouza/go-dockerclient"
-	"reflect"
 )
 
 type DockerWrapper struct {
@@ -24,12 +23,7 @@ func NewDocker(endpoint string) *DockerWrapper {
 		logger.Assert(err, "Docker")
 	}
 	d := &DockerWrapper{Client: client}
-	v := reflect.ValueOf(d).Elem()
-	vt := v.Type()
-	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {
-		field := v.Field(i)
-		f := reflect.ValueOf(d.Client).MethodByName(vt.Field(i).Name)
-		field.Set(f)
-	}
-	return d
+	var makeDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper
+	MakeWrapper(&makeDockerWrapper)
+	return makeDockerWrapper(d, client)
 }
