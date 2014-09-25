@@ -2,13 +2,10 @@ package main
 
 import (
 	"sync"
-
-	"github.com/gorilla/websocket"
 )
 
 type Deploy struct {
 	wg    *sync.WaitGroup
-	ws    *websocket.Conn
 	nginx *Nginx
 	tasks []*AppTask
 }
@@ -166,7 +163,7 @@ func (self *Deploy) DoDeploy() {
 				go f(index, job, apptask, &env)
 			}
 			apptask.wg.Wait()
-			if err := self.ws.WriteJSON(&apptask.result); err != nil {
+			if err := Ws.WriteJSON(&apptask.result); err != nil {
 				logger.Info(err, apptask.result)
 			}
 			if apptask.Type == TEST_IMAGE {
@@ -175,7 +172,7 @@ func (self *Deploy) DoDeploy() {
 					id:      apptask.Id,
 					cids:    apptask.result,
 				}
-				go tester.WaitForTester(self.ws)
+				go tester.WaitForTester()
 			}
 		}(apptask)
 	}

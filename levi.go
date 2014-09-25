@@ -3,26 +3,22 @@ package main
 import (
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 type Levi struct {
 	deploy *Deploy
-	ws     *websocket.Conn
 	finish bool
 	task   chan *AppTask
 	err    chan error
 }
 
-func NewLevi(ws *websocket.Conn) *Levi {
-	var levi *Levi = &Levi{ws: ws}
+func NewLevi() *Levi {
+	var levi *Levi = &Levi{}
 
 	levi.err = make(chan error)
 	levi.task = make(chan *AppTask)
 	levi.finish = false
 	levi.deploy = &Deploy{
-		ws: ws,
 		wg: &sync.WaitGroup{},
 	}
 	levi.deploy.Init()
@@ -37,7 +33,7 @@ func (self *Levi) Exit() {
 func (self *Levi) Read() {
 	for {
 		apptask := &AppTask{wg: &sync.WaitGroup{}}
-		if err := self.ws.ReadJSON(apptask); err != nil {
+		if err := Ws.ReadJSON(apptask); err != nil {
 			self.err <- err
 			continue
 		}

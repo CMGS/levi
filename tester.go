@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/gorilla/websocket"
-)
-
 type Result struct {
 	ExitCode int
 	Err      interface{}
@@ -15,7 +11,7 @@ type Tester struct {
 	cids    map[string][]interface{}
 }
 
-func (self *Tester) WaitForTester(ws *websocket.Conn) {
+func (self *Tester) WaitForTester() {
 	result := make(map[string][]*Result, 1)
 	result[self.id] = make([]*Result, len(self.cids[self.id]))
 
@@ -30,7 +26,7 @@ func (self *Tester) WaitForTester(ws *websocket.Conn) {
 	}
 
 	logger.Info("Test finished", self.id)
-	if err := ws.WriteJSON(&result); err != nil {
+	if err := Ws.WriteJSON(&result); err != nil {
 		logger.Info(err)
 	}
 }

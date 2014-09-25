@@ -5,6 +5,7 @@ import (
 
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/gorilla/websocket"
 )
 
 func MockDocker(d *DockerWrapper) {
@@ -17,6 +18,12 @@ func MockEtcd(e *EtcdWrapper) {
 	var makeMockedEtcdWrapper func(*EtcdWrapper, *etcd.Client) *EtcdWrapper
 	MakeMockedWrapper(&makeMockedEtcdWrapper)
 	makeMockedEtcdWrapper(e, e.Client)
+}
+
+func MockWebSocket(w *WebSocketWrapper) {
+	var makeMockedWebSocketWrapper func(*WebSocketWrapper, *websocket.Conn) *WebSocketWrapper
+	MakeMockedWrapper(&makeMockedWebSocketWrapper)
+	makeMockedWebSocketWrapper(w, w.Conn)
 }
 
 func MakeMockedWrapper(fptr interface{}) {

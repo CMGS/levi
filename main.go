@@ -1,12 +1,9 @@
 package main
 
 import (
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/gorilla/websocket"
 )
 
 func main() {
@@ -17,17 +14,10 @@ func main() {
 	defer os.Remove(config.PidFile)
 	WritePid(config.PidFile)
 
-	var dialer = websocket.Dialer{
-		ReadBufferSize:  config.ReadBufferSize,
-		WriteBufferSize: config.WriteBufferSize,
-	}
-	ws, _, err := dialer.Dial(config.Master, http.Header{})
-	if err != nil {
-		logger.Assert(err, "Master")
-	}
-	defer ws.Close()
+	Ws = NewWebSocket(config.Master)
+	defer Ws.Close()
 
-	levi := NewLevi(ws)
+	levi := NewLevi()
 	status := NewStatus()
 	go status.Listen()
 	go status.Load()
