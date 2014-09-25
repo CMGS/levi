@@ -6,9 +6,14 @@ import (
 	"github.com/coreos/go-etcd/etcd"
 )
 
-var Etcd *etcd.Client
+type EtcdWrapper struct {
+	*etcd.Client
+}
 
-func NewEtcdClient(machines []string) (client *etcd.Client) {
+var Etcd *EtcdWrapper
+
+func NewEtcd(machines []string) *EtcdWrapper {
+	var client *etcd.Client
 	if strings.HasPrefix(machines[0], "https://") {
 		logger.Assert(nil, "TLS not support")
 	} else {
@@ -18,5 +23,9 @@ func NewEtcdClient(machines []string) (client *etcd.Client) {
 	if config.Etcd.Sync {
 		client.SyncCluster()
 	}
-	return client
+
+	e := &EtcdWrapper{Client: client}
+	var makeEtcdWrapper func(*EtcdWrapper, *etcd.Client) *EtcdWrapper
+	MakeWrapper(&makeEtcdWrapper)
+	return makeEtcdWrapper(e, client)
 }

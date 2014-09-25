@@ -11,7 +11,8 @@ import (
 
 func main() {
 	LoadConfig()
-	Etcd = NewEtcdClient(config.Etcd.Machines)
+	Etcd = NewEtcd(config.Etcd.Machines)
+	Docker = NewDocker(config.Docker.Endpoint)
 
 	defer os.Remove(config.PidFile)
 	WritePid(config.PidFile)
@@ -26,7 +27,7 @@ func main() {
 	}
 	defer ws.Close()
 
-	levi := NewLevi(ws, config.Docker.Endpoint)
+	levi := NewLevi(ws)
 	status := NewStatus()
 	go status.Listen()
 	go status.Load()

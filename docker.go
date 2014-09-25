@@ -2,13 +2,21 @@ package main
 
 import (
 	"github.com/fsouza/go-dockerclient"
-	"reflect"
 )
+
+var Docker *DockerWrapper
 
 type DockerWrapper struct {
 	*docker.Client
-	PushImage  func(docker.PushImageOptions, docker.AuthConfiguration) error
-	BuildImage func(docker.BuildImageOptions) error
+	PushImage        func(docker.PushImageOptions, docker.AuthConfiguration) error
+	PullImage        func(docker.PullImageOptions, docker.AuthConfiguration) error
+	CreateContainer  func(docker.CreateContainerOptions) (*docker.Container, error)
+	StartContainer   func(string, *docker.HostConfig) error
+	BuildImage       func(docker.BuildImageOptions) error
+	KillContainer    func(docker.KillContainerOptions) error
+	StopContainer    func(string, uint) error
+	InspectContainer func(string) (*docker.Container, error)
+	RemoveContainer  func(docker.RemoveContainerOptions) error
 }
 
 func NewDocker(endpoint string) *DockerWrapper {
@@ -17,22 +25,7 @@ func NewDocker(endpoint string) *DockerWrapper {
 		logger.Assert(err, "Docker")
 	}
 	d := &DockerWrapper{Client: client}
-	v := reflect.ValueOf(d).Elem()
-	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {
-		field := v.Field(i)
-		f := reflect.ValueOf(d.Client).MethodByName(v.Type().Field(i).Name)
-		field.Set(f)
-	}
-	return d
-}
-func MockDocker(d *DockerWrapper) {
-	errorType := reflect.TypeOf(make([]error, 1)).Elem()
-	v := reflect.ValueOf(d).Elem()
-	for i := 1; i < reflect.TypeOf(*d).NumField(); i++ {
-		field := v.Field(i)
-		f := reflect.MakeFunc(field.Type(), func(in []reflect.Value) []reflect.Value {
-			return []reflect.Value{reflect.Zero(errorType)}
-		})
-		field.Set(f)
-	}
+	var makeDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper
+	MakeWrapper(&makeDockerWrapper)
+	return makeDockerWrapper(d, client)
 }
