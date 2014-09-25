@@ -15,11 +15,8 @@ type Levi struct {
 	err    chan error
 }
 
-var Docker *DockerWrapper
-
-func NewLevi(ws *websocket.Conn, endpoint string) *Levi {
+func NewLevi(ws *websocket.Conn) *Levi {
 	var levi *Levi = &Levi{ws: ws}
-	Docker = NewDocker(endpoint)
 
 	levi.err = make(chan error)
 	levi.task = make(chan *AppTask)

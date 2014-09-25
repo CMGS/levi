@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
 	"strings"
 	"testing"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 func init() {
 	load("levi.yaml")
 	Docker = NewDocker(config.Docker.Endpoint)
 	MockDocker(Docker)
-	Etcd = NewEtcdClient(config.Etcd.Machines)
+	Etcd = NewEtcd(config.Etcd.Machines)
+	MockEtcd(Etcd)
 }
 
 func Test_Pull(t *testing.T) {

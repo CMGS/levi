@@ -11,7 +11,8 @@ func init() {
 	load("levi.yaml")
 	Docker = NewDocker(config.Docker.Endpoint)
 	MockDocker(Docker)
-	Etcd = NewEtcdClient(config.Etcd.Machines)
+	Etcd = NewEtcd(config.Etcd.Machines)
+	MockEtcd(Etcd)
 	status = NewStatus()
 }
 

@@ -4,6 +4,8 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
+var Docker *DockerWrapper
+
 type DockerWrapper struct {
 	*docker.Client
 	PushImage        func(docker.PushImageOptions, docker.AuthConfiguration) error

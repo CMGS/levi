@@ -1,14 +1,22 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient"
 	"reflect"
+
+	"github.com/coreos/go-etcd/etcd"
+	"github.com/fsouza/go-dockerclient"
 )
 
 func MockDocker(d *DockerWrapper) {
 	var makeMockedDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper
 	MakeMockedWrapper(&makeMockedDockerWrapper)
 	makeMockedDockerWrapper(d, d.Client)
+}
+
+func MockEtcd(e *EtcdWrapper) {
+	var makeMockedEtcdWrapper func(*EtcdWrapper, *etcd.Client) *EtcdWrapper
+	MakeMockedWrapper(&makeMockedEtcdWrapper)
+	makeMockedEtcdWrapper(e, e.Client)
 }
 
 func MakeMockedWrapper(fptr interface{}) {
