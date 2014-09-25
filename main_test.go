@@ -13,10 +13,11 @@ func MockDocker(d *DockerWrapper) {
 		if !ok {
 			logger.Info("Reflect Failed")
 		}
+		fdt := fd.Type
+		ret := make([]reflect.Value, 0, fdt.NumOut())
 		f := reflect.MakeFunc(field.Type(), func(in []reflect.Value) []reflect.Value {
-			ret := []reflect.Value{}
-			for i := 0; i < fd.Type.NumOut(); i++ {
-				ret = append(ret, reflect.Zero(fd.Type.Out(i)))
+			for i := 0; i < fdt.NumOut(); i++ {
+				ret = append(ret, reflect.Zero(fdt.Out(i)))
 			}
 			return ret
 		})

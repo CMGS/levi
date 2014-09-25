@@ -7,8 +7,11 @@ import (
 
 type DockerWrapper struct {
 	*docker.Client
-	PushImage  func(docker.PushImageOptions, docker.AuthConfiguration) error
-	BuildImage func(docker.BuildImageOptions) error
+	PushImage       func(docker.PushImageOptions, docker.AuthConfiguration) error
+	PullImage       func(docker.PullImageOptions, docker.AuthConfiguration) error
+	CreateContainer func(docker.CreateContainerOptions) (*docker.Container, error)
+	StartContainer  func(string, *docker.HostConfig) error
+	BuildImage      func(docker.BuildImageOptions) error
 }
 
 func NewDocker(endpoint string) *DockerWrapper {
