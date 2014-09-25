@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"testing"
+
+	"github.com/coreos/go-etcd/etcd"
 )
 
 func init() {
@@ -36,4 +39,27 @@ func Test_GeneratePermdirPath(t *testing.T) {
 	}
 	f("test", "123", false)
 	f("test", "t_test_aaa", true)
+}
+
+func Test_CreateConfigFile(t *testing.T) {
+	appname := "test"
+	job := &Task{Version: "abc", ident: "xxx"}
+	configPath := GenerateConfigPath(appname, job.ident)
+	dir := "/tmp/levi/test"
+	os.MkdirAll(dir, 0755)
+	defer func() {
+		os.RemoveAll(configPath)
+		os.RemoveAll(dir)
+	}()
+	Etcd.Get = func(p string, _ bool, _ bool) (*etcd.Response, error) {
+		ret := &etcd.Response{Node: &etcd.Node{Value: ""}}
+		return ret, nil
+	}
+	env := Env{appname, 4011}
+	if err := env.createConfigFile(job, "config.yaml"); err != nil {
+		t.Error(err)
+	}
+	if _, err := os.Stat(configPath); err != nil {
+		t.Error(err)
+	}
 }

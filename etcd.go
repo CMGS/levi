@@ -8,6 +8,7 @@ import (
 
 type EtcdWrapper struct {
 	*etcd.Client
+	Get func(string, bool, bool) (*etcd.Response, error)
 }
 
 var Etcd *EtcdWrapper
