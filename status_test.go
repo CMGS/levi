@@ -18,9 +18,6 @@ func init() {
 	Etcd = NewEtcd(config.Etcd.Machines)
 	MockEtcd(Etcd)
 	status = NewStatus()
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
-		return &docker.Container{Name: "/test_1234"}, nil
-	}
 }
 
 func Test_GetInfo(t *testing.T) {
@@ -37,6 +34,9 @@ func Test_GetInfo(t *testing.T) {
 
 func Test_StatusAdd(t *testing.T) {
 	id := "xxx"
+	Docker.InspectContainer = func(string) (*docker.Container, error) {
+		return &docker.Container{Name: "/test_1234"}, nil
+	}
 	Etcd.Create = func(p string, o string, _ uint64) (*etcd.Response, error) {
 		if p != fmt.Sprintf("/NBE/_Apps/test/apps/%s/%s", config.Name, id) {
 			t.Fatal("Write to wrong path")
@@ -48,6 +48,9 @@ func Test_StatusAdd(t *testing.T) {
 
 func Test_StatusClean(t *testing.T) {
 	id := "xxx"
+	Docker.InspectContainer = func(string) (*docker.Container, error) {
+		return &docker.Container{Name: "/test_1234"}, nil
+	}
 	Etcd.Delete = func(p string, _ bool) (*etcd.Response, error) {
 		if p != fmt.Sprintf("/NBE/_Apps/test/apps/%s/%s", config.Name, id) {
 			t.Fatal("Delete to wrong path")
