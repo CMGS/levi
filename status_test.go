@@ -1,11 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"path"
 	"testing"
 
-	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -15,49 +12,61 @@ func init() {
 	load("levi.yaml")
 	Docker = NewDocker(config.Docker.Endpoint)
 	MockDocker(Docker)
-	Etcd = NewEtcd(config.Etcd.Machines)
-	MockEtcd(Etcd)
+	Ws = NewWebSocket(config.Master)
+	MockWebSocket(Ws)
 	status = NewStatus()
 	Docker.InspectContainer = func(string) (*docker.Container, error) {
 		return &docker.Container{Name: "/test_1234"}, nil
 	}
 }
 
-func Test_GetInfo(t *testing.T) {
+func Test_GetName(t *testing.T) {
 	var containerName string
 	containerName = "test_1234"
-	appname, p := status.getInfo(containerName)
+	appname := status.getName(containerName)
 	if appname != "test" {
 		t.Fatal("Get appname failed")
-	}
-	if p != path.Join("/NBE/_Apps/test/apps", config.Name) {
-		t.Fatal("Get path failed")
 	}
 }
 
 func Test_StatusAdd(t *testing.T) {
 	id := "xxx"
-	Etcd.Create = func(p string, o string, _ uint64) (*etcd.Response, error) {
-		if p != fmt.Sprintf("/NBE/_Apps/test/apps/%s/%s", config.Name, id) {
-			t.Fatal("Write to wrong path")
+	Ws.WriteJSON = func(d interface{}) error {
+		if x, ok := d.(map[string][]*Info); !ok {
+			i := x[STATUS_ADD][0]
+			t.Fatal("Wrong Data")
+			if i.Type != STATUS_DIE {
+				t.Error("Wrong Status")
+			}
+			if i.Appname != "test" {
+				t.Error("Wrong Appname")
+			}
+			if i.Id != id {
+				t.Error("Wrong Id")
+			}
 		}
-		return &etcd.Response{}, nil
+		return nil
 	}
 	status.add(id)
 }
 
 func Test_StatusClean(t *testing.T) {
 	id := "xxx"
-	Etcd.Delete = func(p string, _ bool) (*etcd.Response, error) {
-		if p != fmt.Sprintf("/NBE/_Apps/test/apps/%s/%s", config.Name, id) {
-			t.Fatal("Delete to wrong path")
+	Ws.WriteJSON = func(d interface{}) error {
+		if x, ok := d.(map[string][]*Info); !ok {
+			i := x[STATUS_IDENT][0]
+			t.Fatal("Wrong Data")
+			if i.Type != STATUS_DIE {
+				t.Error("Wrong Status")
+			}
+			if i.Appname != "test" {
+				t.Error("Wrong Appname")
+			}
+			if i.Id != id {
+				t.Error("Wrong Id")
+			}
 		}
-		node := &etcd.Node{Nodes: etcd.Nodes{&etcd.Node{}, &etcd.Node{}}}
-		return &etcd.Response{Node: node}, nil
-	}
-	Etcd.Get = func(_ string, _ bool, _ bool) (*etcd.Response, error) {
-		node := &etcd.Node{Nodes: etcd.Nodes{&etcd.Node{}, &etcd.Node{}}}
-		return &etcd.Response{Node: node}, nil
+		return nil
 	}
 	status.clean(id)
 }

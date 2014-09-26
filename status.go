@@ -1,15 +1,19 @@
 package main
 
 import (
-	"path"
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
-	"gopkg.in/yaml.v1"
 )
 
 type Status struct {
 	events chan *docker.APIEvents
+}
+
+type Info struct {
+	Type    string
+	Appname string
+	Id      string
 }
 
 func NewStatus() *Status {
@@ -54,56 +58,51 @@ func (self *Status) Listen() {
 }
 
 func (self *Status) add(id string) {
+	info := map[string][]*Info{}
+	info[STATUS_IDENT] = make([]*Info, 1)
+
 	container, err := Docker.InspectContainer(id)
 	if err != nil {
 		logger.Info("Status inspect docker failed", err)
 		return
 	}
-	appname, p := self.getInfo(container.Name)
+	appname := self.getName(container.Name)
 	logger.Info("Status Add:", appname, id)
-	Etcd.CreateDir(p, 0)
-	out, err := yaml.Marshal(container)
-	if err != nil {
-		logger.Info("Status marshal info failed", err)
-		return
+	info[STATUS_IDENT][0] = &Info{STATUS_ADD, appname, id}
+	if err := Ws.WriteJSON(info); err != nil {
+		logger.Info(err, info)
 	}
-	Etcd.Create(path.Join(p, id), string(out), 0)
 }
 
 func (self *Status) clean(id string) {
+	info := map[string][]*Info{}
+	info[STATUS_IDENT] = make([]*Info, 1)
+
 	container, err := Docker.InspectContainer(id)
 	if err != nil {
 		logger.Info("Status inspect docker failed", err)
 		return
 	}
-	appname, p := self.getInfo(container.Name)
+	appname := self.getName(container.Name)
 	logger.Info("Status Remove:", appname, id)
-	resp, err := Etcd.Get(p, false, false)
-	if err != nil {
-		logger.Info("Status get levi dir failed", err)
-		return
-	}
-	if _, err := Etcd.Delete(path.Join(p, id), true); err != nil {
-		logger.Info("Status delete info file failed", err)
-		return
-	}
-	if len(resp.Node.Nodes)-1 <= 0 {
-		Etcd.DeleteDir(p)
+	info[STATUS_IDENT][0] = &Info{STATUS_DIE, appname, id}
+	if err := Ws.WriteJSON(info); err != nil {
+		logger.Info(err, info)
 	}
 	RemoveContainer(id, strings.LastIndex(container.Name, "_test_") > -1)
 }
 
-func (self *Status) getInfo(containerName string) (string, string) {
+func (self *Status) getName(containerName string) string {
 	containerName = strings.TrimLeft(containerName, "/")
 	if pos := strings.LastIndex(containerName, "_daemon_"); pos > -1 {
 		appname := containerName[:pos]
-		return appname, path.Join("/NBE/_Apps", appname, "daemons", config.Name)
+		return appname
 	}
 	if pos := strings.LastIndex(containerName, "_test_"); pos > -1 {
 		appname := containerName[:pos]
-		return appname, path.Join("/NBE/_Apps", appname, "tests", config.Name)
+		return appname
 	}
 	appinfo := strings.Split(containerName, "_")
 	appname := strings.Join(appinfo[:len(appinfo)-1], "_")
-	return appname, path.Join("/NBE/_Apps", appname, "apps", config.Name)
+	return appname
 }

@@ -9,6 +9,9 @@ const (
 	CONTAINER_STOP_TIMEOUT = 15
 	PRODUCTION             = "PROD"
 	TESTING                = "TEST"
+	STATUS_IDENT           = "__status__"
+	STATUS_ADD             = "add"
+	STATUS_DIE             = "die"
 )
 
 var logger = Logger{}
