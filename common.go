@@ -12,6 +12,7 @@ const (
 	TESTING                = "TEST"
 	STATUS_IDENT           = "__status__"
 	STATUS_DIE             = "die"
+	STATUS_START           = "start"
 )
 
 var logger = Logger{}
