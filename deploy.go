@@ -36,12 +36,17 @@ func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) st
 
 func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 	logger.Info("Remove Container", apptask.Name, job.Container)
+	Status.Removable[job.Container] = struct{}{}
 	container := Container{
 		id:      job.Container,
 		appname: apptask.Name,
 	}
 	if err := container.Stop(); err != nil {
 		logger.Info("Stop Container", job.Container, "failed", err)
+		return false
+	}
+	if err := RemoveContainer(job.Container, false); err != nil {
+		logger.Info("Remove Container", job.Container, "failed", err)
 		return false
 	}
 	if ok := self.nginx.Remove(apptask.Name, job.Container); ok {
