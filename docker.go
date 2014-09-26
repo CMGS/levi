@@ -16,6 +16,7 @@ type DockerWrapper struct {
 	KillContainer    func(docker.KillContainerOptions) error
 	StopContainer    func(string, uint) error
 	InspectContainer func(string) (*docker.Container, error)
+	ListContainers   func(docker.ListContainersOptions) ([]docker.APIContainers, error)
 	RemoveContainer  func(docker.RemoveContainerOptions) error
 }
 
