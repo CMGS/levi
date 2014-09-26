@@ -2,7 +2,7 @@ package main
 
 type Result struct {
 	ExitCode int
-	Err      interface{}
+	Err      string
 }
 
 type Tester struct {
@@ -12,13 +12,15 @@ type Tester struct {
 }
 
 func (self *Tester) WaitForTester() {
+	var err error
 	result := make(map[string][]*Result, 1)
 	result[self.id] = make([]*Result, len(self.cids[self.id]))
 
 	for index, v := range self.cids[self.id] {
 		if cid, ok := v.(string); v != nil && ok && cid != "" {
 			r := &Result{}
-			r.ExitCode, r.Err = Docker.WaitContainer(cid)
+			r.ExitCode, err = Docker.WaitContainer(cid)
+			r.Err = err.Error()
 			result[self.id][index] = r
 			RemoveContainer(cid, true)
 		} else {
