@@ -10,6 +10,7 @@ func main() {
 	LoadConfig()
 	Etcd = NewEtcd(config.Etcd.Machines)
 	Docker = NewDocker(config.Docker.Endpoint)
+	Status = NewStatus()
 
 	defer os.Remove(config.PidFile)
 	WritePid(config.PidFile)
@@ -18,9 +19,7 @@ func main() {
 	defer Ws.Close()
 
 	levi := NewLevi()
-	status := NewStatus()
-	go status.Listen()
-	go status.Load()
+	go Status.Listen()
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)

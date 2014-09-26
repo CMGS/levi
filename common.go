@@ -10,7 +10,6 @@ const (
 	PRODUCTION             = "PROD"
 	TESTING                = "TEST"
 	STATUS_IDENT           = "__status__"
-	STATUS_ADD             = "add"
 	STATUS_DIE             = "die"
 )
 
