@@ -43,8 +43,17 @@ func (self *StatusMoniter) Listen() {
 	}
 }
 
+func (self *StatusMoniter) getStatus(s string) string {
+	switch {
+	case strings.HasPrefix(s, "Up"):
+		return STATUS_START
+	default:
+		return STATUS_DIE
+	}
+}
+
 func (self *StatusMoniter) Report() {
-	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
+	containers, err := Docker.ListContainers(docker.ListContainersOptions{All: true})
 	if err != nil {
 		logger.Info(err, "Load")
 	}
@@ -58,7 +67,7 @@ func (self *StatusMoniter) Report() {
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
-		i := &Info{STATUS_START, self.getName(container.Names[0]), container.ID}
+		i := &Info{self.getStatus(container.Status), self.getName(container.Names[0]), container.ID}
 		info[STATUS_IDENT] = append(info[STATUS_IDENT], i)
 	}
 	if err := Ws.WriteJSON(info); err != nil {

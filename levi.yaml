@@ -20,7 +20,7 @@ nginx:
 
 docker:
   endpoint: tcp://10.1.201.16:88
-  registry: 10.1.201.16:8882
+  registry: 10.1.201.99:8882
   network: bridge
 
 app:

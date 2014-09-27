@@ -24,13 +24,25 @@ func Test_GetName(t *testing.T) {
 	}
 }
 
+func Test_StatusGetStatus(t *testing.T) {
+	a := "Exited (0) 9 days ago"
+	if Status.getStatus(a) != STATUS_DIE {
+		t.Error("Wrong Status")
+	}
+	a = "Up 8 days"
+	if Status.getStatus(a) != STATUS_START {
+		t.Error("Wrong Status")
+	}
+}
+
 func Test_StatusReport(t *testing.T) {
 	id := "xxx"
 	Docker.ListContainers = func(opt docker.ListContainersOptions) ([]docker.APIContainers, error) {
 		c1 := docker.APIContainers{
-			Names: []string{"/test_1234"},
-			ID:    id,
-			Image: config.Docker.Registry,
+			Names:  []string{"/test_1234"},
+			ID:     id,
+			Image:  config.Docker.Registry,
+			Status: "Exited (0) 9 days ago",
 		}
 		c := []docker.APIContainers{c1}
 		return c, nil
@@ -41,7 +53,7 @@ func Test_StatusReport(t *testing.T) {
 			t.Fatal("Wrong Data")
 		}
 		i := x[STATUS_IDENT][0]
-		if i.Type != STATUS_START {
+		if i.Type != STATUS_DIE {
 			t.Error("Wrong Status")
 		}
 		if i.Appname != "test" {

@@ -1,2 +1,4 @@
 levi
 .vendor/
+*.out
+levi.test
