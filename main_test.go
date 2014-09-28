@@ -39,8 +39,8 @@ func MakeMockedWrapper(fptr interface{}) {
 				continue
 			}
 			fdt := fd.Type
-			ret := make([]reflect.Value, 0, fdt.NumOut())
 			f := reflect.MakeFunc(field.Type(), func(in []reflect.Value) []reflect.Value {
+				ret := make([]reflect.Value, 0, fdt.NumOut())
 				for i := 0; i < fdt.NumOut(); i++ {
 					ret = append(ret, reflect.Zero(fdt.Out(i)))
 				}

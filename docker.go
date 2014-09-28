@@ -18,6 +18,7 @@ type DockerWrapper struct {
 	InspectContainer func(string) (*docker.Container, error)
 	ListContainers   func(docker.ListContainersOptions) ([]docker.APIContainers, error)
 	RemoveContainer  func(docker.RemoveContainerOptions) error
+	WaitContainer    func(string) (int, error)
 }
 
 func NewDocker(endpoint string) *DockerWrapper {

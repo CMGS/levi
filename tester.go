@@ -29,7 +29,7 @@ func (self *Tester) WaitForTester() {
 	}
 
 	logger.Info("Test finished", self.id)
-	if err := Ws.WriteJSON(&result); err != nil {
+	if err := Ws.WriteJSON(result); err != nil {
 		logger.Info(err)
 	}
 }
