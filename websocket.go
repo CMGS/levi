@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/gorilla/websocket"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 type WebSocketWrapper struct {

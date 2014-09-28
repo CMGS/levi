@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient"
 	"testing"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 func Test_MockDocker(t *testing.T) {
