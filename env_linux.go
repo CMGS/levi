@@ -40,7 +40,7 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 	return os.Chown(configPath, self.appuid, self.appuid)
 }
 
-func (self *Env) CreatePermdir(job *Task, test bool) error {
+func (self *Env) CreatePermdir(job *AddTask, test bool) error {
 	permdir := GeneratePermdirPath(self.appname, job.ident, test)
 	if err := MakeDir(permdir); err != nil {
 		return err

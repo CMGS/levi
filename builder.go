@@ -20,10 +20,10 @@ type Builder struct {
 	registryURL    string
 	repoTag        string
 	extendDir      string
-	build          *BuildInfo
+	build          *BuildTask
 }
 
-func NewBuilder(name string, build *BuildInfo) *Builder {
+func NewBuilder(name string, build *BuildTask) *Builder {
 	builder := Builder{name: name, build: build}
 	builder.extendDir = path.Join(config.Git.ExtendDir, name, build.Version)
 	builder.workDir = path.Join(config.Git.WorkDir, name, build.Version)

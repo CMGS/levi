@@ -1,11 +1,6 @@
 package main
 
-import (
-	"os"
-	"strings"
-
-	"github.com/fsouza/go-dockerclient"
-)
+import "github.com/fsouza/go-dockerclient"
 
 type Container struct {
 	id      string
@@ -22,12 +17,12 @@ func (self *Container) Stop() error {
 	return nil
 }
 
-func RemoveContainer(id string, test bool) error {
+func RemoveContainer(id string, test bool, rmi bool) error {
 	container, err := Docker.InspectContainer(id)
 	if err != nil {
 		return err
 	}
-	for p, rp := range container.Volumes {
+	/*for p, rp := range container.Volumes {
 		switch {
 		case strings.HasSuffix(p, "/config.yaml"):
 			if err := os.Remove(rp); err != nil {
@@ -38,9 +33,14 @@ func RemoveContainer(id string, test bool) error {
 				return err
 			}
 		}
-	}
-	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
+	}*/
+	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id, RemoveVolumes: true}); err != nil {
 		return err
+	}
+	if rmi {
+		if err := Docker.RemoveImage(container.Image); err != nil {
+			return err
+		}
 	}
 	return nil
 }

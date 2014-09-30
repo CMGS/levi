@@ -23,11 +23,15 @@ func (self *Image) Pull() error {
 	return nil
 }
 
-func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, error) {
+func (self *Image) Run(job *AddTask, uid int, test bool) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
-	permdir := GeneratePermdirPath(self.appname, job.ident, runenv == TESTING)
 	mPermdir := fmt.Sprintf("/%s/permdir", self.appname)
+	runenv := PRODUCTION
+	if test {
+		runenv = TESTING
+	}
+	permdir := GeneratePermdirPath(self.appname, job.ident, test)
 
 	containerConfig := docker.Config{
 		CpuShares: job.CpuShares,
@@ -77,7 +81,6 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 	}
 
 	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
-		RemoveContainer(container.ID, runenv == TESTING)
 		return nil, err
 	}
 	return container, nil

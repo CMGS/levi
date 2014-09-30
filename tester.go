@@ -22,7 +22,6 @@ func (self *Tester) WaitForTester() {
 			r.ExitCode, err = Docker.WaitContainer(cid)
 			r.Err = err.Error()
 			result[self.id][index] = r
-			RemoveContainer(cid, true)
 		} else {
 			result[self.id][index] = &Result{ExitCode: -1}
 		}

@@ -10,7 +10,7 @@ type Deploy struct {
 	tasks []*AppTask
 }
 
-func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) string {
+func (self *Deploy) add(index int, job *AddTask, apptask *AppTask, test bool) string {
 	logger.Info("Add Container", apptask.Name, "@", job.Version)
 	image := Image{
 		apptask.Name,
@@ -21,7 +21,7 @@ func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) st
 		logger.Info("Pull Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
 	}
-	container, err := image.Run(&job, apptask.Uid, runenv)
+	container, err := image.Run(job, apptask.Uid, test)
 	if err != nil {
 		logger.Info("Run Image", apptask.Name, "@", job.Version, "Failed", err)
 		return ""
@@ -34,7 +34,7 @@ func (self *Deploy) add(index int, job Task, apptask *AppTask, runenv string) st
 	return container.ID
 }
 
-func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
+func (self *Deploy) remove(index int, job *RemoveTask, apptask *AppTask) bool {
 	logger.Info("Remove Container", apptask.Name, job.Container)
 	Status.Removable[job.Container] = struct{}{}
 	container := Container{
@@ -45,7 +45,7 @@ func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 		logger.Info("Stop Container", job.Container, "failed", err)
 		return false
 	}
-	if err := RemoveContainer(job.Container, false); err != nil {
+	if err := RemoveContainer(job.Container, job.IsTest(), job.IsRemoveImage()); err != nil {
 		logger.Info("Remove Container", job.Container, "failed", err)
 		return false
 	}
@@ -58,15 +58,15 @@ func (self *Deploy) remove(index int, job Task, apptask *AppTask) bool {
 func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
 	env.CreateUser()
-	if err := env.CreateConfigFile(&job); err != nil {
+	if err := env.CreateConfigFile(job.Add, job.Add.IsTest()); err != nil {
 		logger.Info("Create app config failed", err)
 		return
 	}
-	if err := env.CreatePermdir(&job, false); err != nil {
+	if err := env.CreatePermdir(job.Add, job.Add.IsTest()); err != nil {
 		logger.Info("Create app permdir failed", err)
 		return
 	}
-	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
+	if cid := self.add(index, job.Add, apptask, job.Add.IsTest()); cid != "" {
 		apptask.result[apptask.Id][index] = cid
 		logger.Info("Add Finished", cid)
 	}
@@ -74,7 +74,7 @@ func (self *Deploy) AddContainer(index int, job Task, apptask *AppTask, env *Env
 
 func (self *Deploy) RemoveContainer(index int, job Task, apptask *AppTask, _ *Env) {
 	defer apptask.wg.Done()
-	result := self.remove(index, job, apptask)
+	result := self.remove(index, job.Remove, apptask)
 	apptask.result[apptask.Id][index] = result
 	logger.Info("Remove Finished", result)
 }
@@ -83,17 +83,17 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 	defer apptask.wg.Done()
 	env.CreateUser()
 	apptask.result[apptask.Id][index] = ""
-	if result := self.remove(index, job, apptask); !result {
+	if result := self.remove(index, job.Remove, apptask); !result {
 		return
 	}
-	if err := env.CreateConfigFile(&job); err != nil {
+	if err := env.CreateConfigFile(job.Add, job.Add.IsTest()); err != nil {
 		return
 	}
-	if err := env.CreatePermdir(&job, false); err != nil {
+	if err := env.CreatePermdir(job.Add, job.Add.IsTest()); err != nil {
 		logger.Info("Create app permdir failed", err)
 		return
 	}
-	if cid := self.add(index, job, apptask, PRODUCTION); cid != "" {
+	if cid := self.add(index, job.Add, apptask, job.Add.IsTest()); cid != "" {
 		apptask.result[apptask.Id][index] = cid
 		logger.Info("Update Finished", cid)
 	}
@@ -101,30 +101,13 @@ func (self *Deploy) UpdateApp(index int, job Task, apptask *AppTask, env *Env) {
 
 func (self *Deploy) BuildImage(index int, job Task, apptask *AppTask, _ *Env) {
 	defer apptask.wg.Done()
-	builder := NewBuilder(apptask.Name, &job.Build)
+	builder := NewBuilder(apptask.Name, job.Build)
 	if err := builder.Build(); err != nil {
 		logger.Info(err)
 		return
 	}
 	apptask.result[apptask.Id][index] = builder.repoTag
 	logger.Info("Build Finished", builder.repoTag)
-}
-
-func (self *Deploy) TestImage(index int, job Task, apptask *AppTask, env *Env) {
-	defer apptask.wg.Done()
-	env.CreateUser()
-	if err := env.CreateTestConfigFile(&job); err != nil {
-		logger.Info("Create app test config failed", err)
-		return
-	}
-	if err := env.CreatePermdir(&job, true); err != nil {
-		logger.Info("Create app permdir failed", err)
-		return
-	}
-	if cid := self.add(index, job, apptask, TESTING); cid != "" {
-		apptask.result[apptask.Id][index] = cid
-		logger.Info("Start Testing", cid)
-	}
 }
 
 func (self *Deploy) DoDeploy() {
@@ -145,7 +128,7 @@ func (self *Deploy) DoDeploy() {
 				f = self.BuildImage
 			case TEST_IMAGE:
 				logger.Info("Test Task")
-				f = self.TestImage
+				f = self.AddContainer
 			case ADD_CONTAINER:
 				logger.Info("Add Task")
 				f = self.AddContainer
@@ -158,12 +141,12 @@ func (self *Deploy) DoDeploy() {
 			}
 			for index, job := range apptask.Tasks {
 				switch {
-				case job.IsTest():
-					job.SetAsTest()
-				case job.IsDaemon():
-					job.SetAsDaemon()
-				case !job.IsDaemon():
-					job.SetAsService()
+				case job.Add.IsTest():
+					job.Add.SetAsTest()
+				case job.Add.IsDaemon():
+					job.Add.SetAsDaemon()
+				case !job.Add.IsDaemon():
+					job.Add.SetAsService()
 				}
 				go f(index, job, apptask, &env)
 			}
