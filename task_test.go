@@ -5,7 +5,7 @@ import (
 )
 
 func Test_SetType(t *testing.T) {
-	task := Task{
+	task := AddTask{
 		Bind:   9999,
 		Daemon: "abc",
 		Test:   "def",

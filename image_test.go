@@ -25,7 +25,7 @@ func Test_Pull(t *testing.T) {
 
 func Test_Run(t *testing.T) {
 	image := Image{"test", "v1", 12345}
-	job := &Task{
+	job := &AddTask{
 		ident:     "12345",
 		CpuShares: 512,
 		CpuSet:    "0,1",
@@ -49,7 +49,7 @@ func Test_Run(t *testing.T) {
 		}
 		return nil
 	}
-	c, err := image.Run(job, 4001, PRODUCTION)
+	c, err := image.Run(job, 4001, false)
 	if err != nil {
 		t.Fatal(err)
 	}

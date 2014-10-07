@@ -19,8 +19,10 @@ func init() {
 }
 
 func Test_WaitForTester(t *testing.T) {
-	tester := Tester{"test", "abc", map[string][]interface{}{}}
-	tester.cids[tester.id] = []interface{}{"1", "2", "3"}
+	tester := Tester{"test", "abc", map[string]string{}}
+	tester.cids["aa"] = "1"
+	tester.cids["bb"] = "2"
+	tester.cids["cc"] = "3"
 	Docker.WaitContainer = func(id string) (int, error) {
 		return 0, errors.New(id)
 	}

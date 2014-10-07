@@ -43,7 +43,7 @@ func Test_GeneratePermdirPath(t *testing.T) {
 
 func Test_CreateConfigFile(t *testing.T) {
 	appname := "test"
-	job := &Task{Version: "abc", ident: "xxx"}
+	job := &AddTask{Version: "abc", ident: "xxx"}
 	configPath := GenerateConfigPath(appname, job.ident)
 	dir := "/tmp/levi/test"
 	os.MkdirAll(dir, 0755)
