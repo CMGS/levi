@@ -8,23 +8,22 @@ type Result struct {
 type Tester struct {
 	appname string
 	id      string
-	cids    map[string][]interface{}
+	cids    map[string]string
 }
 
 func (self *Tester) WaitForTester() {
 	var err error
-	result := make(map[string][]*Result, 1)
-	result[self.id] = make([]*Result, len(self.cids[self.id]))
-
-	for index, v := range self.cids[self.id] {
-		if cid, ok := v.(string); v != nil && ok && cid != "" {
-			r := &Result{}
+	result := make(map[string]map[string]*Result, 1)
+	result[self.id] = make(map[string]*Result, len(self.cids))
+	for tid, cid := range self.cids {
+		r := &Result{}
+		if cid != "" {
 			r.ExitCode, err = Docker.WaitContainer(cid)
 			r.Err = err.Error()
-			result[self.id][index] = r
 		} else {
-			result[self.id][index] = &Result{ExitCode: -1}
+			r.ExitCode = -1
 		}
+		result[self.id][tid] = r
 	}
 
 	logger.Info("Test finished", self.id)

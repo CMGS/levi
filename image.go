@@ -51,7 +51,6 @@ func (self *Image) Run(job *AddTask, uid int, test bool) (*docker.Container, err
 		Binds: []string{
 			fmt.Sprintf("%s:%s:ro", configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
 			fmt.Sprintf("%s:%s", permdir, mPermdir),
-			"/var/run:/var/run",
 		},
 		NetworkMode: config.Docker.Network,
 	}
@@ -81,6 +80,8 @@ func (self *Image) Run(job *AddTask, uid int, test bool) (*docker.Container, err
 	}
 
 	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
+		// Have to remove resource when start failed
+		RemoveContainer(container.ID, test, true)
 		return nil, err
 	}
 	return container, nil

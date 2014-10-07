@@ -26,8 +26,8 @@ func GeneratePermdirPath(appname, ident string, test bool) string {
 	return path.Join(config.App.Tmpdirs, name)
 }
 
-func (self *Env) CreateConfigFile(job *AddTask, test bool) error {
-	if test {
+func (self *Env) CreateConfigFile(job *AddTask) error {
+	if job.IsTest() {
 		return self.createConfigFile(job, "test.yaml")
 	}
 	return self.createConfigFile(job, "config.yaml")

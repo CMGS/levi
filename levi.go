@@ -51,7 +51,7 @@ func (self *Levi) Loop() {
 			}
 			self.Exit()
 		case task := <-self.task:
-			if task.Type == DOCKER_INFO {
+			if task.Info {
 				Status.Report()
 				continue
 			}
