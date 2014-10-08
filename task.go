@@ -126,8 +126,10 @@ func (self *AppTask) Wait() {
 		}
 		cids[job.Test] = self.result.Add[index]
 	}
-	tester := Tester{self.Id, cids}
-	tester.WaitForTester()
+	if len(cids) != 0 {
+		tester := Tester{self.Id, cids}
+		tester.WaitForTester()
+	}
 }
 
 func (self *AppTask) AddContainer(index int, job *AddTask, env *Env, nginx *Nginx) {
@@ -172,7 +174,11 @@ func (self *AppTask) AddContainer(index int, job *AddTask, env *Env, nginx *Ngin
 func (self *AppTask) RemoveContainer(index int, job *RemoveTask, nginx *Nginx) {
 	defer self.wg.Done()
 	logger.Info("Remove Container", self.Name, job.Container)
-	Status.Removable[job.Container] = struct{}{}
+	if _, ok := Status.Removable[job.Container]; !ok {
+		logger.Info("Not Record")
+		return
+	}
+	delete(Status.Removable, job.Container)
 	container := Container{
 		id:      job.Container,
 		appname: self.Name,

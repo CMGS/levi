@@ -29,7 +29,6 @@ func (self *StatusMoniter) Listen() {
 			continue
 		}
 		if event.Status == "die" {
-			delete(self.Removable, event.ID)
 			self.die(event.ID)
 		}
 	}
@@ -60,9 +59,7 @@ func (self *StatusMoniter) Report(id string) {
 			continue
 		}
 		status := self.getStatus(container.Status)
-		if status == STATUS_START {
-			self.Removable[container.ID] = struct{}{}
-		}
+		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, self.getName(container.Names[0]), container.ID}
 		result.Status = append(result.Status, s)
 	}

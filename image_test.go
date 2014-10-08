@@ -49,7 +49,7 @@ func Test_Run(t *testing.T) {
 		}
 		return nil
 	}
-	c, err := image.Run(job, 4001, false)
+	c, err := image.Run(job, 4001)
 	if err != nil {
 		t.Fatal(err)
 	}

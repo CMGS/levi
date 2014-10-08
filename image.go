@@ -81,6 +81,7 @@ func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
 
 	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
 		// Have to remove resource when start failed
+		logger.Debug("Rollback add files")
 		RemoveContainer(container.ID, job.IsTest(), false)
 		return nil, err
 	}
