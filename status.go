@@ -22,7 +22,7 @@ func NewStatus() *StatusMoniter {
 }
 
 func (self *StatusMoniter) Listen() {
-	logger.Debug("Status Monitor Start")
+	logger.Info("Status Monitor Start")
 	for event := range self.events {
 		logger.Debug("Status:", event.Status, event.ID, event.From)
 		if _, ok := self.Removable[event.ID]; !ok {
@@ -78,7 +78,6 @@ func (self *StatusMoniter) die(id string) {
 		return
 	}
 	appname := self.getName(container.Name)
-	logger.Info("Status Remove:", appname, id)
 	result.Status[0] = &StatusInfo{STATUS_DIE, appname, id}
 	if err := Ws.WriteJSON(result); err != nil {
 		logger.Info(err, result)
