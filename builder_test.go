@@ -15,6 +15,7 @@ var info *BuildTask
 func init() {
 	load("levi.yaml")
 	Docker = NewDocker(config.Docker.Endpoint)
+	MockDocker(Docker)
 	info = &BuildTask{
 		Group:   "platform",
 		Name:    "nbetest",
@@ -75,8 +76,7 @@ func Test_PushImage(t *testing.T) {
 	}
 }
 
-func Test_Clean(t *testing.T) {
-	MockDocker(Docker)
+func Test_BuildClean(t *testing.T) {
 	builder.clear()
 	if _, err := os.Stat(builder.workDir); err == nil {
 		t.Error("Clean work dir failed")
