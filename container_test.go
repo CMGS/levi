@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path"
 	"testing"
 
 	"github.com/fsouza/go-dockerclient"
@@ -23,23 +24,36 @@ func Test_Stop(t *testing.T) {
 }
 
 func Test_RemoveContainer(t *testing.T) {
-	cpath := "/tmp/t1"
+	ppath := path.Join(config.App.Home, "d1")
+	cpath := path.Join(config.App.Home, "t1")
+	image := "testimage"
 	Docker.InspectContainer = func(string) (*docker.Container, error) {
 		m := map[string]string{}
 		m["/test/config.yaml"] = cpath
-		return &docker.Container{Volumes: m}, nil
+		m["/test/permdir"] = ppath
+		return &docker.Container{Volumes: m, Image: image}, nil
 	}
 	f, err := os.Create(cpath)
 	if err != nil {
 		t.Fatal(err)
 	}
+	os.MkdirAll(ppath, 0755)
 	f.WriteString("test")
 	f.Sync()
 	f.Close()
-	if err := RemoveContainer("abcdefg", false, false); err != nil {
+	Docker.RemoveImage = func(p string) error {
+		if p != image {
+			t.Error("Wrong Image")
+		}
+		return nil
+	}
+	if err := RemoveContainer("abcdefg", true, true); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(cpath); err == nil {
+		t.Error("Not clean")
+	}
+	if _, err := os.Stat(ppath); err == nil {
 		t.Error("Not clean")
 	}
 }
