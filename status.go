@@ -31,13 +31,11 @@ func (self *StatusMoniter) Listen() {
 	logger.Debug("Status Monitor Start")
 	for event := range self.events {
 		logger.Debug("Status:", event.Status, event.ID, event.From)
-		if !strings.HasPrefix(event.From, config.Docker.Registry) {
+		if _, ok := self.Removable[event.ID]; !ok {
 			continue
 		}
 		if event.Status == "die" {
-			if _, ok := self.Removable[event.ID]; ok {
-				delete(self.Removable, event.ID)
-			}
+			delete(self.Removable, event.ID)
 			self.die(event.ID)
 		}
 	}
@@ -64,10 +62,14 @@ func (self *StatusMoniter) Report() {
 	logger.Info("Load container")
 	for _, container := range containers {
 		logger.Debug("Container", container)
-		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
+		if _, ok := self.Removable[container.ID]; !ok || !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
-		i := &Info{self.getStatus(container.Status), self.getName(container.Names[0]), container.ID}
+		status := self.getStatus(container.Status)
+		if status == STATUS_START {
+			self.Removable[container.ID] = struct{}{}
+		}
+		i := &Info{status, self.getName(container.Names[0]), container.ID}
 		info[STATUS_IDENT] = append(info[STATUS_IDENT], i)
 	}
 	if err := Ws.WriteJSON(info); err != nil {

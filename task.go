@@ -54,16 +54,6 @@ func (self *AddTask) ShouldExpose() bool {
 	return self.Daemon == "" && self.Test == ""
 }
 
-func (self *AddTask) CheckTest() bool {
-	test_ident := fmt.Sprintf("test_%s", self.Test)
-	return test_ident == self.ident
-}
-
-func (self *AddTask) CheckDaemon() bool {
-	daemon_ident := fmt.Sprintf("daemon_%s", self.Daemon)
-	return daemon_ident == self.ident
-}
-
 func (self *AddTask) SetAsTest() {
 	self.ident = fmt.Sprintf("test_%s", self.Test)
 }
@@ -138,8 +128,9 @@ func (self *AppTask) Wait() {
 		}
 		cids[job.Test] = self.result.Add[index]
 	}
-	tester := Tester{self.Name, self.Id, cids}
-	go tester.WaitForTester()
+	tester := Tester{self.Id, cids}
+	// Block Levi
+	tester.WaitForTester()
 }
 
 func (self *AppTask) AddContainer(index int, job *AddTask, env *Env, nginx *Nginx) {
@@ -163,17 +154,21 @@ func (self *AppTask) AddContainer(index int, job *AddTask, env *Env, nginx *Ngin
 		logger.Info("Pull Image", self.Name, "@", job.Version, "Failed", err)
 		return
 	}
-	container, err := image.Run(job, self.Uid, job.IsTest())
+	container, err := image.Run(job, self.Uid)
 	if err != nil {
 		logger.Info("Run Image", self.Name, "@", job.Version, "Failed", err)
 		return
 	}
 	logger.Info("Run Image", self.Name, "@", job.Version, "Succeed", container.ID)
-	if !job.CheckDaemon() && !job.CheckTest() {
+	if job.ShouldExpose() {
 		nginx.New(self.Name, container.ID, job.ident)
 		nginx.SetUpdate(self.Name)
 	}
 	self.result.Add[index] = container.ID
+	// Record normal container
+	if !job.IsTest() {
+		Status.Removable[container.ID] = struct{}{}
+	}
 	logger.Info("Add Finished", container.ID)
 }
 
@@ -211,9 +206,15 @@ func (self *AppTask) BuildImage(index int, job *BuildTask) {
 	logger.Info("Build Finished", self.result.Build[index])
 }
 
+type TestResult struct {
+	ExitCode int
+	Err      string
+}
+
 type TaskResult struct {
 	Id     string
 	Build  []string
 	Add    []string
 	Remove []bool
+	Test   map[string]*TestResult
 }
