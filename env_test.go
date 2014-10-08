@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/coreos/go-etcd/etcd"
@@ -43,9 +44,9 @@ func Test_GeneratePermdirPath(t *testing.T) {
 
 func Test_CreateConfigFile(t *testing.T) {
 	appname := "test"
-	job := &Task{Version: "abc", ident: "xxx"}
+	job := &AddTask{Version: "abc", ident: "xxx"}
 	configPath := GenerateConfigPath(appname, job.ident)
-	dir := "/tmp/levi/test"
+	dir := path.Join(config.App.Home, "test")
 	os.MkdirAll(dir, 0755)
 	defer func() {
 		os.RemoveAll(configPath)

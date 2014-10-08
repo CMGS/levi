@@ -2,3 +2,4 @@ levi
 .vendor/
 *.out
 levi.test
+levi.yaml

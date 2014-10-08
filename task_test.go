@@ -4,18 +4,18 @@ import (
 	"testing"
 )
 
-func Test_SetType(t *testing.T) {
-	task := Task{
+func Test_SetAddTaskType(t *testing.T) {
+	task := AddTask{
 		Bind:   9999,
 		Daemon: "abc",
 		Test:   "def",
 	}
 	task.SetAsTest()
-	if !task.CheckTest() || !task.IsTest() {
+	if !task.IsTest() || task.ident != "test_def" {
 		t.Error("Test ident invaild")
 	}
 	task.SetAsDaemon()
-	if !task.CheckDaemon() || !task.IsDaemon() {
+	if !task.IsDaemon() || task.ident != "daemon_abc" {
 		t.Error("Daemon ident invaild")
 	}
 	task.Daemon = ""

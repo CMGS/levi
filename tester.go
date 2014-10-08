@@ -1,31 +1,27 @@
 package main
 
-type Result struct {
-	ExitCode int
-	Err      string
-}
-
 type Tester struct {
-	appname string
-	id      string
-	cids    map[string][]interface{}
+	id   string
+	cids map[string]string
 }
 
 func (self *Tester) WaitForTester() {
 	var err error
-	result := make(map[string][]*Result, 1)
-	result[self.id] = make([]*Result, len(self.cids[self.id]))
-
-	for index, v := range self.cids[self.id] {
-		if cid, ok := v.(string); v != nil && ok && cid != "" {
-			r := &Result{}
+	result := &TaskResult{Id: self.id}
+	result.Test = make(map[string]*TestResult, len(self.cids))
+	for tid, cid := range self.cids {
+		r := &TestResult{}
+		if cid != "" {
 			r.ExitCode, err = Docker.WaitContainer(cid)
-			r.Err = err.Error()
-			result[self.id][index] = r
-			RemoveContainer(cid, true)
+			if err != nil {
+				r.Err = err.Error()
+			}
 		} else {
-			result[self.id][index] = &Result{ExitCode: -1}
+			r.ExitCode = -1
 		}
+		result.Test[tid] = r
+		// Remove test container
+		RemoveContainer(cid, true, false)
 	}
 
 	logger.Info("Test finished", self.id)

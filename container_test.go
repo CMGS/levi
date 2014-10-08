@@ -36,7 +36,7 @@ func Test_RemoveContainer(t *testing.T) {
 	f.WriteString("test")
 	f.Sync()
 	f.Close()
-	if err := RemoveContainer("abcdefg", false); err != nil {
+	if err := RemoveContainer("abcdefg", false, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(cpath); err == nil {

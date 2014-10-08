@@ -24,7 +24,7 @@ func Test_GetName(t *testing.T) {
 	}
 }
 
-func Test_StatusGetStatus(t *testing.T) {
+func Test_GetStatus(t *testing.T) {
 	a := "Exited (0) 9 days ago"
 	if Status.getStatus(a) != STATUS_DIE {
 		t.Error("Wrong Status")
@@ -47,25 +47,31 @@ func Test_StatusReport(t *testing.T) {
 		c := []docker.APIContainers{c1}
 		return c, nil
 	}
+	tid := "zz"
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(map[string][]*Info)
+		x, ok := d.(*TaskResult)
 		if !ok {
 			t.Fatal("Wrong Data")
 		}
-		i := x[STATUS_IDENT][0]
-		if i.Type != STATUS_DIE {
+		if x.Id != tid {
+			t.Error("Wrong Task ID")
+		}
+		if len(x.Status) == 0 {
 			t.Error("Wrong Status")
 		}
+		i := x.Status[0]
 		if i.Appname != "test" {
 			t.Error("Wrong Appname")
 		}
 		if i.Id != id {
 			t.Error("Wrong Id")
 		}
+		if i.Type != STATUS_DIE {
+			t.Error("Wrong Status")
+		}
 		return nil
-
 	}
-	Status.Report()
+	Status.Report(tid)
 }
 
 func Test_StatusDie(t *testing.T) {
@@ -74,19 +80,22 @@ func Test_StatusDie(t *testing.T) {
 		return &docker.Container{Name: "/test_1234"}, nil
 	}
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(map[string][]*Info)
+		x, ok := d.(*TaskResult)
 		if !ok {
 			t.Fatal("Wrong Data")
 		}
-		i := x[STATUS_IDENT][0]
-		if i.Type != STATUS_DIE {
+		if len(x.Status) == 0 {
 			t.Error("Wrong Status")
 		}
+		i := x.Status[0]
 		if i.Appname != "test" {
 			t.Error("Wrong Appname")
 		}
 		if i.Id != id {
 			t.Error("Wrong Id")
+		}
+		if i.Type != STATUS_DIE {
+			t.Error("Wrong Status")
 		}
 		return nil
 	}

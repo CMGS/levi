@@ -22,7 +22,7 @@ func (self *Container) Stop() error {
 	return nil
 }
 
-func RemoveContainer(id string, test bool) error {
+func RemoveContainer(id string, test bool, rmi bool) error {
 	container, err := Docker.InspectContainer(id)
 	if err != nil {
 		return err
@@ -30,17 +30,22 @@ func RemoveContainer(id string, test bool) error {
 	for p, rp := range container.Volumes {
 		switch {
 		case strings.HasSuffix(p, "/config.yaml"):
-			if err := os.Remove(rp); err != nil {
+			if err := os.RemoveAll(rp); err != nil {
 				return err
 			}
 		case test && strings.HasSuffix(p, "/permdir"):
-			if err := os.Remove(rp); err != nil {
+			if err := os.RemoveAll(rp); err != nil {
 				return err
 			}
 		}
 	}
 	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
 		return err
+	}
+	if rmi {
+		if err := Docker.RemoveImage(container.Image); err != nil {
+			return err
+		}
 	}
 	return nil
 }

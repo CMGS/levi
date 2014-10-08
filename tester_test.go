@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"strconv"
 	"testing"
 
 	"github.com/fsouza/go-dockerclient"
@@ -19,8 +18,8 @@ func init() {
 }
 
 func Test_WaitForTester(t *testing.T) {
-	tester := Tester{"test", "abc", map[string][]interface{}{}}
-	tester.cids[tester.id] = []interface{}{"1", "2", "3"}
+	tester := Tester{"xxxxxx", map[string]string{}}
+	tester.cids["abc"] = "def"
 	Docker.WaitContainer = func(id string) (int, error) {
 		return 0, errors.New(id)
 	}
@@ -29,21 +28,19 @@ func Test_WaitForTester(t *testing.T) {
 		return &docker.Container{Volumes: m}, nil
 	}
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(map[string][]*Result)
+		x, ok := d.(*TaskResult)
 		if !ok {
 			t.Fatal("Wrong Data")
 		}
-		y, ok := x["abc"]
-		if !ok {
-			t.Fatal("Wrong Map")
+		if len(x.Test) == 0 {
+			t.Fatal("Wrong Data")
 		}
-		for i, z := range y {
-			if z.ExitCode != 0 {
-				t.Fatal("Wrong RetCode")
-			}
-			if n, err := strconv.Atoi(z.Err); err != nil || n != i+1 {
-				t.Fatal("Parser Invaild")
-			}
+		r := x.Test["abc"]
+		if r.ExitCode != 0 {
+			t.Fatal("Wrong Exit Code")
+		}
+		if r.Err != "def" {
+			t.Fatal("Wrong ErrStr")
 		}
 		return nil
 	}

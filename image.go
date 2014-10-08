@@ -23,11 +23,15 @@ func (self *Image) Pull() error {
 	return nil
 }
 
-func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, error) {
+func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
-	permdir := GeneratePermdirPath(self.appname, job.ident, runenv == TESTING)
 	mPermdir := fmt.Sprintf("/%s/permdir", self.appname)
+	runenv := PRODUCTION
+	if job.IsTest() {
+		runenv = TESTING
+	}
+	permdir := GeneratePermdirPath(self.appname, job.ident, job.IsTest())
 
 	containerConfig := docker.Config{
 		CpuShares: job.CpuShares,
@@ -47,7 +51,6 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 		Binds: []string{
 			fmt.Sprintf("%s:%s:ro", configPath, fmt.Sprintf("/%s/config.yaml", self.appname)),
 			fmt.Sprintf("%s:%s", permdir, mPermdir),
-			"/var/run:/var/run",
 		},
 		NetworkMode: config.Docker.Network,
 	}
@@ -77,7 +80,9 @@ func (self *Image) Run(job *Task, uid int, runenv string) (*docker.Container, er
 	}
 
 	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
-		RemoveContainer(container.ID, runenv == TESTING)
+		// Have to remove resource when start failed
+		logger.Debug("Rollback add files")
+		RemoveContainer(container.ID, job.IsTest(), false)
 		return nil, err
 	}
 	return container, nil

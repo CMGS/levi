@@ -26,15 +26,14 @@ func GeneratePermdirPath(appname, ident string, test bool) string {
 	return path.Join(config.App.Tmpdirs, name)
 }
 
-func (self *Env) CreateConfigFile(job *Task) error {
+func (self *Env) CreateConfigFile(job *AddTask) error {
+	if job.IsTest() {
+		return self.createConfigFile(job, "test.yaml")
+	}
 	return self.createConfigFile(job, "config.yaml")
 }
 
-func (self *Env) CreateTestConfigFile(job *Task) error {
-	return self.createConfigFile(job, "test.yaml")
-}
-
-func (self *Env) createConfigFile(job *Task, filename string) error {
+func (self *Env) createConfigFile(job *AddTask, filename string) error {
 	configPath := GenerateConfigPath(self.appname, job.ident)
 
 	resp, err := Etcd.Get(path.Join("/NBE", self.appname, job.Version, filename), false, false)

@@ -51,8 +51,8 @@ func (self *Levi) Loop() {
 			}
 			self.Exit()
 		case task := <-self.task:
-			if task.Type == DOCKER_INFO {
-				Status.Report()
+			if task.Info {
+				Status.Report(task.Id)
 				continue
 			}
 			self.deploy.tasks = append(self.deploy.tasks, task)
