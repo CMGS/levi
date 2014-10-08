@@ -18,11 +18,6 @@ type BuildTask struct {
 type RemoveTask struct {
 	Container string
 	RmImage   bool
-	RunEnv    string
-}
-
-func (self *RemoveTask) IsTest() bool {
-	return self.RunEnv == TESTING
 }
 
 func (self *RemoveTask) IsRemoveImage() bool {
@@ -186,7 +181,8 @@ func (self *AppTask) RemoveContainer(index int, job *RemoveTask, nginx *Nginx) {
 		logger.Info("Stop Container", job.Container, "failed", err)
 		return
 	}
-	if err := RemoveContainer(job.Container, job.IsTest(), job.IsRemoveImage()); err != nil {
+	// Test container will be automatic removed
+	if err := RemoveContainer(job.Container, false, job.IsRemoveImage()); err != nil {
 		logger.Info("Remove Container", job.Container, "failed", err)
 		return
 	}
