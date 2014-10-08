@@ -92,21 +92,21 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 			default:
 				job.SetAsService()
 			}
-			go self.AddContainer(index, job, env, nginx)
+			go self.AddContainer(index, env, nginx)
 		}
 	}
 	if len(self.Tasks.Remove) != 0 {
 		self.wg.Add(len(self.Tasks.Remove))
 		self.result.Remove = make([]bool, len(self.Tasks.Remove))
-		for index, job := range self.Tasks.Remove {
-			go self.RemoveContainer(index, job, nginx)
+		for index, _ := range self.Tasks.Remove {
+			go self.RemoveContainer(index, nginx)
 		}
 	}
 	if len(self.Tasks.Build) != 0 {
 		self.wg.Add(len(self.Tasks.Build))
 		self.result.Build = make([]string, len(self.Tasks.Build))
-		for index, job := range self.Tasks.Build {
-			go self.BuildImage(index, job)
+		for index, _ := range self.Tasks.Build {
+			go self.BuildImage(index)
 		}
 	}
 }
@@ -132,8 +132,9 @@ func (self *AppTask) Wait() {
 	}
 }
 
-func (self *AppTask) AddContainer(index int, job *AddTask, env *Env, nginx *Nginx) {
+func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 	defer self.wg.Done()
+	job := self.Tasks.Add[index]
 	env.CreateUser()
 	if err := env.CreateConfigFile(job); err != nil {
 		logger.Info("Create app config failed", err)
@@ -171,8 +172,9 @@ func (self *AppTask) AddContainer(index int, job *AddTask, env *Env, nginx *Ngin
 	logger.Info("Add Finished", container.ID)
 }
 
-func (self *AppTask) RemoveContainer(index int, job *RemoveTask, nginx *Nginx) {
+func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	defer self.wg.Done()
+	job := self.Tasks.Remove[index]
 	logger.Info("Remove Container", self.Name, job.Container)
 	if _, ok := Status.Removable[job.Container]; !ok {
 		logger.Info("Not Record")
@@ -199,8 +201,9 @@ func (self *AppTask) RemoveContainer(index int, job *RemoveTask, nginx *Nginx) {
 	logger.Info("Remove Finished", self.result.Remove[index])
 }
 
-func (self *AppTask) BuildImage(index int, job *BuildTask) {
+func (self *AppTask) BuildImage(index int) {
 	defer self.wg.Done()
+	job := self.Tasks.Build[index]
 	builder := NewBuilder(self.Name, job)
 	if err := builder.Build(); err != nil {
 		logger.Info(err)
