@@ -49,7 +49,7 @@ func (self *StatusMoniter) Report(id string) {
 		logger.Info(err, "Load")
 	}
 
-	result := TaskResult{Id: id}
+	result := &TaskResult{Id: id}
 	result.Status = []*StatusInfo{}
 
 	logger.Info("Load container")
@@ -69,7 +69,7 @@ func (self *StatusMoniter) Report(id string) {
 }
 
 func (self *StatusMoniter) die(id string) {
-	result := TaskResult{Id: STATUS_IDENT}
+	result := &TaskResult{Id: STATUS_IDENT}
 	result.Status = make([]*StatusInfo, 1)
 
 	container, err := Docker.InspectContainer(id)

@@ -7,7 +7,7 @@ type Tester struct {
 
 func (self *Tester) WaitForTester() {
 	var err error
-	result := TaskResult{Id: self.id}
+	result := &TaskResult{Id: self.id}
 	result.Test = make(map[string]*TestResult, len(self.cids))
 	for tid, cid := range self.cids {
 		r := &TestResult{}
