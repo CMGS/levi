@@ -52,7 +52,7 @@ func (self *Levi) Loop() {
 			self.Exit()
 		case task := <-self.task:
 			if task.Info {
-				Status.Report()
+				Status.Report(task.Id)
 				continue
 			}
 			self.deploy.tasks = append(self.deploy.tasks, task)

@@ -13,12 +13,6 @@ type StatusMoniter struct {
 	Removable map[string]struct{}
 }
 
-type Info struct {
-	Type    string
-	Appname string
-	Id      string
-}
-
 func NewStatus() *StatusMoniter {
 	status := &StatusMoniter{}
 	status.events = make(chan *docker.APIEvents)
@@ -50,36 +44,36 @@ func (self *StatusMoniter) getStatus(s string) string {
 	}
 }
 
-func (self *StatusMoniter) Report() {
+func (self *StatusMoniter) Report(id string) {
 	containers, err := Docker.ListContainers(docker.ListContainersOptions{All: true})
 	if err != nil {
 		logger.Info(err, "Load")
 	}
 
-	info := map[string][]*Info{}
-	info[STATUS_IDENT] = []*Info{}
+	result := TaskResult{Id: id}
+	result.Status = []*StatusInfo{}
 
 	logger.Info("Load container")
 	for _, container := range containers {
 		logger.Debug("Container", container)
-		if _, ok := self.Removable[container.ID]; !ok || !strings.HasPrefix(container.Image, config.Docker.Registry) {
+		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
 		status := self.getStatus(container.Status)
 		if status == STATUS_START {
 			self.Removable[container.ID] = struct{}{}
 		}
-		i := &Info{status, self.getName(container.Names[0]), container.ID}
-		info[STATUS_IDENT] = append(info[STATUS_IDENT], i)
+		s := &StatusInfo{status, self.getName(container.Names[0]), container.ID}
+		result.Status = append(result.Status, s)
 	}
-	if err := Ws.WriteJSON(info); err != nil {
-		logger.Info(err, info)
+	if err := Ws.WriteJSON(result); err != nil {
+		logger.Info(err, result)
 	}
 }
 
 func (self *StatusMoniter) die(id string) {
-	info := map[string][]*Info{}
-	info[STATUS_IDENT] = make([]*Info, 1)
+	result := TaskResult{Id: STATUS_IDENT}
+	result.Status = make([]*StatusInfo, 1)
 
 	container, err := Docker.InspectContainer(id)
 	if err != nil {
@@ -88,9 +82,9 @@ func (self *StatusMoniter) die(id string) {
 	}
 	appname := self.getName(container.Name)
 	logger.Info("Status Remove:", appname, id)
-	info[STATUS_IDENT][0] = &Info{STATUS_DIE, appname, id}
-	if err := Ws.WriteJSON(info); err != nil {
-		logger.Info(err, info)
+	result.Status[0] = &StatusInfo{STATUS_DIE, appname, id}
+	if err := Ws.WriteJSON(result); err != nil {
+		logger.Info(err, result)
 	}
 }
 
