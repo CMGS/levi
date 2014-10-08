@@ -20,9 +20,6 @@ func (self *Deploy) doDeploy() {
 			env := &Env{apptask.Name, apptask.Uid}
 			apptask.Deploy(env, self.nginx)
 			apptask.Wait()
-			if err := Ws.WriteJSON(apptask.result); err != nil {
-				logger.Info(err, apptask.result)
-			}
 		}(apptask)
 	}
 }

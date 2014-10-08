@@ -118,6 +118,9 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 
 func (self *AppTask) Wait() {
 	self.wg.Wait()
+	if err := Ws.WriteJSON(self.result); err != nil {
+		logger.Info(err, self.result)
+	}
 	cids := map[string]string{}
 	if len(self.Tasks.Add) == 0 {
 		return
@@ -129,7 +132,6 @@ func (self *AppTask) Wait() {
 		cids[job.Test] = self.result.Add[index]
 	}
 	tester := Tester{self.Id, cids}
-	// Block Levi
 	tester.WaitForTester()
 }
 

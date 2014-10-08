@@ -1,6 +1,11 @@
 package main
 
-import "github.com/fsouza/go-dockerclient"
+import (
+	"os"
+	"strings"
+
+	"github.com/fsouza/go-dockerclient"
+)
 
 type Container struct {
 	id      string
@@ -22,7 +27,19 @@ func RemoveContainer(id string, test bool, rmi bool) error {
 	if err != nil {
 		return err
 	}
-	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id, RemoveVolumes: true}); err != nil {
+	for p, rp := range container.Volumes {
+		switch {
+		case strings.HasSuffix(p, "/config.yaml"):
+			if err := os.RemoveAll(rp); err != nil {
+				return err
+			}
+		case test && strings.HasSuffix(p, "/permdir"):
+			if err := os.RemoveAll(rp); err != nil {
+				return err
+			}
+		}
+	}
+	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
 		return err
 	}
 	if rmi {

@@ -13,7 +13,9 @@ func (self *Tester) WaitForTester() {
 		r := &TestResult{}
 		if cid != "" {
 			r.ExitCode, err = Docker.WaitContainer(cid)
-			r.Err = err.Error()
+			if err != nil {
+				r.Err = err.Error()
+			}
 		} else {
 			r.ExitCode = -1
 		}
