@@ -181,6 +181,11 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 		return
 	}
 	delete(Status.Removable, job.Container)
+	defer func() {
+		if !self.result.Remove[index] {
+			Status.Removable[job.Container] = struct{}{}
+		}
+	}()
 	container := Container{
 		id:      job.Container,
 		appname: self.Name,
