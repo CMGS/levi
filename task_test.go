@@ -3,9 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 
+	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -109,5 +111,44 @@ func Test_TaskRemoveContainer(t *testing.T) {
 	}
 	if _, ok := Status.Removable[id]; !ok {
 		t.Error("Wrong Status")
+	}
+}
+
+func Test_TaskAddContainer(t *testing.T) {
+	cid := "12345"
+	appname := "nbetest"
+	ver := "v1"
+	tid := "abcdefg"
+	job := &AddTask{
+		Version:   ver,
+		Cmd:       []string{"python", "xxx.py"},
+		Memory:    99999,
+		CpuShares: 512,
+		CpuSet:    "0",
+		Test:      tid,
+	}
+	job.SetAsTest()
+	cpath := GenerateConfigPath(appname, job.ident)
+	dpath := GeneratePermdirPath(appname, job.ident, true)
+	nginx := NewNginx()
+	env := &Env{appname, 4011}
+	apptask.Tasks.Add = []*AddTask{job}
+	apptask.result.Add = make([]string, 1)
+	apptask.wg.Add(1)
+	Etcd.Get = func(string, bool, bool) (*etcd.Response, error) {
+		ret := &etcd.Response{Node: &etcd.Node{Value: ""}}
+		return ret, nil
+	}
+	Docker.CreateContainer = func(docker.CreateContainerOptions) (*docker.Container, error) {
+		return &docker.Container{ID: cid}, nil
+	}
+	defer os.RemoveAll(cpath)
+	defer os.RemoveAll(dpath)
+	apptask.AddContainer(0, env, nginx)
+	if len(apptask.result.Add) == 0 {
+		t.Error("Wrong Result")
+	}
+	if apptask.result.Add[0] != cid {
+		t.Error("Wrong Data")
 	}
 }

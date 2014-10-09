@@ -41,13 +41,13 @@ func Test_Run(t *testing.T) {
 	}
 	Docker.StartContainer = func(id string, opts *docker.HostConfig) error {
 		if strings.LastIndex(opts.Binds[0], "/test/config.yaml:ro") == -1 {
-			t.Fatal("Bind invaild")
+			t.Error("Bind invaild")
 		}
 		return nil
 	}
 	c, err := image.Run(job, 4001)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	if c.ID != "abcdefg" {
 		t.Error("Cid invaild")
