@@ -24,17 +24,17 @@ func Test_WaitForTester(t *testing.T) {
 	Ws.WriteJSON = func(d interface{}) error {
 		x, ok := d.(*TaskResult)
 		if !ok {
-			t.Fatal("Wrong Data")
+			t.Error("Wrong Data")
 		}
 		if len(x.Test) == 0 {
-			t.Fatal("Wrong Data")
+			t.Error("Wrong Data")
 		}
 		r := x.Test["abc"]
 		if r.ExitCode != 0 {
-			t.Fatal("Wrong Exit Code")
+			t.Error("Wrong Exit Code")
 		}
 		if r.Err != "def" {
-			t.Fatal("Wrong ErrStr")
+			t.Error("Wrong ErrStr")
 		}
 		return nil
 	}

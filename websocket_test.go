@@ -10,6 +10,6 @@ func Test_MockWebSocket(t *testing.T) {
 	MockWebSocket(Ws)
 	defer Ws.Close()
 	if err := Ws.WriteJSON("aaa"); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }

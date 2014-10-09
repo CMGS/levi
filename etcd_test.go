@@ -10,6 +10,6 @@ func Test_MockEtcd(t *testing.T) {
 	MockEtcd(Etcd)
 	resp, err := Etcd.Get("/test", false, false)
 	if err != nil || resp != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }

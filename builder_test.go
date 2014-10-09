@@ -52,7 +52,7 @@ func Test_CreateDockerFile(t *testing.T) {
 
 func Test_CreateTar(t *testing.T) {
 	if _, err := os.Stat(builder.tarPath); err == nil {
-		t.Fatal("Tar exists")
+		t.Error("Tar exists")
 	}
 	if err := builder.createTar(); err != nil {
 		t.Error(err)
@@ -86,7 +86,7 @@ func Test_BuildClean(t *testing.T) {
 	for _, image := range images {
 		for _, tag := range image.RepoTags {
 			if tag == "<none>:<none>" || tag == builder.repoTag {
-				t.Fatal("Docker hub not clear")
+				t.Error("Docker hub not clear")
 			}
 		}
 	}

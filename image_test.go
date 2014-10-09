@@ -32,10 +32,10 @@ func Test_Run(t *testing.T) {
 	}
 	Docker.CreateContainer = func(opts docker.CreateContainerOptions) (*docker.Container, error) {
 		if opts.Name != "test_12345" {
-			t.Fatal("Name invaild")
+			t.Error("Name invaild")
 		}
 		if opts.Config.Env[0] != fmt.Sprintf("NBE_RUNENV=%s", PRODUCTION) {
-			t.Fatal("Env invaild")
+			t.Error("Env invaild")
 		}
 		return &docker.Container{ID: "abcdefg"}, nil
 	}

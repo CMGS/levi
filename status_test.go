@@ -15,7 +15,7 @@ func Test_GetName(t *testing.T) {
 	containerName = "test_1234"
 	appname := Status.getName(containerName)
 	if appname != "test" {
-		t.Fatal("Get appname failed")
+		t.Error("Get appname failed")
 	}
 }
 
@@ -46,7 +46,7 @@ func Test_StatusReport(t *testing.T) {
 	Ws.WriteJSON = func(d interface{}) error {
 		x, ok := d.(*TaskResult)
 		if !ok {
-			t.Fatal("Wrong Data")
+			t.Error("Wrong Data")
 		}
 		if x.Id != tid {
 			t.Error("Wrong Task ID")
@@ -68,7 +68,7 @@ func Test_StatusReport(t *testing.T) {
 	}
 	Status.Report(tid)
 	if _, ok := Status.Removable[id]; !ok {
-		t.Fatal("Wrong Data")
+		t.Error("Wrong Data")
 	}
 }
 
@@ -80,7 +80,7 @@ func Test_StatusDie(t *testing.T) {
 	Ws.WriteJSON = func(d interface{}) error {
 		x, ok := d.(*TaskResult)
 		if !ok {
-			t.Fatal("Wrong Data")
+			t.Error("Wrong Data")
 		}
 		if len(x.Status) == 0 {
 			t.Error("Wrong Status")
@@ -106,20 +106,20 @@ func Test_StatusListen(t *testing.T) {
 	event := &docker.APIEvents{"die", id, "zzz", 12345}
 	Status.events <- event
 	Docker.InspectContainer = func(string) (*docker.Container, error) {
-		t.Fatal("Wrong event")
+		t.Error("Wrong event")
 		return nil, nil
 	}
 	Status.Removable[id] = struct{}{}
 	Docker.InspectContainer = func(i string) (*docker.Container, error) {
 		if i != id {
-			t.Fatal("Wrong event")
+			t.Error("Wrong event")
 		}
 		return &docker.Container{ID: id, Name: "/test_1234"}, nil
 	}
 	Ws.WriteJSON = func(d interface{}) error {
 		x, ok := d.(*TaskResult)
 		if !ok {
-			t.Fatal("Wrong Data")
+			t.Error("Wrong Data")
 		}
 		if len(x.Status) == 0 {
 			t.Error("Wrong Status")

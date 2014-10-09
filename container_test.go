@@ -15,7 +15,7 @@ func init() {
 func Test_Stop(t *testing.T) {
 	container := Container{"abcdefg", "test"}
 	if err := container.Stop(); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
@@ -31,7 +31,7 @@ func Test_RemoveContainer(t *testing.T) {
 	}
 	f, err := os.Create(cpath)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	os.MkdirAll(ppath, 0755)
 	f.WriteString("test")
@@ -44,7 +44,7 @@ func Test_RemoveContainer(t *testing.T) {
 		return nil
 	}
 	if err := RemoveContainer("abcdefg", true, true); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	if _, err := os.Stat(cpath); err == nil {
 		t.Error("Not clean")
