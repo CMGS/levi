@@ -8,13 +8,7 @@ import (
 )
 
 func init() {
-	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint)
-	MockDocker(Docker)
-	Ws = NewWebSocket(config.Master)
-	MockWebSocket(Ws)
-	Etcd = NewEtcd(config.Etcd.Machines)
-	MockEtcd(Etcd)
+	InitTest()
 }
 
 func Test_WaitForTester(t *testing.T) {

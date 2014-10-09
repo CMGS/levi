@@ -9,11 +9,7 @@ import (
 )
 
 func init() {
-	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint)
-	MockDocker(Docker)
-	Etcd = NewEtcd(config.Etcd.Machines)
-	MockEtcd(Etcd)
+	InitTest()
 }
 
 func Test_Pull(t *testing.T) {

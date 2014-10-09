@@ -13,9 +13,7 @@ var builder *Builder
 var info *BuildTask
 
 func init() {
-	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint)
-	MockDocker(Docker)
+	InitTest()
 	info = &BuildTask{
 		Group:   "platform",
 		Name:    "nbetest",

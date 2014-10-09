@@ -8,6 +8,17 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+func InitTest() {
+	load("levi.yaml")
+	Docker = NewDocker(config.Docker.Endpoint)
+	MockDocker(Docker)
+	Ws = NewWebSocket(config.Master)
+	MockWebSocket(Ws)
+	Etcd = NewEtcd(config.Etcd.Machines)
+	MockEtcd(Etcd)
+	Status = NewStatus()
+}
+
 func MockDocker(d *DockerWrapper) {
 	var makeMockedDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper
 	MakeMockedWrapper(&makeMockedDockerWrapper)

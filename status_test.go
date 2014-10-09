@@ -7,12 +7,7 @@ import (
 )
 
 func init() {
-	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint)
-	MockDocker(Docker)
-	Ws = NewWebSocket(config.Master)
-	MockWebSocket(Ws)
-	Status = NewStatus()
+	InitTest()
 }
 
 func Test_GetName(t *testing.T) {

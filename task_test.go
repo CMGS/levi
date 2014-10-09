@@ -1,21 +1,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 var apptask *AppTask
 
 func init() {
-	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint)
-	MockDocker(Docker)
-	Ws = NewWebSocket(config.Master)
-	MockWebSocket(Ws)
-	Etcd = NewEtcd(config.Etcd.Machines)
-	MockEtcd(Etcd)
+	InitTest()
 	apptask = &AppTask{
 		Id:   "abc",
 		Uid:  4001,
@@ -60,13 +57,57 @@ func Test_TaskBuildImage(t *testing.T) {
 		Static:  "static",
 	}
 	apptask.Tasks.Build = []*BuildTask{job}
-	apptask.result.Build = make([]string, len(apptask.Tasks.Build))
-	apptask.wg.Add(len(apptask.Tasks.Build))
+	apptask.result.Build = make([]string, 1)
+	apptask.wg.Add(1)
 	apptask.BuildImage(0)
 	if len(apptask.result.Build) == 0 {
 		t.Error("Wrong Result")
 	}
 	if apptask.result.Build[0] != fmt.Sprintf("%s/%s:%s", config.Docker.Registry, name, ver) {
 		t.Error("Wrong Data")
+	}
+}
+
+func Test_TaskRemoveContainer(t *testing.T) {
+	id := "abcdefg"
+	job := &RemoveTask{id, true}
+	nginx := NewNginx()
+	apptask.Tasks.Remove = []*RemoveTask{job}
+	apptask.result.Remove = make([]bool, 1)
+	apptask.wg.Add(1)
+	apptask.RemoveContainer(0, nginx)
+	if len(apptask.result.Remove) == 0 {
+		t.Error("Wrong Result")
+	}
+	if apptask.result.Remove[0] {
+		t.Error("Wrong Data")
+	}
+	Status.Removable[id] = struct{}{}
+	apptask.wg.Add(1)
+	Docker.InspectContainer = func(string) (*docker.Container, error) {
+		return &docker.Container{Volumes: map[string]string{}, ID: id}, nil
+	}
+	apptask.RemoveContainer(0, nginx)
+	if len(apptask.result.Remove) == 0 {
+		t.Error("Wrong Result")
+	}
+	if !apptask.result.Remove[0] {
+		t.Error("Wrong Data")
+	}
+	if _, ok := Status.Removable[id]; ok {
+		t.Error("Wrong Status")
+	}
+	Status.Removable[id] = struct{}{}
+	apptask.result.Remove = make([]bool, 1)
+	apptask.wg.Add(1)
+	Docker.InspectContainer = func(string) (*docker.Container, error) {
+		return nil, errors.New("made by test")
+	}
+	apptask.RemoveContainer(0, nginx)
+	if apptask.result.Remove[0] {
+		t.Error("Wrong Data")
+	}
+	if _, ok := Status.Removable[id]; !ok {
+		t.Error("Wrong Status")
 	}
 }
