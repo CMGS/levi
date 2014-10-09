@@ -151,4 +151,7 @@ func Test_TaskAddContainer(t *testing.T) {
 	if apptask.result.Add[0] != cid {
 		t.Error("Wrong Data")
 	}
+	if _, ok := Status.Removable[cid]; ok {
+		t.Error("Wrong Container Flag")
+	}
 }
