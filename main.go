@@ -14,6 +14,7 @@ func main() {
 
 	defer os.Remove(config.PidFile)
 	WritePid(config.PidFile)
+	RunLenz()
 
 	Ws = NewWebSocket(config.Master)
 	defer Ws.Close()

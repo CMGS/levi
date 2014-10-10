@@ -37,6 +37,11 @@ type EtcdConfig struct {
 	Machines []string
 }
 
+type LenzConfig struct {
+	Routes   string
+	Forwards string
+}
+
 type LeviConfig struct {
 	Name            string
 	Master          string
@@ -51,6 +56,7 @@ type LeviConfig struct {
 	Docker DockerConfig
 	App    AppConfig
 	Etcd   EtcdConfig
+	Lenz   LenzConfig
 }
 
 var config = LeviConfig{}
