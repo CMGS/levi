@@ -41,22 +41,22 @@ func streamer(route *Route, logstream chan *Log) {
 			logger.Debug(logline.Appname, addr)
 			switch u, err := url.Parse(addr); {
 			case err != nil:
-				logger.Debug(err)
+				logger.Debug("Lenz", err)
 				route.backends.Remove(addr)
 				continue
 			case u.Scheme == "udp":
 				if err := udpStreamer(logline, u.Host); err != nil {
-					logger.Debug("Send to", u.Host, "by udp failed", err)
+					logger.Debug("Lenz Send to", u.Host, "by udp failed", err)
 					continue
 				}
 			case u.Scheme == "tcp":
 				if err := tcpStreamer(logline, u.Host); err != nil {
-					logger.Debug("Send to", u.Host, "by tcp failed", err)
+					logger.Debug("Lenz Send to", u.Host, "by tcp failed", err)
 					continue
 				}
 			case u.Scheme == "syslog":
 				if err := syslogStreamer(logline, u.Host); err != nil {
-					logger.Debug("Sent to syslog failed", err)
+					logger.Debug("Lenz Sent to syslog failed", err)
 					continue
 				}
 			}

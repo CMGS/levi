@@ -29,7 +29,6 @@ func NewAttachManager() *AttachManager {
 		events := make(chan *docker.APIEvents)
 		logger.Assert(Docker.AddEventListener(events), "attacher")
 		for msg := range events {
-			logger.Debug("event:", msg.ID[:12], msg.Status)
 			if msg.Status == "start" {
 				go m.attach(msg.ID[:12])
 			}
@@ -59,7 +58,7 @@ func (m *AttachManager) attach(id string) {
 		})
 		outwr.Close()
 		errwr.Close()
-		logger.Debug("attach:", id, "finished")
+		logger.Debug("Lenz Attach:", id, "finished")
 		if err != nil {
 			close(success)
 			failure <- err
@@ -76,10 +75,10 @@ func (m *AttachManager) attach(id string) {
 		m.Unlock()
 		success <- struct{}{}
 		m.send(&AttachEvent{ID: id, Name: name, Type: "attach"})
-		logger.Debug("attach:", id, "success")
+		logger.Debug("Lenz Attach:", id, "success")
 		return
 	}
-	logger.Debug("attach:", id, "failure:", <-failure)
+	logger.Debug("Lenz Attach:", id, "failure:", <-failure)
 }
 
 func (m *AttachManager) send(event *AttachEvent) {
@@ -164,7 +163,7 @@ func NewLogPump(stdout, stderr io.Reader, id, name string) *LogPump {
 			data, err := buf.ReadBytes('\n')
 			if err != nil {
 				if err != io.EOF {
-					logger.Debug("pump:", id, typ+":", err)
+					logger.Debug("Lenz Pump:", id, typ, err)
 				}
 				return
 			}
