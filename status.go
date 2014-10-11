@@ -7,16 +7,16 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
-var Status *StatusMoniter
-
 type StatusMoniter struct {
 	events    chan *docker.APIEvents
 	Removable map[string]struct{}
+	lenz      *Lenz
 }
 
 func NewStatus() *StatusMoniter {
 	status := &StatusMoniter{}
 	status.events = make(chan *docker.APIEvents)
+	status.lenz = NewLenz()
 	status.Removable = map[string]struct{}{}
 	Logger.Assert(Docker.AddEventListener(status.events), "Attacher")
 	return status
@@ -26,8 +26,11 @@ func (self *StatusMoniter) Listen() {
 	Logger.Info("Status Monitor Start")
 	for event := range self.events {
 		Logger.Debug("Status:", event.Status, event.ID, event.From)
-		if _, ok := self.Removable[event.ID]; !ok {
+		if _, ok := self.Removable[event.ID]; !ok || event.Status != "start" {
 			continue
+		}
+		if event.Status == "start" {
+			self.lenz.Attacher.Attach(event.ID[:12])
 		}
 		if event.Status == "die" {
 			self.die(event.ID)
@@ -59,6 +62,7 @@ func (self *StatusMoniter) Report(id string) {
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
+		self.lenz.Attacher.Attach(container.ID[:12])
 		status := self.getStatus(container.Status)
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, self.getName(container.Names[0]), container.ID}

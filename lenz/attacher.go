@@ -24,26 +24,15 @@ func NewAttachManager(client *defines.DockerWrapper) *AttachManager {
 		channels: make(map[chan *defines.AttachEvent]struct{}),
 	}
 	m.client = client
-	containers, err := client.ListContainers(docker.ListContainersOptions{})
-	Logger.Assert(err, "attacher")
-	for _, listing := range containers {
-		m.attach(listing.ID[:12])
-	}
-	go func() {
-		events := make(chan *docker.APIEvents)
-		Logger.Assert(client.AddEventListener(events), "attacher")
-		for msg := range events {
-			if msg.Status == "start" {
-				go m.attach(msg.ID[:12])
-			}
-		}
-	}()
 	return m
 }
 
-func (m *AttachManager) attach(id string) {
+func (m *AttachManager) Attach(id string) {
 	container, err := m.client.InspectContainer(id)
-	Logger.Assert(err, "attacher")
+	if err != nil {
+		Logger.Info(err, "attacher")
+		return
+	}
 	name := container.Name[1:]
 	success := make(chan struct{})
 	failure := make(chan error)

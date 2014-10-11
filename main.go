@@ -13,6 +13,8 @@ var Ws *defines.WebSocketWrapper
 var Etcd *defines.EtcdWrapper
 var Docker *defines.DockerWrapper
 
+var Status *StatusMoniter
+
 func main() {
 	LoadConfig()
 	Etcd = defines.NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
@@ -27,6 +29,7 @@ func main() {
 
 	levi := NewLevi()
 	go Status.Listen()
+	go Status.Report(STATUS_IDENT)
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
