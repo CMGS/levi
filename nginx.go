@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	. "./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -28,7 +29,7 @@ func NewNginx() *Nginx {
 	}
 	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
-		logger.Assert(err, "Load")
+		Logger.Assert(err, "Load")
 	}
 	for _, container := range containers {
 		name := strings.TrimLeft(container.Names[0], "/")
@@ -76,9 +77,9 @@ func (self *Nginx) Remove(appname, cid string) bool {
 
 func (self *Nginx) Clear(appname string) {
 	var configPath = path.Join(config.Nginx.Configs, fmt.Sprintf("%s.conf", appname))
-	logger.Info("Clear config file", configPath)
+	Logger.Info("Clear config file", configPath)
 	if err := os.Remove(configPath); err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 	}
 }
 
@@ -95,27 +96,27 @@ func (self *Nginx) Save() {
 		f, err := os.Create(configPath)
 		defer f.Close()
 		if err != nil {
-			logger.Info("Create upstream config failed", err)
+			Logger.Info("Create upstream config failed", err)
 		}
 		tmpl := template.Must(template.ParseFiles(config.Nginx.Template))
 		err = tmpl.Execute(f, upstream)
 		if err != nil {
-			logger.Info("Generate upstream config failed", err)
+			Logger.Info("Generate upstream config failed", err)
 		}
 	}
 }
 
 func (self *Nginx) DeleteStream(appname string) {
 	url := UrlJoin(config.Nginx.DyUpstream, appname)
-	logger.Debug(url)
+	Logger.Debug(url)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 	} else {
 		defer resp.Body.Close()
 	}
@@ -123,16 +124,16 @@ func (self *Nginx) DeleteStream(appname string) {
 
 func (self *Nginx) UpdateStream(upstream *Upstream) {
 	url := UrlJoin(config.Nginx.DyUpstream, upstream.Appname)
-	logger.Debug("Upstream Info", upstream.Ports, url)
+	Logger.Debug("Upstream Info", upstream.Ports, url)
 	var s []string = []string{}
 	for _, port := range upstream.Ports {
 		s = append(s, fmt.Sprintf("server 127.0.0.1:%s", port))
 	}
 	data := fmt.Sprintf("%s;", strings.Join(s, ";"))
-	logger.Debug("Upstream Data", data)
+	Logger.Debug("Upstream Data", data)
 	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data))
 	if err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 	} else {
 		defer resp.Body.Close()
 	}

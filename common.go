@@ -8,5 +8,3 @@ const (
 	STATUS_DIE             = "die"
 	STATUS_START           = "start"
 )
-
-var logger = Logger{}

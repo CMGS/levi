@@ -1,13 +1,6 @@
-package main
+package defines
 
-import (
-	"encoding/json"
-	"io"
-	"io/ioutil"
-	"log"
-
-	"github.com/CMGS/consistent"
-)
+import "github.com/CMGS/consistent"
 
 type AttachEvent struct {
 	Type string
@@ -29,14 +22,14 @@ type Route struct {
 	ID       string  `json:"id"`
 	Source   *Source `json:"source,omitempty"`
 	Target   *Target `json:"target"`
-	backends *consistent.Consistent
-	closer   chan bool
+	Backends *consistent.Consistent
+	Closer   chan bool
 }
 
-func (s *Route) loadBackends() {
-	s.backends = consistent.New()
+func (s *Route) LoadBackends() {
+	s.Backends = consistent.New()
 	for _, addr := range s.Target.Addrs {
-		s.backends.Add(addr)
+		s.Backends.Add(addr)
 	}
 }
 
@@ -54,24 +47,4 @@ func (s *Source) All() bool {
 type Target struct {
 	Addrs     []string `json:"addrs"`
 	AppendTag string   `json:"append_tag,omitempty"`
-}
-
-func marshal(obj interface{}) []byte {
-	bytes, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		log.Println("marshal:", err)
-	}
-	return bytes
-}
-
-func unmarshal(input io.ReadCloser, obj interface{}) error {
-	body, err := ioutil.ReadAll(input)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(body, obj)
-	if err != nil {
-		return err
-	}
-	return nil
 }

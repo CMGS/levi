@@ -1,4 +1,4 @@
-package main
+package lenz
 
 import (
 	"io/ioutil"
@@ -6,12 +6,15 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"../defines"
+	"../utils"
 )
 
 type RouteStore interface {
-	Get(id string) (*Route, error)
-	GetAll() ([]*Route, error)
-	Add(route *Route) error
+	Get(id string) (*defines.Route, error)
+	GetAll() ([]*defines.Route, error)
+	Add(route *defines.Route) error
 	Remove(id string) bool
 }
 
@@ -19,11 +22,11 @@ type RouteManager struct {
 	sync.Mutex
 	persistor RouteStore
 	attacher  *AttachManager
-	routes    map[string]*Route
+	routes    map[string]*defines.Route
 }
 
 func NewRouteManager(attacher *AttachManager) *RouteManager {
-	return &RouteManager{attacher: attacher, routes: make(map[string]*Route)}
+	return &RouteManager{attacher: attacher, routes: make(map[string]*defines.Route)}
 }
 
 func (rm *RouteManager) Reload() error {
@@ -38,7 +41,7 @@ func (rm *RouteManager) Reload() error {
 		if route, ok := rm.routes[newRoute.ID]; ok {
 			route.Source = newRoute.Source
 			route.Target = newRoute.Target
-			route.backends = newRoute.backends
+			route.Backends = newRoute.Backends
 			continue
 		}
 		rm.Add(newRoute)
@@ -65,7 +68,7 @@ func (rm *RouteManager) Load(persistor RouteStore) error {
 	return nil
 }
 
-func (rm *RouteManager) Get(id string) (*Route, error) {
+func (rm *RouteManager) Get(id string) (*defines.Route, error) {
 	rm.Lock()
 	defer rm.Unlock()
 	route, ok := rm.routes[id]
@@ -75,26 +78,26 @@ func (rm *RouteManager) Get(id string) (*Route, error) {
 	return route, nil
 }
 
-func (rm *RouteManager) GetAll() ([]*Route, error) {
+func (rm *RouteManager) GetAll() ([]*defines.Route, error) {
 	rm.Lock()
 	defer rm.Unlock()
-	routes := make([]*Route, 0)
+	routes := make([]*defines.Route, 0)
 	for _, route := range rm.routes {
 		routes = append(routes, route)
 	}
 	return routes, nil
 }
 
-func (rm *RouteManager) Add(route *Route) error {
+func (rm *RouteManager) Add(route *defines.Route) error {
 	rm.Lock()
 	defer rm.Unlock()
-	route.closer = make(chan bool)
+	route.Closer = make(chan bool)
 	rm.routes[route.ID] = route
 	go func() {
-		logstream := make(chan *Log)
+		logstream := make(chan *defines.Log)
 		defer close(logstream)
 		go streamer(route, logstream)
-		rm.attacher.Listen(route.Source, logstream, route.closer)
+		rm.attacher.Listen(route.Source, logstream, route.Closer)
 	}()
 	if rm.persistor != nil {
 		if err := rm.persistor.Add(route); err != nil {
@@ -108,8 +111,8 @@ func (rm *RouteManager) Remove(id string) bool {
 	rm.Lock()
 	defer rm.Unlock()
 	route, ok := rm.routes[id]
-	if ok && route.closer != nil {
-		route.closer <- true
+	if ok && route.Closer != nil {
+		route.Closer <- true
 	}
 	delete(rm.routes, id)
 	if rm.persistor != nil {
@@ -124,13 +127,13 @@ func (fs RouteFileStore) Filename(id string) string {
 	return string(fs) + "/" + id + ".json"
 }
 
-func (fs RouteFileStore) Get(id string) (*Route, error) {
+func (fs RouteFileStore) Get(id string) (*defines.Route, error) {
 	file, err := os.Open(fs.Filename(id))
 	if err != nil {
 		return nil, err
 	}
-	route := new(Route)
-	if err = unmarshal(file, route); err != nil {
+	route := new(defines.Route)
+	if err = utils.Unmarshal(file, route); err != nil {
 		return nil, err
 	}
 	if route.ID == "" {
@@ -139,12 +142,12 @@ func (fs RouteFileStore) Get(id string) (*Route, error) {
 	return route, nil
 }
 
-func (fs RouteFileStore) GetAll() ([]*Route, error) {
+func (fs RouteFileStore) GetAll() ([]*defines.Route, error) {
 	files, err := ioutil.ReadDir(string(fs))
 	if err != nil {
 		return nil, err
 	}
-	var routes []*Route
+	var routes []*defines.Route
 	for _, file := range files {
 		fileparts := strings.Split(file.Name(), ".")
 		if len(fileparts) > 1 && fileparts[1] == "json" {
@@ -152,14 +155,14 @@ func (fs RouteFileStore) GetAll() ([]*Route, error) {
 			if err == nil {
 				routes = append(routes, route)
 			}
-			route.loadBackends()
+			route.LoadBackends()
 		}
 	}
 	return routes, nil
 }
 
-func (fs RouteFileStore) Add(route *Route) error {
-	return ioutil.WriteFile(fs.Filename(route.ID), marshal(route), 0644)
+func (fs RouteFileStore) Add(route *defines.Route) error {
+	return ioutil.WriteFile(fs.Filename(route.ID), utils.Marshal(route), 0644)
 }
 
 func (fs RouteFileStore) Remove(id string) bool {

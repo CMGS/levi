@@ -1,4 +1,4 @@
-package main
+package defines
 
 import (
 	"testing"

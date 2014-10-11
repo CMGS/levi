@@ -1,9 +1,11 @@
-package main
+package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -30,12 +32,12 @@ func UrlJoin(strs ...string) string {
 
 func WritePid(path string) {
 	if err := ioutil.WriteFile(path, []byte(strconv.Itoa(os.Getpid())), 0755); err != nil {
-		logger.Assert(err, "Save pid file failed")
+		Logger.Assert(err, "Save pid file failed")
 	}
 }
 
 func GetBuffer() io.Writer {
-	if logger.Mode {
+	if Logger.Mode {
 		return os.Stdout
 	} else {
 		return FakeOut{}
@@ -126,4 +128,24 @@ func MakeWrapper(fptr interface{}) {
 	fn := reflect.ValueOf(fptr).Elem()
 	v := reflect.MakeFunc(fn.Type(), maker)
 	fn.Set(v)
+}
+
+func Marshal(obj interface{}) []byte {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		log.Println("marshal:", err)
+	}
+	return bytes
+}
+
+func Unmarshal(input io.ReadCloser, obj interface{}) error {
+	body, err := ioutil.ReadAll(input)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(body, obj)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,6 +1,10 @@
 package main
 
-import "sync"
+import (
+	"sync"
+
+	. "./utils"
+)
 
 type Deploy struct {
 	wg    *sync.WaitGroup
@@ -16,7 +20,7 @@ func (self *Deploy) doDeploy() {
 			if apptask.Tasks == nil {
 				return
 			}
-			logger.Info("Appname", apptask.Name)
+			Logger.Info("Appname", apptask.Name)
 			env := &Env{apptask.Name, apptask.Uid}
 			apptask.Deploy(env, self.nginx)
 			apptask.Wait()
@@ -25,8 +29,8 @@ func (self *Deploy) doDeploy() {
 }
 
 func (self *Deploy) Deploy() {
-	logger.Debug("Got tasks", len(self.tasks))
-	logger.Debug(self.nginx.upstreams)
+	Logger.Debug("Got tasks", len(self.tasks))
+	Logger.Debug(self.nginx.upstreams)
 	//Do Deploy
 	self.doDeploy()
 	//Wait For Container Control Finish

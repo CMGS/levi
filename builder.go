@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	. "./utils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/juju/utils/tar"
 	"github.com/libgit2/git2go"
@@ -81,7 +82,7 @@ func (self *Builder) Build() error {
 
 func (self *Builder) fetchCode() error {
 	repo, err := git.Clone(self.repoURL, self.codeDir, &git.CloneOptions{})
-	logger.Debug(self.repoURL, self.codeDir)
+	Logger.Debug(self.repoURL, self.codeDir)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func (self *Builder) fetchCode() error {
 }
 
 func (self *Builder) createDockerFile() error {
-	logger.Debug(self.dockerFilePath)
+	Logger.Debug(self.dockerFilePath)
 	f, err := os.Create(self.dockerFilePath)
 	if err != nil {
 		return err
@@ -130,7 +131,7 @@ func (self *Builder) createDockerFile() error {
 }
 
 func (self *Builder) createTar() error {
-	logger.Debug(self.tarPath)
+	Logger.Debug(self.tarPath)
 
 	file, _ := os.Create(self.tarPath)
 	defer file.Close()
@@ -179,7 +180,7 @@ func (self *Builder) clear() {
 	defer os.RemoveAll(self.workDir)
 	images, err := Docker.ListImages(false)
 	if err != nil {
-		logger.Debug(err)
+		Logger.Debug(err)
 	}
 	for _, image := range images {
 		flag := false

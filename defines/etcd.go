@@ -1,8 +1,9 @@
-package main
+package defines
 
 import (
 	"strings"
 
+	"../utils"
 	"github.com/coreos/go-etcd/etcd"
 )
 
@@ -15,22 +16,20 @@ type EtcdWrapper struct {
 	DeleteDir func(string) (*etcd.Response, error)
 }
 
-var Etcd *EtcdWrapper
-
-func NewEtcd(machines []string) *EtcdWrapper {
+func NewEtcd(machines []string, sync bool) *EtcdWrapper {
 	var client *etcd.Client
 	if strings.HasPrefix(machines[0], "https://") {
-		logger.Assert(nil, "TLS not support")
+		utils.Logger.Assert(nil, "TLS not support")
 	} else {
 		client = etcd.NewClient(machines)
 	}
 
-	if config.Etcd.Sync {
+	if sync {
 		client.SyncCluster()
 	}
 
 	e := &EtcdWrapper{Client: client}
 	var makeEtcdWrapper func(*EtcdWrapper, *etcd.Client) *EtcdWrapper
-	MakeWrapper(&makeEtcdWrapper)
+	utils.MakeWrapper(&makeEtcdWrapper)
 	return makeEtcdWrapper(e, client)
 }

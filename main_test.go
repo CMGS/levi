@@ -46,7 +46,7 @@ func MakeMockedWrapper(fptr interface{}) {
 			field := wrapper.Field(i)
 			fd, ok := client.Type().MethodByName(wrapperType.Field(i).Name)
 			if !ok {
-				logger.Info("Reflect Failed")
+				Logger.Info("Reflect Failed")
 				continue
 			}
 			fdt := fd.Type

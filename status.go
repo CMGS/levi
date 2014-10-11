@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	. "./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -17,14 +18,14 @@ func NewStatus() *StatusMoniter {
 	status := &StatusMoniter{}
 	status.events = make(chan *docker.APIEvents)
 	status.Removable = map[string]struct{}{}
-	logger.Assert(Docker.AddEventListener(status.events), "Attacher")
+	Logger.Assert(Docker.AddEventListener(status.events), "Attacher")
 	return status
 }
 
 func (self *StatusMoniter) Listen() {
-	logger.Info("Status Monitor Start")
+	Logger.Info("Status Monitor Start")
 	for event := range self.events {
-		logger.Debug("Status:", event.Status, event.ID, event.From)
+		Logger.Debug("Status:", event.Status, event.ID, event.From)
 		if _, ok := self.Removable[event.ID]; !ok {
 			continue
 		}
@@ -46,15 +47,15 @@ func (self *StatusMoniter) getStatus(s string) string {
 func (self *StatusMoniter) Report(id string) {
 	containers, err := Docker.ListContainers(docker.ListContainersOptions{All: true})
 	if err != nil {
-		logger.Info(err, "Load")
+		Logger.Info(err, "Load")
 	}
 
 	result := &TaskResult{Id: id}
 	result.Status = []*StatusInfo{}
 
-	logger.Info("Load container")
+	Logger.Info("Load container")
 	for _, container := range containers {
-		logger.Debug("Container", container)
+		Logger.Debug("Container", container)
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
@@ -64,7 +65,7 @@ func (self *StatusMoniter) Report(id string) {
 		result.Status = append(result.Status, s)
 	}
 	if err := Ws.WriteJSON(result); err != nil {
-		logger.Info(err, result)
+		Logger.Info(err, result)
 	}
 }
 
@@ -74,13 +75,13 @@ func (self *StatusMoniter) die(id string) {
 
 	container, err := Docker.InspectContainer(id)
 	if err != nil {
-		logger.Info("Status inspect docker failed", err)
+		Logger.Info("Status inspect docker failed", err)
 		return
 	}
 	appname := self.getName(container.Name)
 	result.Status[0] = &StatusInfo{STATUS_DIE, appname, id}
 	if err := Ws.WriteJSON(result); err != nil {
-		logger.Info(err, result)
+		Logger.Info(err, result)
 	}
 }
 
