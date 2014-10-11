@@ -27,6 +27,11 @@ func NewAttachManager(client *defines.DockerWrapper) *AttachManager {
 	return m
 }
 
+func (m *AttachManager) Attached(id string) bool {
+	_, ok := m.attached[id]
+	return ok
+}
+
 func (m *AttachManager) Attach(id, name string) {
 	success := make(chan struct{})
 	failure := make(chan error)

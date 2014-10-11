@@ -63,12 +63,15 @@ func (self *StatusMoniter) Report(id string) {
 
 	Logger.Info("Load container")
 	for _, container := range containers {
-		Logger.Debug("Container", container)
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
 		name := self.getName(container.Names[0])
-		self.lenz.Attacher.Attach(container.ID[:12], name)
+		shortID := container.ID[:12]
+		Logger.Debug("Container", name, shortID)
+		if !self.lenz.Attacher.Attached(shortID) {
+			self.lenz.Attacher.Attach(shortID, name)
+		}
 		status := self.getStatus(container.Status)
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, name, container.ID}
