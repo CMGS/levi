@@ -1,8 +1,9 @@
-package defines
+package main
 
 import (
 	"testing"
 
+	. "./defines"
 	"github.com/fsouza/go-dockerclient"
 )
 

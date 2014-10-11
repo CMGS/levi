@@ -30,7 +30,12 @@ func (self *StatusMoniter) Listen() {
 			continue
 		}
 		if event.Status == "start" {
-			self.lenz.Attacher.Attach(event.ID[:12])
+			container, err := Docker.InspectContainer(event.ID)
+			if err != nil {
+				Logger.Info("Status:", "Inspect Container", event.ID, "Failed")
+				return
+			}
+			self.lenz.Attacher.Attach(event.ID[:12], self.getName(container.Name))
 		}
 		if event.Status == "die" {
 			self.die(event.ID)
@@ -62,10 +67,11 @@ func (self *StatusMoniter) Report(id string) {
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
-		self.lenz.Attacher.Attach(container.ID[:12])
+		name := self.getName(container.Names[0])
+		self.lenz.Attacher.Attach(container.ID[:12], name)
 		status := self.getStatus(container.Status)
 		self.Removable[container.ID] = struct{}{}
-		s := &StatusInfo{status, self.getName(container.Names[0]), container.ID}
+		s := &StatusInfo{status, name, container.ID}
 		result.Status = append(result.Status, s)
 	}
 	if err := Ws.WriteJSON(result); err != nil {

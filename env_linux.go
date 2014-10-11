@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path"
 	"strconv"
+
+	. "./utils"
 )
 
 func (self *Env) CheckUser() bool {

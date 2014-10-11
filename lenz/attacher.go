@@ -27,13 +27,7 @@ func NewAttachManager(client *defines.DockerWrapper) *AttachManager {
 	return m
 }
 
-func (m *AttachManager) Attach(id string) {
-	container, err := m.client.InspectContainer(id)
-	if err != nil {
-		Logger.Info(err, "attacher")
-		return
-	}
-	name := container.Name[1:]
+func (m *AttachManager) Attach(id, name string) {
 	success := make(chan struct{})
 	failure := make(chan error)
 	outrd, outwr := io.Pipe()
