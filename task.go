@@ -157,6 +157,12 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 		return
 	}
 	container, err := image.Run(job, self.Uid)
+	defer func() {
+		// Record normal container
+		if !job.IsTest() && self.result.Add[index] != "" {
+			Status.Removable[container.ID] = struct{}{}
+		}
+	}()
 	if err != nil {
 		Logger.Info("Run Image", self.Name, "@", job.Version, "Failed", err)
 		return
@@ -167,10 +173,6 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 		nginx.SetUpdate(self.Name)
 	}
 	self.result.Add[index] = container.ID
-	// Record normal container
-	if !job.IsTest() {
-		Status.Removable[container.ID] = struct{}{}
-	}
 	Logger.Info("Add Finished", container.ID)
 }
 
