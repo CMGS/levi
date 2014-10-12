@@ -26,19 +26,19 @@ func (self *StatusMoniter) Listen() {
 	Logger.Info("Status Monitor Start")
 	for event := range self.events {
 		Logger.Debug("Status:", event.Status, event.ID, event.From)
-		if _, ok := self.Removable[event.ID]; !ok || event.Status != "start" {
-			continue
+		if _, ok := self.Removable[event.ID]; ok && event.Status == "die" {
+			self.die(event.ID)
 		}
-		if event.Status == "start" {
+		if strings.HasPrefix(event.From, config.Docker.Registry) && event.Status == "start" {
 			container, err := Docker.InspectContainer(event.ID)
 			if err != nil {
 				Logger.Info("Status:", "Inspect Container", event.ID, "Failed")
-				return
+				continue
 			}
-			self.lenz.Attacher.Attach(event.ID[:12], self.getName(container.Name))
-		}
-		if event.Status == "die" {
-			self.die(event.ID)
+			shortID := event.ID[:12]
+			if !self.lenz.Attacher.Attached(shortID) {
+				self.lenz.Attacher.Attach(shortID, self.getName(container.Name))
+			}
 		}
 	}
 }
@@ -68,11 +68,11 @@ func (self *StatusMoniter) Report(id string) {
 		}
 		name := self.getName(container.Names[0])
 		shortID := container.ID[:12]
-		Logger.Debug("Container", name, shortID)
-		if !self.lenz.Attacher.Attached(shortID) {
+		status := self.getStatus(container.Status)
+		Logger.Debug("Container", name, shortID, status)
+		if !self.lenz.Attacher.Attached(shortID) && status != STATUS_DIE {
 			self.lenz.Attacher.Attach(shortID, name)
 		}
-		status := self.getStatus(container.Status)
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, name, container.ID}
 		result.Status = append(result.Status, s)
