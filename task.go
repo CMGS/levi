@@ -118,19 +118,20 @@ func (self *AppTask) Wait() {
 	if err := Ws.WriteJSON(self.result); err != nil {
 		Logger.Info(err, self.result)
 	}
-	cids := map[string]string{}
-	if len(self.Tasks.Add) == 0 {
-		return
-	}
-	for index, job := range self.Tasks.Add {
-		if !job.IsTest() {
-			continue
-		}
-		cids[job.Test] = self.result.Add[index]
-	}
-	if len(cids) != 0 {
-		tester := Tester{self.Id, cids}
-		tester.WaitForTester()
+	if len(self.Tasks.Add) != 0 {
+		go func() {
+			cids := map[string]struct{}{}
+			for index, job := range self.Tasks.Add {
+				if !job.IsTest() {
+					continue
+				}
+				cids[self.result.Add[index]] = struct{}{}
+			}
+			if len(cids) != 0 {
+				tester := Tester{self.Id, cids}
+				tester.WaitForTester()
+			}
+		}()
 	}
 }
 
