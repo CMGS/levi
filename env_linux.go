@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path"
 	"strconv"
+
+	. "./utils"
 )
 
 func (self *Env) CheckUser() bool {
@@ -18,7 +20,7 @@ func (self *Env) CheckUser() bool {
 
 func (self *Env) CreateUser() {
 	if self.CheckUser() {
-		logger.Info("User", self.appname, "exist")
+		Logger.Info("User", self.appname, "exist")
 		return
 	}
 	cmd := exec.Command(
@@ -29,7 +31,7 @@ func (self *Env) CreateUser() {
 	)
 	err := cmd.Run()
 	if err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 	}
 }
 

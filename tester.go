@@ -1,5 +1,7 @@
 package main
 
+import . "./utils"
+
 type Tester struct {
 	id   string
 	cids map[string]string
@@ -24,8 +26,8 @@ func (self *Tester) WaitForTester() {
 		RemoveContainer(cid, true, false)
 	}
 
-	logger.Info("Test finished", self.id)
+	Logger.Info("Test finished", self.id)
 	if err := Ws.WriteJSON(result); err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 	}
 }

@@ -3,6 +3,8 @@ package main
 import (
 	"sync"
 	"time"
+
+	. "./utils"
 )
 
 type Levi struct {
@@ -45,7 +47,7 @@ func (self *Levi) Loop() {
 	for !self.finish {
 		select {
 		case err := <-self.err:
-			logger.Info(err)
+			Logger.Info(err)
 			if len(self.deploy.tasks) != 0 {
 				self.deploy.Deploy()
 			}
@@ -60,7 +62,7 @@ func (self *Levi) Loop() {
 				self.deploy.Deploy()
 			}
 		case <-time.After(time.Second * time.Duration(config.TaskInterval)):
-			logger.Debug("Time Check")
+			Logger.Debug("Time Check")
 			if len(self.deploy.tasks) != 0 {
 				self.deploy.Deploy()
 			}

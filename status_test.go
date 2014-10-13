@@ -31,7 +31,7 @@ func Test_GetStatus(t *testing.T) {
 }
 
 func Test_StatusReport(t *testing.T) {
-	id := "xxx"
+	id := "xxxxxxxxxxxx"
 	Docker.ListContainers = func(opt docker.ListContainersOptions) ([]docker.APIContainers, error) {
 		c1 := docker.APIContainers{
 			Names:  []string{"/test_1234"},
@@ -42,7 +42,7 @@ func Test_StatusReport(t *testing.T) {
 		c := []docker.APIContainers{c1}
 		return c, nil
 	}
-	tid := "zz"
+	tid := "zzzzzzzzzzzz"
 	Ws.WriteJSON = func(d interface{}) error {
 		x, ok := d.(*TaskResult)
 		if !ok {

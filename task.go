@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"sync"
+
+	. "./utils"
 )
 
 type BuildTask struct {
@@ -114,7 +116,7 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 func (self *AppTask) Wait() {
 	self.wg.Wait()
 	if err := Ws.WriteJSON(self.result); err != nil {
-		logger.Info(err, self.result)
+		Logger.Info(err, self.result)
 	}
 	cids := map[string]string{}
 	if len(self.Tasks.Add) == 0 {
@@ -137,47 +139,49 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 	job := self.Tasks.Add[index]
 	env.CreateUser()
 	if err := env.CreateConfigFile(job); err != nil {
-		logger.Info("Create app config failed", err)
+		Logger.Info("Create app config failed", err)
 		return
 	}
 	if err := env.CreatePermdir(job); err != nil {
-		logger.Info("Create app permdir failed", err)
+		Logger.Info("Create app permdir failed", err)
 		return
 	}
-	logger.Info("Add Container", self.Name, "@", job.Version)
+	Logger.Info("Add Container", self.Name, "@", job.Version)
 	image := Image{
 		self.Name,
 		job.Version,
 		job.Bind,
 	}
 	if err := image.Pull(); err != nil {
-		logger.Info("Pull Image", self.Name, "@", job.Version, "Failed", err)
+		Logger.Info("Pull Image", self.Name, "@", job.Version, "Failed", err)
 		return
 	}
 	container, err := image.Run(job, self.Uid)
+	defer func() {
+		// Record normal container
+		if !job.IsTest() && self.result.Add[index] != "" {
+			Status.Removable[container.ID] = struct{}{}
+		}
+	}()
 	if err != nil {
-		logger.Info("Run Image", self.Name, "@", job.Version, "Failed", err)
+		Logger.Info("Run Image", self.Name, "@", job.Version, "Failed", err)
 		return
 	}
-	logger.Info("Run Image", self.Name, "@", job.Version, "Succeed", container.ID)
+	Logger.Info("Run Image", self.Name, "@", job.Version, "Succeed", container.ID)
 	if job.ShouldExpose() {
 		nginx.New(self.Name, container.ID, job.ident)
 		nginx.SetUpdate(self.Name)
 	}
 	self.result.Add[index] = container.ID
-	// Record normal container
-	if !job.IsTest() {
-		Status.Removable[container.ID] = struct{}{}
-	}
-	logger.Info("Add Finished", container.ID)
+	Logger.Info("Add Finished", container.ID)
 }
 
 func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	defer self.wg.Done()
 	job := self.Tasks.Remove[index]
-	logger.Info("Remove Container", self.Name, job.Container)
+	Logger.Info("Remove Container", self.Name, job.Container)
 	if _, ok := Status.Removable[job.Container]; !ok {
-		logger.Info("Not Record")
+		Logger.Info("Not Record")
 		return
 	}
 	delete(Status.Removable, job.Container)
@@ -191,19 +195,19 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 		appname: self.Name,
 	}
 	if err := container.Stop(); err != nil {
-		logger.Info("Stop Container", job.Container, "failed", err)
+		Logger.Info("Stop Container", job.Container, "failed", err)
 		return
 	}
 	// Test container will be automatic removed
 	if err := RemoveContainer(job.Container, false, job.IsRemoveImage()); err != nil {
-		logger.Info("Remove Container", job.Container, "failed", err)
+		Logger.Info("Remove Container", job.Container, "failed", err)
 		return
 	}
 	if ok := nginx.Remove(self.Name, job.Container); ok {
 		nginx.SetUpdate(self.Name)
 	}
 	self.result.Remove[index] = true
-	logger.Info("Remove Finished", self.result.Remove[index])
+	Logger.Info("Remove Finished", self.result.Remove[index])
 }
 
 func (self *AppTask) BuildImage(index int) {
@@ -211,11 +215,11 @@ func (self *AppTask) BuildImage(index int) {
 	job := self.Tasks.Build[index]
 	builder := NewBuilder(self.Name, job)
 	if err := builder.Build(); err != nil {
-		logger.Info(err)
+		Logger.Info(err)
 		return
 	}
 	self.result.Build[index] = builder.repoTag
-	logger.Info("Build Finished", self.result.Build[index])
+	Logger.Info("Build Finished", self.result.Build[index])
 }
 
 type TestResult struct {

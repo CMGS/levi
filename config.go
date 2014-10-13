@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	. "./utils"
 	"gopkg.in/yaml.v1"
 )
 
@@ -37,6 +38,11 @@ type EtcdConfig struct {
 	Machines []string
 }
 
+type LenzConfig struct {
+	Routes   string
+	Forwards string
+}
+
 type LeviConfig struct {
 	Name            string
 	Master          string
@@ -51,13 +57,14 @@ type LeviConfig struct {
 	Docker DockerConfig
 	App    AppConfig
 	Etcd   EtcdConfig
+	Lenz   LenzConfig
 }
 
 var config = LeviConfig{}
 
 func LoadConfig() {
 	var configPath string
-	flag.BoolVar(&logger.Mode, "DEBUG", false, "enable debug")
+	flag.BoolVar(&Logger.Mode, "DEBUG", false, "enable debug")
 	flag.StringVar(&configPath, "c", "levi.yaml", "config file")
 	flag.Parse()
 	load(configPath)
@@ -65,16 +72,16 @@ func LoadConfig() {
 
 func load(configPath string) {
 	if _, err := os.Stat(configPath); err != nil {
-		logger.Assert(err, "config file invaild")
+		Logger.Assert(err, "config file invaild")
 	}
 
 	b, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		logger.Assert(err, "Read config file failed")
+		Logger.Assert(err, "Read config file failed")
 	}
 
 	if err := yaml.Unmarshal(b, &config); err != nil {
-		logger.Assert(err, "Load config file failed")
+		Logger.Assert(err, "Load config file failed")
 	}
-	logger.Debug(config)
+	Logger.Debug(config)
 }

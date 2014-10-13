@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"io"
@@ -35,7 +35,7 @@ func Test_WritePid(t *testing.T) {
 
 func Test_GetBuffer(t *testing.T) {
 	f := func(mod bool, o io.Writer) {
-		logger.Mode = mod
+		Logger.Mode = mod
 		b := GetBuffer()
 		if b != o {
 			t.Error("Buffer invaild")

@@ -3,6 +3,8 @@ package main
 import (
 	"reflect"
 
+	. "./defines"
+	"./utils"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gorilla/websocket"
@@ -12,9 +14,9 @@ func InitTest() {
 	load("levi.yaml")
 	Docker = NewDocker(config.Docker.Endpoint)
 	MockDocker(Docker)
-	Ws = NewWebSocket(config.Master)
+	Ws = NewWebSocket(config.Master, config.ReadBufferSize, config.WriteBufferSize)
 	MockWebSocket(Ws)
-	Etcd = NewEtcd(config.Etcd.Machines)
+	Etcd = NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
 	MockEtcd(Etcd)
 	Status = NewStatus()
 }
@@ -46,7 +48,7 @@ func MakeMockedWrapper(fptr interface{}) {
 			field := wrapper.Field(i)
 			fd, ok := client.Type().MethodByName(wrapperType.Field(i).Name)
 			if !ok {
-				logger.Info("Reflect Failed")
+				utils.Logger.Info("Reflect Failed")
 				continue
 			}
 			fdt := fd.Type
