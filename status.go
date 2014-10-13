@@ -10,13 +10,11 @@ import (
 type StatusMoniter struct {
 	events    chan *docker.APIEvents
 	Removable map[string]struct{}
-	lenz      *Lenz
 }
 
 func NewStatus() *StatusMoniter {
 	status := &StatusMoniter{}
 	status.events = make(chan *docker.APIEvents)
-	status.lenz = NewLenz()
 	status.Removable = map[string]struct{}{}
 	Logger.Assert(Docker.AddEventListener(status.events), "Attacher")
 	return status
@@ -36,8 +34,8 @@ func (self *StatusMoniter) Listen() {
 				continue
 			}
 			shortID := event.ID[:12]
-			if !self.lenz.Attacher.Attached(shortID) {
-				self.lenz.Attacher.Attach(shortID, self.getName(container.Name))
+			if !Lenz.Attacher.Attached(shortID) {
+				Lenz.Attacher.Attach(shortID, self.getName(container.Name))
 			}
 		}
 	}
@@ -70,8 +68,8 @@ func (self *StatusMoniter) Report(id string) {
 		shortID := container.ID[:12]
 		status := self.getStatus(container.Status)
 		Logger.Debug("Container", name, shortID, status)
-		if !self.lenz.Attacher.Attached(shortID) && status != STATUS_DIE {
-			self.lenz.Attacher.Attach(shortID, name)
+		if !Lenz.Attacher.Attached(shortID) && status != STATUS_DIE {
+			Lenz.Attacher.Attach(shortID, name)
 		}
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, name, container.ID}

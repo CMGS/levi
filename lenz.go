@@ -8,14 +8,14 @@ import (
 	. "./utils"
 )
 
-type Lenz struct {
+type LenzForwarder struct {
 	Attacher *lenz.AttachManager
 	Router   *lenz.RouteManager
 	Routefs  lenz.RouteFileStore
 }
 
-func NewLenz() *Lenz {
-	obj := &Lenz{}
+func NewLenz() *LenzForwarder {
+	obj := &LenzForwarder{}
 	obj.Attacher = lenz.NewAttachManager(Docker)
 	obj.Router = lenz.NewRouteManager(obj.Attacher)
 	obj.Routefs = lenz.RouteFileStore(config.Lenz.Routes)
