@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"strings"
 
 	"./defines"
 	"./lenz"
@@ -21,9 +20,9 @@ func NewLenz() *Lenz {
 	obj.Router = lenz.NewRouteManager(obj.Attacher)
 	obj.Routefs = lenz.RouteFileStore(config.Lenz.Routes)
 
-	if config.Lenz.Forwards != "" {
+	if len(config.Lenz.Forwards) > 0 {
 		Logger.Info("Routing all to", config.Lenz.Forwards)
-		target := defines.Target{Addrs: strings.Split(config.Lenz.Forwards, ",")}
+		target := defines.Target{Addrs: config.Lenz.Forwards}
 		route := defines.Route{ID: "lenz_default", Target: &target}
 		route.LoadBackends()
 		obj.Router.Add(&route)

@@ -40,7 +40,7 @@ type EtcdConfig struct {
 
 type LenzConfig struct {
 	Routes   string
-	Forwards string
+	Forwards []string
 }
 
 type LeviConfig struct {
