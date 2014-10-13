@@ -3,19 +3,21 @@ package defines
 import "github.com/CMGS/consistent"
 
 type AttachEvent struct {
-	Type string
-	ID   string
-	Name string
+	Type    string
+	ID      string
+	Name    string
+	AppID   string
+	AppType string
 }
 
 type Log struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Type    string `json:"type"`
+	AppType string `json:"apptype"`
+	AppID   string `json:"appid"`
 	Data    string `json:"data"`
-	Appname string `json:"appname"`
 	Tag     string `json:"tag"`
-	Port    string `json:"port"`
 }
 
 type Route struct {

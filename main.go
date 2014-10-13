@@ -14,11 +14,13 @@ var Etcd *defines.EtcdWrapper
 var Docker *defines.DockerWrapper
 
 var Status *StatusMoniter
+var Lenz *LenzForwarder
 
 func main() {
 	LoadConfig()
 	Etcd = defines.NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
 	Docker = defines.NewDocker(config.Docker.Endpoint)
+	Lenz = NewLenz()
 	Status = NewStatus()
 
 	defer os.Remove(config.PidFile)

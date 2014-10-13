@@ -13,9 +13,15 @@ func init() {
 func Test_GetName(t *testing.T) {
 	var containerName string
 	containerName = "test_1234"
-	appname := Status.getName(containerName)
+	appname, appid, apptype := Status.getAppInfo(containerName)
 	if appname != "test" {
 		t.Error("Get appname failed")
+	}
+	if appid != "1234" {
+		t.Error("Get appid failed")
+	}
+	if apptype != DEFAULT_TYPE {
+		t.Error("Get apptype failed")
 	}
 }
 

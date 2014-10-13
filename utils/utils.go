@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -133,7 +132,7 @@ func MakeWrapper(fptr interface{}) {
 func Marshal(obj interface{}) []byte {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
-		log.Println("marshal:", err)
+		Logger.Info("Utils Marshal:", err)
 	}
 	return bytes
 }

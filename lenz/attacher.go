@@ -32,7 +32,10 @@ func (m *AttachManager) Attached(id string) bool {
 	return ok
 }
 
-func (m *AttachManager) Attach(id, name string) {
+func (m *AttachManager) Attach(id, name, aid, atype string) {
+	if m.Attached(id) {
+		return
+	}
 	success := make(chan struct{})
 	failure := make(chan error)
 	outrd, outwr := io.Pipe()
@@ -55,7 +58,7 @@ func (m *AttachManager) Attach(id, name string) {
 			close(success)
 			failure <- err
 		}
-		m.send(&defines.AttachEvent{Type: "detach", ID: id, Name: name})
+		m.send(&defines.AttachEvent{Type: "detach", ID: id, Name: name, AppID: aid, AppType: atype})
 		m.Lock()
 		delete(m.attached, id)
 		m.Unlock()
@@ -63,10 +66,10 @@ func (m *AttachManager) Attach(id, name string) {
 	_, ok := <-success
 	if ok {
 		m.Lock()
-		m.attached[id] = NewLogPump(outrd, errrd, id, name)
+		m.attached[id] = NewLogPump(outrd, errrd, id, name, aid, atype)
 		m.Unlock()
 		success <- struct{}{}
-		m.send(&defines.AttachEvent{ID: id, Name: name, Type: "attach"})
+		m.send(&defines.AttachEvent{Type: "attach", ID: id, Name: name, AppID: aid, AppType: atype})
 		Logger.Debug("Lenz Attach:", id, "success")
 		return
 	}
@@ -88,7 +91,7 @@ func (m *AttachManager) addListener(ch chan *defines.AttachEvent) {
 	m.channels[ch] = struct{}{}
 	go func() {
 		for id, pump := range m.attached {
-			ch <- &defines.AttachEvent{ID: id, Name: pump.Name, Type: "attach"}
+			ch <- &defines.AttachEvent{Type: "attach", ID: id, Name: pump.Name, AppID: pump.AppID, AppType: pump.AppType}
 		}
 	}()
 }
@@ -140,13 +143,17 @@ type LogPump struct {
 	sync.Mutex
 	ID       string
 	Name     string
+	AppID    string
+	AppType  string
 	channels map[chan *defines.Log]struct{}
 }
 
-func NewLogPump(stdout, stderr io.Reader, id, name string) *LogPump {
+func NewLogPump(stdout, stderr io.Reader, id, name, aid, atype string) *LogPump {
 	obj := &LogPump{
 		ID:       id,
 		Name:     name,
+		AppID:    aid,
+		AppType:  atype,
 		channels: make(map[chan *defines.Log]struct{}),
 	}
 	pump := func(typ string, source io.Reader) {
@@ -160,10 +167,12 @@ func NewLogPump(stdout, stderr io.Reader, id, name string) *LogPump {
 				return
 			}
 			obj.send(&defines.Log{
-				Data: strings.TrimSuffix(string(data), "\n"),
-				ID:   id,
-				Name: name,
-				Type: typ,
+				Data:    strings.TrimSuffix(string(data), "\n"),
+				ID:      id,
+				Name:    name,
+				AppID:   aid,
+				AppType: atype,
+				Type:    typ,
 			})
 		}
 	}

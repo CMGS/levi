@@ -12,8 +12,8 @@ func init() {
 }
 
 func Test_WaitForTester(t *testing.T) {
-	tester := Tester{"xxxxxx", map[string]string{}}
-	tester.cids["abc"] = "def"
+	tester := Tester{"xxxxxx", map[string]struct{}{}}
+	tester.cids["abc"] = struct{}{}
 	Docker.WaitContainer = func(id string) (int, error) {
 		return 0, errors.New(id)
 	}
@@ -33,7 +33,7 @@ func Test_WaitForTester(t *testing.T) {
 		if r.ExitCode != 0 {
 			t.Error("Wrong Exit Code")
 		}
-		if r.Err != "def" {
+		if r.Err != "abc" {
 			t.Error("Wrong ErrStr")
 		}
 		return nil

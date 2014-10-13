@@ -2,28 +2,27 @@ package main
 
 import (
 	"os"
-	"strings"
 
 	"./defines"
 	"./lenz"
 	. "./utils"
 )
 
-type Lenz struct {
+type LenzForwarder struct {
 	Attacher *lenz.AttachManager
 	Router   *lenz.RouteManager
 	Routefs  lenz.RouteFileStore
 }
 
-func NewLenz() *Lenz {
-	obj := &Lenz{}
+func NewLenz() *LenzForwarder {
+	obj := &LenzForwarder{}
 	obj.Attacher = lenz.NewAttachManager(Docker)
-	obj.Router = lenz.NewRouteManager(obj.Attacher)
+	obj.Router = lenz.NewRouteManager(obj.Attacher, config.Lenz.Stdout)
 	obj.Routefs = lenz.RouteFileStore(config.Lenz.Routes)
 
-	if config.Lenz.Forwards != "" {
+	if len(config.Lenz.Forwards) > 0 {
 		Logger.Info("Routing all to", config.Lenz.Forwards)
-		target := defines.Target{Addrs: strings.Split(config.Lenz.Forwards, ",")}
+		target := defines.Target{Addrs: config.Lenz.Forwards}
 		route := defines.Route{ID: "lenz_default", Target: &target}
 		route.LoadBackends()
 		obj.Router.Add(&route)

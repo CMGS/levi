@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"log/syslog"
 	"net"
 	"net/url"
-	"strings"
 
 	"../defines"
 	. "../utils"
 )
 
-func streamer(route *defines.Route, logstream chan *defines.Log) {
+func streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 	var types map[string]struct{}
 	if route.Source != nil {
 		types = make(map[string]struct{})
@@ -28,48 +26,48 @@ func streamer(route *defines.Route, logstream chan *defines.Log) {
 				continue
 			}
 		}
-		appinfo := strings.SplitN(logline.Name, "_", 2)
-		logline.Appname = appinfo[0]
-		logline.Port = appinfo[1]
 		logline.Tag = route.Target.AppendTag
 
-		for offset := 0; offset < route.Backends.Len(); offset++ {
-			addr, err := route.Backends.Get(logline.Appname, offset)
-			if err != nil {
-				Logger.Debug("Get backend failed", err)
-				log.Println(logline.Appname, logline.Data)
+		switch stdout {
+		case true:
+			Logger.Info(logline)
+		default:
+			for offset := 0; offset < route.Backends.Len(); offset++ {
+				addr, err := route.Backends.Get(logline.Name, offset)
+				if err != nil {
+					Logger.Info("Get backend failed", err, logline.Name, logline.Data)
+					break
+				}
+				Logger.Debug(logline.Name, addr)
+				switch u, err := url.Parse(addr); {
+				case err != nil:
+					Logger.Info("Lenz", err)
+					route.Backends.Remove(addr)
+					continue
+				case u.Scheme == "udp":
+					if err := udpStreamer(logline, u.Host); err != nil {
+						Logger.Info("Lenz Send to", u.Host, "by udp failed", err)
+						continue
+					}
+				case u.Scheme == "tcp":
+					if err := tcpStreamer(logline, u.Host); err != nil {
+						Logger.Info("Lenz Send to", u.Host, "by tcp failed", err)
+						continue
+					}
+				case u.Scheme == "syslog":
+					if err := syslogStreamer(logline, u.Host); err != nil {
+						Logger.Info("Lenz Sent to syslog failed", err)
+						continue
+					}
+				}
 				break
 			}
-
-			Logger.Debug(logline.Appname, addr)
-			switch u, err := url.Parse(addr); {
-			case err != nil:
-				Logger.Debug("Lenz", err)
-				route.Backends.Remove(addr)
-				continue
-			case u.Scheme == "udp":
-				if err := udpStreamer(logline, u.Host); err != nil {
-					Logger.Debug("Lenz Send to", u.Host, "by udp failed", err)
-					continue
-				}
-			case u.Scheme == "tcp":
-				if err := tcpStreamer(logline, u.Host); err != nil {
-					Logger.Debug("Lenz Send to", u.Host, "by tcp failed", err)
-					continue
-				}
-			case u.Scheme == "syslog":
-				if err := syslogStreamer(logline, u.Host); err != nil {
-					Logger.Debug("Lenz Sent to syslog failed", err)
-					continue
-				}
-			}
-			break
 		}
 	}
 }
 
 func syslogStreamer(logline *defines.Log, addr string) error {
-	tag := fmt.Sprintf("%s.%s", logline.Appname, logline.Tag)
+	tag := fmt.Sprintf("%s.%s", logline.Name, logline.Tag)
 	remote, err := syslog.Dial("udp", addr, syslog.LOG_USER|syslog.LOG_INFO, tag)
 	if err != nil {
 		return err

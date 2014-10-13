@@ -4,14 +4,14 @@ import . "./utils"
 
 type Tester struct {
 	id   string
-	cids map[string]string
+	cids map[string]struct{}
 }
 
 func (self *Tester) WaitForTester() {
 	var err error
 	result := &TaskResult{Id: self.id}
 	result.Test = make(map[string]*TestResult, len(self.cids))
-	for tid, cid := range self.cids {
+	for cid, _ := range self.cids {
 		r := &TestResult{}
 		if cid != "" {
 			r.ExitCode, err = Docker.WaitContainer(cid)
@@ -21,7 +21,7 @@ func (self *Tester) WaitForTester() {
 		} else {
 			r.ExitCode = -1
 		}
-		result.Test[tid] = r
+		result.Test[cid] = r
 		// Remove test container
 		RemoveContainer(cid, true, false)
 	}
