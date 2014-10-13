@@ -33,10 +33,9 @@ func (self *StatusMoniter) Listen() {
 				Logger.Info("Status:", "Inspect Container", event.ID, "Failed")
 				continue
 			}
-			shortID := event.ID[:12]
-			if !Lenz.Attacher.Attached(shortID) {
-				Lenz.Attacher.Attach(shortID, self.getName(container.Name))
-			}
+			name, aid, at := self.getAppInfo(container.Name)
+			shortID := container.Name[:12]
+			Lenz.Attacher.Attach(shortID, name, aid, at)
 		}
 	}
 }
@@ -64,12 +63,12 @@ func (self *StatusMoniter) Report(id string) {
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
-		name := self.getName(container.Names[0])
-		shortID := container.ID[:12]
 		status := self.getStatus(container.Status)
+		name, aid, at := self.getAppInfo(container.Names[0])
+		shortID := container.ID[:12]
 		Logger.Debug("Container", name, shortID, status)
-		if !Lenz.Attacher.Attached(shortID) && status != STATUS_DIE {
-			Lenz.Attacher.Attach(shortID, name)
+		if status != STATUS_DIE {
+			Lenz.Attacher.Attach(shortID, name, aid, at)
 		}
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, name, container.ID}
@@ -89,24 +88,26 @@ func (self *StatusMoniter) die(id string) {
 		Logger.Info("Status inspect docker failed", err)
 		return
 	}
-	appname := self.getName(container.Name)
+	appname, _, _ := self.getAppInfo(container.Name)
 	result.Status[0] = &StatusInfo{STATUS_DIE, appname, id}
 	if err := Ws.WriteJSON(result); err != nil {
 		Logger.Info(err, result)
 	}
 }
 
-func (self *StatusMoniter) getName(containerName string) string {
+func (self *StatusMoniter) getAppInfo(containerName string) (string, string, string) {
 	containerName = strings.TrimLeft(containerName, "/")
 	if pos := strings.LastIndex(containerName, "_daemon_"); pos > -1 {
 		appname := containerName[:pos]
-		return appname
+		appid := containerName[pos+8:]
+		return appname, appid, DAEMON_TYPE
 	}
 	if pos := strings.LastIndex(containerName, "_test_"); pos > -1 {
 		appname := containerName[:pos]
-		return appname
+		appid := containerName[pos+6:]
+		return appname, appid, TEST_TYPE
 	}
 	appinfo := strings.Split(containerName, "_")
 	appname := strings.Join(appinfo[:len(appinfo)-1], "_")
-	return appname
+	return appname, appinfo[len(appinfo)-1], DEFAULT_TYPE
 }

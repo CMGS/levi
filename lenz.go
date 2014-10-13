@@ -17,7 +17,7 @@ type LenzForwarder struct {
 func NewLenz() *LenzForwarder {
 	obj := &LenzForwarder{}
 	obj.Attacher = lenz.NewAttachManager(Docker)
-	obj.Router = lenz.NewRouteManager(obj.Attacher)
+	obj.Router = lenz.NewRouteManager(obj.Attacher, config.Lenz.Stdout)
 	obj.Routefs = lenz.RouteFileStore(config.Lenz.Routes)
 
 	if len(config.Lenz.Forwards) > 0 {

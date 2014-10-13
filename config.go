@@ -41,6 +41,7 @@ type EtcdConfig struct {
 type LenzConfig struct {
 	Routes   string
 	Forwards []string
+	Stdout   bool
 }
 
 type LeviConfig struct {

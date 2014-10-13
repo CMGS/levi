@@ -38,4 +38,4 @@ lenz:
   forwards:
     - udp://0.0.0.0:11111
     - udp://0.0.0.0:11111
-
+  stdout: True
