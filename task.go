@@ -135,9 +135,33 @@ func (self *AppTask) Wait() {
 	}
 }
 
+func (self *AppTask) storeNewContainerInfo(index int) {
+	cid := self.result.Add[index]
+	if cid == "" {
+		return
+	}
+	job := self.Tasks.Add[index]
+	var aid, at string
+	switch {
+	case job.IsTest():
+		aid = job.Test
+		at = TEST_TYPE
+	case job.IsDaemon():
+		aid = job.Daemon
+		at = DAEMON_TYPE
+		Status.Removable[cid] = struct{}{}
+	default:
+		aid = string(job.Port)
+		at = DEFAULT_TYPE
+		Status.Removable[cid] = struct{}{}
+	}
+	Lenz.Attacher.Attach(cid[:12], self.Name, aid, at)
+}
+
 func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 	defer self.wg.Done()
 	job := self.Tasks.Add[index]
+	defer self.storeNewContainerInfo(index)
 	env.CreateUser()
 	if err := env.CreateConfigFile(job); err != nil {
 		Logger.Info("Create app config failed", err)
@@ -158,12 +182,6 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 		return
 	}
 	container, err := image.Run(job, self.Uid)
-	defer func() {
-		// Record normal container
-		if !job.IsTest() && self.result.Add[index] != "" {
-			Status.Removable[container.ID] = struct{}{}
-		}
-	}()
 	if err != nil {
 		Logger.Info("Run Image", self.Name, "@", job.Version, "Failed", err)
 		return
