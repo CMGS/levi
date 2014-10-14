@@ -24,18 +24,8 @@ func (self *StatusMoniter) Listen() {
 	Logger.Info("Status Monitor Start")
 	for event := range self.events {
 		Logger.Debug("Status:", event.Status, event.ID, event.From)
-		if _, ok := self.Removable[event.ID]; ok && event.Status == "die" {
+		if _, ok := self.Removable[event.ID]; ok && event.Status == STATUS_DIE {
 			self.die(event.ID)
-		}
-		if strings.HasPrefix(event.From, config.Docker.Registry) && event.Status == "start" {
-			container, err := Docker.InspectContainer(event.ID)
-			if err != nil {
-				Logger.Info("Status:", "Inspect Container", event.ID, "Failed")
-				continue
-			}
-			name, aid, at := self.getAppInfo(container.Name)
-			shortID := container.Name[:12]
-			Lenz.Attacher.Attach(shortID, name, aid, at)
 		}
 	}
 }
