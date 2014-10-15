@@ -18,7 +18,12 @@ func InitTest() {
 	MockWebSocket(Ws)
 	Etcd = NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
 	MockEtcd(Etcd)
-	Status = NewStatus()
+	if Status == nil {
+		Status = NewStatus()
+	}
+	if Lenz == nil {
+		Lenz = NewLenz()
+	}
 }
 
 func MockDocker(d *DockerWrapper) {

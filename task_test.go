@@ -115,7 +115,7 @@ func Test_TaskRemoveContainer(t *testing.T) {
 }
 
 func Test_TaskAddContainer(t *testing.T) {
-	cid := "12345"
+	cid := "1234567890abcdefg"
 	appname := "nbetest"
 	ver := "v1"
 	tid := "abcdefg"

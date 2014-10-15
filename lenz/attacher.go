@@ -33,6 +33,7 @@ func (m *AttachManager) Attached(id string) bool {
 }
 
 func (m *AttachManager) Attach(id, name, aid, atype string) {
+	// Not Thread Safe
 	if m.Attached(id) {
 		return
 	}
