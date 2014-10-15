@@ -38,6 +38,7 @@ func main() {
 		signal.Notify(c, syscall.SIGTERM)
 		signal.Notify(c, syscall.SIGHUP)
 		signal.Notify(c, syscall.SIGKILL)
+		signal.Notify(c, syscall.SIGQUIT)
 		utils.Logger.Info("Catch", <-c)
 		levi.Exit()
 	}()
