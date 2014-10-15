@@ -11,8 +11,6 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
-var attachLock *sync.Mutex = &sync.Mutex{}
-
 type AttachManager struct {
 	sync.Mutex
 	attached map[string]*LogPump
@@ -35,8 +33,6 @@ func (m *AttachManager) Attached(id string) bool {
 }
 
 func (m *AttachManager) Attach(id, name, aid, atype string) {
-	attachLock.Lock()
-	defer attachLock.Unlock()
 	if m.Attached(id) {
 		return
 	}
