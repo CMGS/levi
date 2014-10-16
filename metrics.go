@@ -18,11 +18,15 @@ type AppMetrics struct {
 	cid  string
 	typ  string
 	stop chan bool
+	sync.WaitGroup
 }
 
 func (self *AppMetrics) Report() {
+	self.Add(1)
+	defer self.Done()
 	defer close(self.stop)
 	var finish bool = false
+	Logger.Info("Metrics Report", self.name, self.cid, self.typ)
 	for !finish {
 		select {
 		case <-time.After(time.Second * time.Duration(config.Metrics.ReportInterval)):
@@ -66,6 +70,7 @@ func (self *AppMetrics) generate() (*MetricData, error) {
 
 func (self *AppMetrics) Stop() {
 	self.stop <- true
+	self.Wait()
 }
 
 type MetricsRecorder struct {
@@ -90,6 +95,7 @@ func (self *MetricsRecorder) Add(appname, cid, apptype string) {
 		cid,
 		apptype,
 		make(chan bool),
+		sync.WaitGroup{},
 	}
 	go self.apps[cid].Report()
 }
@@ -102,4 +108,12 @@ func (self *MetricsRecorder) Remove(cid string) {
 	}
 	self.apps[cid].Stop()
 	delete(self.apps, cid)
+}
+
+func (self *MetricsRecorder) StopAll() {
+	self.Lock()
+	defer self.Unlock()
+	for _, r := range self.apps {
+		r.Stop()
+	}
 }

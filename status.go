@@ -59,6 +59,7 @@ func (self *StatusMoniter) Report(id string) {
 		Logger.Debug("Container", name, shortID, status)
 		if status != STATUS_DIE {
 			Lenz.Attacher.Attach(shortID, name, aid, at)
+			Metrics.Add(name, shortID, at)
 		}
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, name, container.ID}
