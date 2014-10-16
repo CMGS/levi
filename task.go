@@ -141,6 +141,7 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		return
 	}
 	job := self.Tasks.Add[index]
+	shortID := cid[:12]
 	var aid, at string
 	switch {
 	case job.IsTest():
@@ -150,14 +151,14 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		aid = job.Daemon
 		at = DAEMON_TYPE
 		Status.Removable[cid] = struct{}{}
+		Metrics.Add(self.Name, shortID, at)
 	default:
 		aid = string(job.Port)
 		at = DEFAULT_TYPE
 		Status.Removable[cid] = struct{}{}
+		Metrics.Add(self.Name, shortID, at)
 	}
-	shortID := cid[:12]
 	Lenz.Attacher.Attach(shortID, self.Name, aid, at)
-	Metrics.Add(self.Name, shortID, at)
 }
 
 func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
