@@ -36,9 +36,11 @@ func (self *AppMetrics) Report() {
 				continue
 			}
 			Logger.Debug(m)
-		case finish = <-self.stop:
+		case f := <-self.stop:
+			finish = f
 		}
 	}
+	Logger.Info("Metrics Stop", self.name, self.cid, self.typ)
 }
 
 func (self *AppMetrics) generate() (*MetricData, error) {
