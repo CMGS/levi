@@ -44,6 +44,10 @@ type LenzConfig struct {
 	Stdout   bool
 }
 
+type MetricsConfig struct {
+	ReportInterval int
+}
+
 type LeviConfig struct {
 	Name            string
 	Master          string
@@ -53,12 +57,13 @@ type LeviConfig struct {
 	ReadBufferSize  int
 	WriteBufferSize int
 
-	Git    GitConfig
-	Nginx  NginxConfig
-	Docker DockerConfig
-	App    AppConfig
-	Etcd   EtcdConfig
-	Lenz   LenzConfig
+	Git     GitConfig
+	Nginx   NginxConfig
+	Docker  DockerConfig
+	App     AppConfig
+	Etcd    EtcdConfig
+	Lenz    LenzConfig
+	Metrics MetricsConfig
 }
 
 var config = LeviConfig{}
