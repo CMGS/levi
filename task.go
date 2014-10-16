@@ -155,7 +155,9 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		at = DEFAULT_TYPE
 		Status.Removable[cid] = struct{}{}
 	}
-	Lenz.Attacher.Attach(cid[:12], self.Name, aid, at)
+	shortID := cid[:12]
+	Lenz.Attacher.Attach(shortID, self.Name, aid, at)
+	Metrics.Add(self.Name, shortID, at)
 }
 
 func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
