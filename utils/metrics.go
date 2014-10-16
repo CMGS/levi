@@ -42,7 +42,7 @@ func getLongID(shortID string) (longID string, err error) {
 		return
 	}
 	if len(a) != 1 {
-		return "", fmt.Errorf("No such ID %s", shortID)
+		return "", fmt.Errorf("Get Long ID Failed %s", shortID)
 	}
 	dir := filepath.Dir(a[0])
 	longID = filepath.Base(dir)
@@ -64,7 +64,7 @@ func GetContainerPID(id string) (pid string, err error) {
 		return
 	}
 	if len(a) != 1 {
-		return "", fmt.Errorf("No such ID %s", id)
+		return "", fmt.Errorf("Get Container PID Failed %s", id)
 	}
 
 	contents, err := ioutil.ReadFile(a[0])
