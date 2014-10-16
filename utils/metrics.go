@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/docker/libcontainer/cgroups"
 	"github.com/docker/libcontainer/cgroups/fs"
-	"github.com/docker/libcontainer/system"
 )
 
 var devDir string = ""
@@ -77,36 +74,6 @@ func GetContainerPID(id string) (pid string, err error) {
 
 	a = strings.Split(string(contents), "\n")
 	return a[0], nil
-}
-
-func NetNsSynchronize(pid string, fn func() error) (err error) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	f, err := os.OpenFile("/proc/self/ns/net", os.O_RDONLY, 0)
-	if err != nil {
-		return
-	}
-	defer func() {
-		system.Setns(f.Fd(), 0)
-		f.Close()
-	}()
-	if err = setNetNs(pid); err != nil {
-		return
-	}
-	return fn()
-}
-
-func setNetNs(pid string) (err error) {
-	path := filepath.Join("/proc", pid, "ns", "net")
-	f, err := os.OpenFile(path, os.O_RDONLY, 0)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	if err = system.Setns(f.Fd(), 0); err != nil {
-		return
-	}
-	return
 }
 
 func GetIfStats() (m map[string]interface{}, err error) {
