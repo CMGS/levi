@@ -102,7 +102,7 @@ func (self *MetricsRecorder) Add(appname, cid, apptype string) {
 	go self.apps[cid].Report()
 }
 
-func (self *MetricsRecorder) Remove(cid string) {
+func (self *MetricsRecorder) Stop(cid string) {
 	self.Lock()
 	defer self.Unlock()
 	if _, ok := self.apps[cid]; !ok {

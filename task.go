@@ -209,7 +209,9 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	defer func() {
 		if !self.result.Remove[index] {
 			Status.Removable[job.Container] = struct{}{}
+			return
 		}
+		Metrics.Stop(job.Container[:12])
 	}()
 	container := Container{
 		id:      job.Container,

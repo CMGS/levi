@@ -26,7 +26,6 @@ func (self *StatusMoniter) Listen() {
 		Logger.Debug("Status:", event.Status, event.ID, event.From)
 		if _, ok := self.Removable[event.ID]; ok && event.Status == STATUS_DIE {
 			self.die(event.ID)
-			Metrics.Remove(event.ID[:12])
 		}
 	}
 }
