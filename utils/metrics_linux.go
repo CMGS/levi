@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/docker/libcontainer/system"
 )
 
 func NetNsSynchronize(pid string, fn func() error) (err error) {
