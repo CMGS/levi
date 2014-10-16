@@ -26,7 +26,6 @@ func (self *StatusMoniter) Listen() {
 		Logger.Debug("Status:", event.Status, event.ID, event.From)
 		if _, ok := self.Removable[event.ID]; ok && event.Status == STATUS_DIE {
 			self.die(event.ID)
-			Metrics.Stop(event.ID[:12])
 		}
 	}
 }
@@ -60,7 +59,9 @@ func (self *StatusMoniter) Report(id string) {
 		Logger.Debug("Container", name, shortID, status)
 		if status != STATUS_DIE {
 			Lenz.Attacher.Attach(shortID, name, aid, at)
-			Metrics.Add(name, shortID, at)
+			if at == DAEMON_TYPE || at == DEFAULT_TYPE {
+				Metrics.Add(name, shortID, at)
+			}
 		}
 		self.Removable[container.ID] = struct{}{}
 		s := &StatusInfo{status, name, container.ID}
@@ -80,6 +81,7 @@ func (self *StatusMoniter) die(id string) {
 		Logger.Info("Status inspect docker failed", err)
 		return
 	}
+	Metrics.Stop(id[:12])
 	appname, _, _ := self.getAppInfo(container.Name)
 	result.Status[0] = &StatusInfo{STATUS_DIE, appname, id}
 	if err := Ws.WriteJSON(result); err != nil {
