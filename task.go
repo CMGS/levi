@@ -151,13 +151,12 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		aid = job.Daemon
 		at = DAEMON_TYPE
 		Status.Removable[cid] = struct{}{}
-		Metrics.Add(self.Name, shortID, at)
 	default:
 		aid = string(job.Port)
 		at = DEFAULT_TYPE
 		Status.Removable[cid] = struct{}{}
-		Metrics.Add(self.Name, shortID, at)
 	}
+	Metrics.Add(self.Name, shortID, at)
 	Lenz.Attacher.Attach(shortID, self.Name, aid, at)
 }
 
@@ -212,7 +211,6 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 			Status.Removable[job.Container] = struct{}{}
 			return
 		}
-		Metrics.Stop(job.Container[:12])
 	}()
 	container := Container{
 		id:      job.Container,
