@@ -46,6 +46,7 @@ type LenzConfig struct {
 
 type MetricsConfig struct {
 	ReportInterval int
+	Statsd         string
 }
 
 type LeviConfig struct {

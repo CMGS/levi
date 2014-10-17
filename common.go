@@ -10,4 +10,5 @@ const (
 	DAEMON_TYPE            = "daemon"
 	TEST_TYPE              = "test"
 	DEFAULT_TYPE           = "app"
+	STATSD_NS              = "NBE"
 )

@@ -42,3 +42,4 @@ lenz:
 
 metrics:
   reportinterval: 10
+  statsd: 10.1.201.42:8125

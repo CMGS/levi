@@ -5,6 +5,7 @@ import (
 	"time"
 
 	. "./utils"
+	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/docker/libcontainer/cgroups"
 )
 
@@ -77,12 +78,18 @@ func (self *AppMetrics) Stop() {
 
 type MetricsRecorder struct {
 	sync.Mutex
-	apps map[string]*AppMetrics
+	apps   map[string]*AppMetrics
+	client *statsd.Client
 }
 
 func NewMetricsRecorder() *MetricsRecorder {
+	var err error
 	r := &MetricsRecorder{}
 	r.apps = map[string]*AppMetrics{}
+	r.client, err = statsd.New(config.Metrics.Statsd, STATSD_NS)
+	if err != nil {
+		Logger.Assert(err, "Metrics init")
+	}
 	return r
 }
 
@@ -115,6 +122,7 @@ func (self *MetricsRecorder) Stop(cid string) {
 func (self *MetricsRecorder) StopAll() {
 	self.Lock()
 	defer self.Unlock()
+	defer self.client.Close()
 	for _, r := range self.apps {
 		r.Stop()
 	}
