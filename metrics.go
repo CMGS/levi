@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -8,6 +10,48 @@ import (
 	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/docker/libcontainer/cgroups"
 )
+
+type StatsdSender struct {
+	memMax            string
+	memCurrent        string
+	cpuTotal          string
+	interfaceInBytes  string
+	interfaceOutBytes string
+	client            *statsd.Client
+}
+
+func (self *StatsdSender) sendToStatsd(key string, value int64) {
+	err := self.client.Timing(key, value, config.Metrics.Rate)
+	if err != nil {
+		Logger.Info("Sent to statsd failed", err, key, value)
+	}
+}
+
+func (self *StatsdSender) Send(data *MetricData) {
+	self.sendToStatsd(self.memMax, int64(data.MemoryStats.Usage))
+	self.sendToStatsd(self.memCurrent, int64(data.MemoryStats.MaxUsage))
+	self.sendToStatsd(self.cpuTotal, int64(data.CpuStats.CpuUsage.TotalUsage))
+	iBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["inbytes.0"]), 10, 64)
+	oBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["outbytes.0"]), 10, 64)
+	self.sendToStatsd(self.interfaceInBytes, iBytes)
+	self.sendToStatsd(self.interfaceOutBytes, oBytes)
+	Logger.Debug("Stats --------")
+	Logger.Debug(data.MemoryStats.Usage, data.MemoryStats.MaxUsage)
+	Logger.Debug(data.CpuStats.CpuUsage.TotalUsage)
+	Logger.Debug(iBytes, oBytes)
+	Logger.Debug("Stats --------")
+}
+
+func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
+	s := &StatsdSender{}
+	s.memMax = fmt.Sprintf("%s.%s.mem.max", appname, apptype)
+	s.memCurrent = fmt.Sprintf("%s.%s.mem.current", appname, apptype)
+	s.cpuTotal = fmt.Sprintf("%s.%s.cpu.total", appname, apptype)
+	s.interfaceInBytes = fmt.Sprintf("%s.%s.interfaces.inbytes", appname, apptype)
+	s.interfaceOutBytes = fmt.Sprintf("%s.%s.interfaces.outbytes", appname, apptype)
+	s.client = client
+	return s
+}
 
 type MetricData struct {
 	cgroups.Stats
@@ -22,12 +66,13 @@ type AppMetrics struct {
 	sync.WaitGroup
 }
 
-func (self *AppMetrics) Report() {
+func (self *AppMetrics) Report(client *statsd.Client) {
 	self.Add(1)
 	defer self.Done()
 	defer close(self.stop)
 	var finish bool = false
 	Logger.Info("Metrics Report", self.name, self.cid, self.typ)
+	s := NewStatsdSender(self.name, self.typ, client)
 	for !finish {
 		select {
 		case <-time.After(time.Second * time.Duration(config.Metrics.ReportInterval)):
@@ -36,7 +81,7 @@ func (self *AppMetrics) Report() {
 				Logger.Info(err)
 				continue
 			}
-			Logger.Debug(m)
+			s.Send(m)
 		case f := <-self.stop:
 			finish = f
 		}
@@ -106,7 +151,7 @@ func (self *MetricsRecorder) Add(appname, cid, apptype string) {
 		make(chan bool),
 		sync.WaitGroup{},
 	}
-	go self.apps[cid].Report()
+	go self.apps[cid].Report(self.client)
 }
 
 func (self *MetricsRecorder) Stop(cid string) {
