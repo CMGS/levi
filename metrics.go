@@ -28,18 +28,13 @@ func (self *StatsdSender) sendToStatsd(key string, value int64) {
 }
 
 func (self *StatsdSender) Send(data *MetricData) {
-	self.sendToStatsd(self.memMax, int64(data.MemoryStats.Usage))
-	self.sendToStatsd(self.memCurrent, int64(data.MemoryStats.MaxUsage))
+	self.sendToStatsd(self.memMax, int64(data.MemoryStats.MaxUsage))
+	self.sendToStatsd(self.memCurrent, int64(data.MemoryStats.Usage))
 	self.sendToStatsd(self.cpuTotal, int64(data.CpuStats.CpuUsage.TotalUsage))
 	iBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["inbytes.0"]), 10, 64)
 	oBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["outbytes.0"]), 10, 64)
 	self.sendToStatsd(self.interfaceInBytes, iBytes)
 	self.sendToStatsd(self.interfaceOutBytes, oBytes)
-	Logger.Debug("Stats --------")
-	Logger.Debug(data.MemoryStats.Usage, data.MemoryStats.MaxUsage)
-	Logger.Debug(data.CpuStats.CpuUsage.TotalUsage)
-	Logger.Debug(iBytes, oBytes)
-	Logger.Debug("Stats --------")
 }
 
 func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
