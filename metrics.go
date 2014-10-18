@@ -11,13 +11,42 @@ import (
 	"github.com/docker/libcontainer/cgroups"
 )
 
+type CpuStats struct {
+	user   uint64
+	system uint64
+}
+
+func NewCpuStats() *CpuStats {
+	c := &CpuStats{}
+	return c
+}
+
+func (self *CpuStats) getRate(user, system uint64) (int64, int64) {
+	if self.user == 0 || self.system == 0 {
+		return 0, 0
+	}
+	r1 := int64(user - self.user)
+	r2 := int64(system - self.system)
+	self.user = user
+	self.system = system
+	return r1, r2
+}
+
 type StatsdSender struct {
-	memMax            string
 	memCurrent        string
-	cpuTotal          string
+	cpuUser           string
+	cpuSystem         string
 	interfaceInBytes  string
 	interfaceOutBytes string
 	client            *statsd.Client
+	cpuStats          *CpuStats
+}
+
+func (self *StatsdSender) sendCpuUsage(key string, value int64) {
+	err := self.client.Timing(key, value, 1.0/float32(config.Metrics.ReportInterval))
+	if err != nil {
+		Logger.Info("Sent to statsd failed", err, key, value)
+	}
 }
 
 func (self *StatsdSender) sendToStatsd(key string, value int64) {
@@ -28,9 +57,11 @@ func (self *StatsdSender) sendToStatsd(key string, value int64) {
 }
 
 func (self *StatsdSender) Send(data *MetricData) {
-	self.sendToStatsd(self.memMax, int64(data.MemoryStats.MaxUsage))
 	self.sendToStatsd(self.memCurrent, int64(data.MemoryStats.Usage))
-	self.sendToStatsd(self.cpuTotal, int64(data.CpuStats.CpuUsage.TotalUsage))
+	user, system := self.cpuStats.getRate(data.CpuStats.CpuUsage.UsageInUsermode, data.CpuStats.CpuUsage.UsageInKernelmode)
+	self.sendCpuUsage(self.cpuUser, user)
+	self.sendCpuUsage(self.cpuSystem, system)
+
 	iBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["inbytes.0"]), 10, 64)
 	oBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["outbytes.0"]), 10, 64)
 	self.sendToStatsd(self.interfaceInBytes, iBytes)
@@ -39,12 +70,13 @@ func (self *StatsdSender) Send(data *MetricData) {
 
 func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
 	s := &StatsdSender{}
-	s.memMax = fmt.Sprintf("%s.%s.mem.max", appname, apptype)
 	s.memCurrent = fmt.Sprintf("%s.%s.mem.current", appname, apptype)
-	s.cpuTotal = fmt.Sprintf("%s.%s.cpu.total", appname, apptype)
+	s.cpuUser = fmt.Sprintf("%s.%s.cpu.system", appname, apptype)
+	s.cpuSystem = fmt.Sprintf("%s.%s.cpu.user", appname, apptype)
 	s.interfaceInBytes = fmt.Sprintf("%s.%s.interfaces.inbytes", appname, apptype)
 	s.interfaceOutBytes = fmt.Sprintf("%s.%s.interfaces.outbytes", appname, apptype)
 	s.client = client
+	s.cpuStats = NewCpuStats()
 	return s
 }
 
