@@ -16,8 +16,10 @@ type CpuStats struct {
 	system uint64
 }
 
-func NewCpuStats() *CpuStats {
-	c := &CpuStats{}
+func NewCpuStats(stats cgroups.CpuStats) CpuStats {
+	c := CpuStats{}
+	c.user = stats.CpuUsage.UsageInUsermode
+	c.system = stats.CpuUsage.UsageInKernelmode
 	return c
 }
 
@@ -32,6 +34,20 @@ func (self *CpuStats) getRate(user, system uint64) (int64, int64) {
 	return r1, r2
 }
 
+type InterfaceStats struct {
+	inBytes  int64
+	outBytes int64
+}
+
+func NewInterfaceStats(iStats map[string]interface{}) InterfaceStats {
+	i := InterfaceStats{}
+	iBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
+	oBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
+	i.inBytes = iBytes
+	i.outBytes = oBytes
+	return i
+}
+
 type StatsdSender struct {
 	memCurrent        string
 	cpuUser           string
@@ -39,17 +55,19 @@ type StatsdSender struct {
 	interfaceInBytes  string
 	interfaceOutBytes string
 	client            *statsd.Client
-	cpuStats          *CpuStats
+
+	user   uint64
+	system uint64
 }
 
-func (self *StatsdSender) sendCpuUsage(key string, value int64) {
+func (self *StatsdSender) Rate(key string, value int64) {
 	err := self.client.Timing(key, value, 1.0/float32(config.Metrics.ReportInterval))
 	if err != nil {
 		Logger.Info("Sent to statsd failed", err, key, value)
 	}
 }
 
-func (self *StatsdSender) sendToStatsd(key string, value int64) {
+func (self *StatsdSender) Gauge(key string, value int64) {
 	err := self.client.Timing(key, value, config.Metrics.Rate)
 	if err != nil {
 		Logger.Info("Sent to statsd failed", err, key, value)
@@ -57,15 +75,22 @@ func (self *StatsdSender) sendToStatsd(key string, value int64) {
 }
 
 func (self *StatsdSender) Send(data *MetricData) {
-	self.sendToStatsd(self.memCurrent, int64(data.MemoryStats.Usage))
-	user, system := self.cpuStats.getRate(data.CpuStats.CpuUsage.UsageInUsermode, data.CpuStats.CpuUsage.UsageInKernelmode)
-	self.sendCpuUsage(self.cpuUser, user)
-	self.sendCpuUsage(self.cpuSystem, system)
+	self.Gauge(self.memCurrent, int64(data.memoryStats.Usage))
 
-	iBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["inbytes.0"]), 10, 64)
-	oBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", data.Interfaces["outbytes.0"]), 10, 64)
-	self.sendToStatsd(self.interfaceInBytes, iBytes)
-	self.sendToStatsd(self.interfaceOutBytes, oBytes)
+	if self.user == 0 && self.system == 0 {
+		self.Rate(self.cpuUser, int64(self.user))
+		self.Rate(self.cpuSystem, int64(self.system))
+	} else {
+		self.Rate(self.cpuUser, int64(self.user-data.cpuStats.user))
+		self.Rate(self.cpuSystem, int64(self.system-data.cpuStats.system))
+		self.user = data.cpuStats.user
+		self.system = data.cpuStats.system
+	}
+
+	if data.isApp {
+		self.Gauge(self.interfaceInBytes, data.interfaceStats.inBytes)
+		self.Gauge(self.interfaceOutBytes, data.interfaceStats.outBytes)
+	}
 }
 
 func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
@@ -76,13 +101,27 @@ func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSend
 	s.interfaceInBytes = fmt.Sprintf("%s.%s.interfaces.inbytes", appname, apptype)
 	s.interfaceOutBytes = fmt.Sprintf("%s.%s.interfaces.outbytes", appname, apptype)
 	s.client = client
-	s.cpuStats = NewCpuStats()
 	return s
 }
 
 type MetricData struct {
-	cgroups.Stats
-	Interfaces map[string]interface{}
+	cpuStats       CpuStats
+	memoryStats    cgroups.MemoryStats
+	blkioStats     cgroups.BlkioStats
+	interfaceStats InterfaceStats
+	isApp          bool
+}
+
+func NewMetricData(stats *cgroups.Stats) *MetricData {
+	m := &MetricData{}
+	m.memoryStats = stats.MemoryStats
+	m.blkioStats = stats.BlkioStats
+	m.cpuStats = NewCpuStats(stats.CpuStats)
+	return m
+}
+
+func (self *MetricData) ParseInterfaceData(iStats map[string]interface{}) {
+	self.interfaceStats = NewInterfaceStats(iStats)
 }
 
 type AppMetrics struct {
@@ -117,30 +156,32 @@ func (self *AppMetrics) Report(client *statsd.Client) {
 }
 
 func (self *AppMetrics) generate() (*MetricData, error) {
-	m := &MetricData{}
-	pid, err := GetContainerPID(self.cid)
-	if err != nil {
-		return nil, err
-	}
 	c, err := GetCgroupStats(self.cid)
 	if err != nil {
 		return nil, err
 	}
-	m.MemoryStats = c.MemoryStats
-	m.CpuStats = c.CpuStats
-	m.BlkioStats = c.BlkioStats
-	err = NetNsSynchronize(pid, func() (err error) {
-		ifstats, err := GetIfStats()
+	data := NewMetricData(c)
+	if self.typ == DEFAULT_TYPE {
+		data.isApp = true
+		pid, err := GetContainerPID(self.cid)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		m.Interfaces = ifstats
-		return nil
-	})
-	if err != nil {
-		return nil, err
+		var iStats map[string]interface{}
+		err = NetNsSynchronize(pid, func() (err error) {
+			var e error
+			iStats, e = GetIfStats()
+			if e != nil {
+				return e
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		data.ParseInterfaceData(iStats)
 	}
-	return m, nil
+	return data, nil
 }
 
 func (self *AppMetrics) Stop() {
