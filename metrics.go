@@ -23,6 +23,18 @@ func NewCpuStats(stats cgroups.CpuStats) CpuStats {
 	return c
 }
 
+type MemStats struct {
+	rss   uint64
+	usage uint64
+}
+
+func NewMemStats(stats cgroups.MemoryStats) MemStats {
+	m := MemStats{}
+	m.rss = stats.Stats["rss"]
+	m.usage = stats.Usage
+	return m
+}
+
 type InterfaceStats struct {
 	inBytes  int64
 	outBytes int64
@@ -38,7 +50,7 @@ func NewInterfaceStats(iStats map[string]interface{}) InterfaceStats {
 }
 
 type StatsdSender struct {
-	memCurrent        string
+	memUsage          string
 	memRss            string
 	cpuUser           string
 	cpuSystem         string
@@ -55,8 +67,8 @@ func (self *StatsdSender) Gauge(key string, value int64) {
 }
 
 func (self *StatsdSender) Send(data *MetricData) {
-	self.Gauge(self.memCurrent, int64(data.memoryStats.Usage))
-	self.Gauge(self.memRss, int64(data.memoryStats.Stats["rss"]))
+	self.Gauge(self.memUsage, int64(data.memoryStats.usage))
+	self.Gauge(self.memRss, int64(data.memoryStats.rss))
 	self.Gauge(self.cpuUser, int64(data.cpuStats.user))
 	self.Gauge(self.cpuSystem, int64(data.cpuStats.system))
 
@@ -68,7 +80,7 @@ func (self *StatsdSender) Send(data *MetricData) {
 
 func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
 	s := &StatsdSender{}
-	s.memCurrent = fmt.Sprintf("%s.%s.mem.current", appname, apptype)
+	s.memUsage = fmt.Sprintf("%s.%s.mem.usage", appname, apptype)
 	s.memRss = fmt.Sprintf("%s.%s.mem.rss", appname, apptype)
 	s.cpuUser = fmt.Sprintf("%s.%s.cpu.system", appname, apptype)
 	s.cpuSystem = fmt.Sprintf("%s.%s.cpu.user", appname, apptype)
@@ -80,14 +92,14 @@ func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSend
 
 type MetricData struct {
 	cpuStats       CpuStats
-	memoryStats    cgroups.MemoryStats
+	memoryStats    MemStats
 	interfaceStats InterfaceStats
 	isApp          bool
 }
 
 func NewMetricData(stats *cgroups.Stats) *MetricData {
 	m := &MetricData{}
-	m.memoryStats = stats.MemoryStats
+	m.memoryStats = NewMemStats(stats.MemoryStats)
 	m.cpuStats = NewCpuStats(stats.CpuStats)
 	return m
 }
