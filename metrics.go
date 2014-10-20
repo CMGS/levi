@@ -23,17 +23,6 @@ func NewCpuStats(stats cgroups.CpuStats) CpuStats {
 	return c
 }
 
-func (self *CpuStats) getRate(user, system uint64) (int64, int64) {
-	if self.user == 0 || self.system == 0 {
-		return 0, 0
-	}
-	r1 := int64(user - self.user)
-	r2 := int64(system - self.system)
-	self.user = user
-	self.system = system
-	return r1, r2
-}
-
 type InterfaceStats struct {
 	inBytes  int64
 	outBytes int64
@@ -50,21 +39,12 @@ func NewInterfaceStats(iStats map[string]interface{}) InterfaceStats {
 
 type StatsdSender struct {
 	memCurrent        string
+	memRss            string
 	cpuUser           string
 	cpuSystem         string
 	interfaceInBytes  string
 	interfaceOutBytes string
 	client            *statsd.Client
-
-	user   uint64
-	system uint64
-}
-
-func (self *StatsdSender) Rate(key string, value int64) {
-	err := self.client.Timing(key, value, 1.0/float32(config.Metrics.ReportInterval))
-	if err != nil {
-		Logger.Info("Sent to statsd failed", err, key, value)
-	}
 }
 
 func (self *StatsdSender) Gauge(key string, value int64) {
@@ -76,16 +56,9 @@ func (self *StatsdSender) Gauge(key string, value int64) {
 
 func (self *StatsdSender) Send(data *MetricData) {
 	self.Gauge(self.memCurrent, int64(data.memoryStats.Usage))
-
-	if self.user == 0 && self.system == 0 {
-		self.Rate(self.cpuUser, int64(self.user))
-		self.Rate(self.cpuSystem, int64(self.system))
-	} else {
-		self.Rate(self.cpuUser, int64(self.user-data.cpuStats.user))
-		self.Rate(self.cpuSystem, int64(self.system-data.cpuStats.system))
-		self.user = data.cpuStats.user
-		self.system = data.cpuStats.system
-	}
+	self.Gauge(self.memRss, int64(data.memoryStats.Stats["rss"]))
+	self.Gauge(self.cpuUser, int64(data.cpuStats.user))
+	self.Gauge(self.cpuSystem, int64(data.cpuStats.system))
 
 	if data.isApp {
 		self.Gauge(self.interfaceInBytes, data.interfaceStats.inBytes)
@@ -96,6 +69,7 @@ func (self *StatsdSender) Send(data *MetricData) {
 func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
 	s := &StatsdSender{}
 	s.memCurrent = fmt.Sprintf("%s.%s.mem.current", appname, apptype)
+	s.memRss = fmt.Sprintf("%s.%s.mem.rss", appname, apptype)
 	s.cpuUser = fmt.Sprintf("%s.%s.cpu.system", appname, apptype)
 	s.cpuSystem = fmt.Sprintf("%s.%s.cpu.user", appname, apptype)
 	s.interfaceInBytes = fmt.Sprintf("%s.%s.interfaces.inbytes", appname, apptype)
@@ -107,7 +81,6 @@ func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSend
 type MetricData struct {
 	cpuStats       CpuStats
 	memoryStats    cgroups.MemoryStats
-	blkioStats     cgroups.BlkioStats
 	interfaceStats InterfaceStats
 	isApp          bool
 }
@@ -115,7 +88,6 @@ type MetricData struct {
 func NewMetricData(stats *cgroups.Stats) *MetricData {
 	m := &MetricData{}
 	m.memoryStats = stats.MemoryStats
-	m.blkioStats = stats.BlkioStats
 	m.cpuStats = NewCpuStats(stats.CpuStats)
 	return m
 }
