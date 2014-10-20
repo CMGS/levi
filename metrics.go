@@ -101,12 +101,12 @@ type AppMetrics struct {
 	cid  string
 	typ  string
 	stop chan bool
-	sync.WaitGroup
+	mu   *sync.Mutex
 }
 
 func (self *AppMetrics) Report(client *statsd.Client) {
-	self.Add(1)
-	defer self.Done()
+	self.mu.Lock()
+	defer self.mu.Unlock()
 	defer close(self.stop)
 	var finish bool = false
 	Logger.Info("Metrics Report", self.name, self.cid, self.typ)
@@ -158,7 +158,8 @@ func (self *AppMetrics) generate() (*MetricData, error) {
 
 func (self *AppMetrics) Stop() {
 	self.stop <- true
-	self.Wait()
+	self.mu.Lock()
+	defer self.mu.Unlock()
 }
 
 type MetricsRecorder struct {
@@ -189,7 +190,7 @@ func (self *MetricsRecorder) Add(appname, cid, apptype string) {
 		cid,
 		apptype,
 		make(chan bool),
-		sync.WaitGroup{},
+		&sync.Mutex{},
 	}
 	go self.apps[cid].Report(self.client)
 }
