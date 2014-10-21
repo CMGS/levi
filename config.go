@@ -46,8 +46,10 @@ type LenzConfig struct {
 
 type MetricsConfig struct {
 	ReportInterval int
-	Statsd         string
-	Rate           float32
+	Host           string
+	Username       string
+	Password       string
+	Database       string
 }
 
 type LeviConfig struct {

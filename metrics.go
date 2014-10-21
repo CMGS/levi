@@ -7,155 +7,62 @@ import (
 	"time"
 
 	. "./utils"
-	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/docker/libcontainer/cgroups"
 )
 
-type CpuStats struct {
-	user   uint64
-	system uint64
-	usage  uint64
-}
-
-func NewCpuStats(stats cgroups.CpuStats) CpuStats {
-	c := CpuStats{}
-	c.user = stats.CpuUsage.UsageInUsermode
-	c.system = stats.CpuUsage.UsageInKernelmode
-	c.usage = stats.CpuUsage.TotalUsage
-	return c
-}
-
-type MemStats struct {
-	rss   uint64
-	usage uint64
-}
-
-func NewMemStats(stats cgroups.MemoryStats) MemStats {
-	m := MemStats{}
-	m.rss = stats.Stats["rss"]
-	m.usage = stats.Usage
-	return m
-}
-
-type InterfaceStats struct {
-	inBytes  int64
-	outBytes int64
-}
-
-func NewInterfaceStats(iStats map[string]interface{}) InterfaceStats {
-	i := InterfaceStats{}
-	iBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
-	oBytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
-	i.inBytes = iBytes
-	i.outBytes = oBytes
-	return i
-}
-
-type StatsdSender struct {
-	memUsage          string
-	memRss            string
-	cpuUser           string
-	cpuSystem         string
-	cpuUsage          string
-	interfaceInBytes  string
-	interfaceOutBytes string
-	client            *statsd.Client
-}
-
-func (self *StatsdSender) Gauge(key string, value int64) {
-	err := self.client.Timing(key, value, config.Metrics.Rate)
-	if err != nil {
-		Logger.Info("Sent to statsd failed", err, key, value)
-	}
-}
-
-func (self *StatsdSender) Send(data *MetricData) {
-	self.Gauge(self.memUsage, int64(data.memoryStats.usage))
-	self.Gauge(self.memRss, int64(data.memoryStats.rss))
-	self.Gauge(self.cpuUser, int64(data.cpuStats.user))
-	self.Gauge(self.cpuSystem, int64(data.cpuStats.system))
-
-	if data.isApp {
-		self.Gauge(self.interfaceInBytes, data.interfaceStats.inBytes)
-		self.Gauge(self.interfaceOutBytes, data.interfaceStats.outBytes)
-	}
-}
-
-func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSender {
-	s := &StatsdSender{}
-	s.memUsage = fmt.Sprintf("%s.%s.mem.usage", appname, apptype)
-	s.memRss = fmt.Sprintf("%s.%s.mem.rss", appname, apptype)
-	s.cpuUser = fmt.Sprintf("%s.%s.cpu.system", appname, apptype)
-	s.cpuSystem = fmt.Sprintf("%s.%s.cpu.user", appname, apptype)
-	s.cpuUsage = fmt.Sprintf("%s.%s.cpu.usage", appname, apptype)
-	s.interfaceInBytes = fmt.Sprintf("%s.%s.interfaces.inbytes", appname, apptype)
-	s.interfaceOutBytes = fmt.Sprintf("%s.%s.interfaces.outbytes", appname, apptype)
-	s.client = client
-	return s
-}
-
 type MetricData struct {
-	cpuStats       CpuStats
-	memoryStats    MemStats
-	interfaceStats InterfaceStats
-	isApp          bool
+	appname string
+	apptype string
+	isapp   bool
+	first   bool
+
+	mem_usage uint64
+	mem_rss   uint64
+
+	cpu_user_rate   float64
+	cpu_system_rate float64
+	cpu_usage_rate  float64
+
+	net_inbytes  int64
+	net_outbytes int64
+	net_inerrs   int64
+	net_outerrs  int64
+
+	old_cpu_user   uint64
+	old_cpu_system uint64
+	old_cpu_usage  uint64
+
+	old_net_inbytes  int64
+	old_net_outbytes int64
+	old_net_inerrs   int64
+	old_net_outerrs  int64
 }
 
-func NewMetricData(stats *cgroups.Stats) *MetricData {
+func NewMetricData(appname, apptype string) *MetricData {
 	m := &MetricData{}
-	m.memoryStats = NewMemStats(stats.MemoryStats)
-	m.cpuStats = NewCpuStats(stats.CpuStats)
+	m.appname = appname
+	m.apptype = apptype
+	if apptype == DEFAULT_TYPE {
+		m.isapp = true
+	}
+	m.first = true
 	return m
 }
 
-func (self *MetricData) ParseInterfaceData(iStats map[string]interface{}) {
-	self.interfaceStats = NewInterfaceStats(iStats)
-}
-
-type AppMetrics struct {
-	name string
-	cid  string
-	typ  string
-	stop chan bool
-	mu   *sync.Mutex
-}
-
-func (self *AppMetrics) Report(client *statsd.Client) {
-	self.mu.Lock()
-	defer self.mu.Unlock()
-	defer close(self.stop)
-	var finish bool = false
-	Logger.Info("Metrics Report", self.name, self.cid, self.typ)
-	s := NewStatsdSender(self.name, self.typ, client)
-	for !finish {
-		select {
-		case <-time.After(time.Second * time.Duration(config.Metrics.ReportInterval)):
-			m, err := self.generate()
-			if err != nil {
-				Logger.Info(err)
-				continue
-			}
-			s.Send(m)
-		case f := <-self.stop:
-			finish = f
-		}
-	}
-	Logger.Info("Metrics Stop", self.name, self.cid, self.typ)
-}
-
-func (self *AppMetrics) generate() (*MetricData, error) {
-	c, err := GetCgroupStats(self.cid)
+func (self *MetricData) Update(cid string) bool {
+	var iStats map[string]interface{}
+	stats, err := GetCgroupStats(cid)
 	if err != nil {
-		return nil, err
+		Logger.Info("Get CPU,MEM Failed", err, cid, self.appname)
+		return false
 	}
-	data := NewMetricData(c)
-	if self.typ == DEFAULT_TYPE {
-		data.isApp = true
-		pid, err := GetContainerPID(self.cid)
+
+	if self.isapp {
+		pid, err := GetContainerPID(cid)
 		if err != nil {
-			return nil, err
+			Logger.Info("Get PID Failed", err, cid, self.appname)
+			return false
 		}
-		var iStats map[string]interface{}
 		err = NetNsSynchronize(pid, func() (err error) {
 			var e error
 			iStats, e = GetIfStats()
@@ -165,67 +72,114 @@ func (self *AppMetrics) generate() (*MetricData, error) {
 			return nil
 		})
 		if err != nil {
-			return nil, err
+			Logger.Info("Get NET Failed", err, cid, self.appname)
+			return false
 		}
-		data.ParseInterfaceData(iStats)
 	}
-	return data, nil
+
+	if self.first {
+		self.saveData(stats, iStats)
+		self.first = false
+	}
+
+	t := float64(config.Metrics.ReportInterval * 1e9)
+	self.mem_usage = stats.MemoryStats.Usage
+	self.mem_rss = stats.MemoryStats.Stats["rss"]
+	self.cpu_user_rate = float64((stats.CpuStats.CpuUsage.UsageInUsermode - self.old_cpu_user)) / t
+	self.cpu_system_rate = float64((stats.CpuStats.CpuUsage.UsageInKernelmode - self.old_cpu_system)) / t
+	self.cpu_usage_rate = float64((stats.CpuStats.CpuUsage.TotalUsage - self.old_cpu_usage)) / t
+
+	if self.isapp {
+		inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
+		outbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
+		inerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
+		outerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
+		t := int64(config.Metrics.ReportInterval)
+		self.net_inbytes = (inbytes - self.old_net_inbytes) / t
+		self.net_outbytes = (outbytes - self.old_net_outbytes) / t
+		self.net_inerrs = (inerrs - self.old_net_inerrs) / t
+		self.net_outerrs = (outerrs - self.old_net_outbytes) / t
+	}
+
+	self.saveData(stats, iStats)
+	return true
 }
 
-func (self *AppMetrics) Stop() {
-	self.stop <- true
-	self.mu.Lock()
-	defer self.mu.Unlock()
+func (self *MetricData) saveData(stats *cgroups.Stats, iStats map[string]interface{}) {
+	self.old_cpu_user = stats.CpuStats.CpuUsage.UsageInUsermode
+	self.old_cpu_system = stats.CpuStats.CpuUsage.UsageInKernelmode
+	self.old_cpu_usage = stats.CpuStats.CpuUsage.TotalUsage
+	if self.isapp {
+		self.old_net_inbytes, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
+		self.old_net_outbytes, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
+		self.old_net_inerrs, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
+		self.old_net_outerrs, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
+	}
 }
 
 type MetricsRecorder struct {
-	sync.Mutex
-	apps   map[string]*AppMetrics
-	client *statsd.Client
+	mu     *sync.Mutex
+	apps   map[string]*MetricData
+	client *InfluxDBClient
+	stop   chan bool
+	done   chan int
 }
 
 func NewMetricsRecorder() *MetricsRecorder {
-	var err error
 	r := &MetricsRecorder{}
-	r.apps = map[string]*AppMetrics{}
-	r.client, err = statsd.New(config.Metrics.Statsd, STATSD_NS)
-	if err != nil {
-		Logger.Assert(err, "Metrics init")
-	}
+	r.mu = &sync.Mutex{}
+	r.apps = map[string]*MetricData{}
+	r.client = NewInfluxDBClient()
+	r.stop = make(chan bool)
+	r.done = make(chan int)
 	return r
 }
 
 func (self *MetricsRecorder) Add(appname, cid, apptype string) {
-	self.Lock()
-	defer self.Unlock()
+	self.mu.Lock()
+	defer self.mu.Unlock()
 	if _, ok := self.apps[cid]; ok {
 		return
 	}
-	self.apps[cid] = &AppMetrics{
-		appname,
-		cid,
-		apptype,
-		make(chan bool),
-		&sync.Mutex{},
-	}
-	go self.apps[cid].Report(self.client)
+	self.apps[cid] = NewMetricData(appname, apptype)
 }
 
-func (self *MetricsRecorder) Stop(cid string) {
-	self.Lock()
-	defer self.Unlock()
+func (self *MetricsRecorder) Remove(cid string) {
+	self.mu.Lock()
+	defer self.mu.Unlock()
 	if _, ok := self.apps[cid]; !ok {
 		return
 	}
-	self.apps[cid].Stop()
 	delete(self.apps, cid)
 }
 
-func (self *MetricsRecorder) StopAll() {
-	self.Lock()
-	defer self.Unlock()
-	defer self.client.Close()
-	for _, r := range self.apps {
-		r.Stop()
+func (self *MetricsRecorder) Report() {
+	defer close(self.stop)
+	var finish bool = false
+	for !finish {
+		select {
+		case <-time.After(time.Second * time.Duration(config.Metrics.ReportInterval)):
+			self.Send()
+		case f := <-self.stop:
+			finish = f
+		}
 	}
+	Logger.Info("Metrics Stop")
+	self.done <- 1
+}
+
+func (self *MetricsRecorder) Stop() {
+	self.stop <- true
+	<-self.done
+}
+
+func (self *MetricsRecorder) Send() {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+	for cid, app := range self.apps {
+		if app.Update(cid) {
+			self.client.GenSeries(cid, app)
+		}
+	}
+	self.client.Send()
 }

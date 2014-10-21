@@ -34,6 +34,7 @@ func main() {
 	levi := NewLevi()
 	go Status.Listen()
 	go Status.Report(STATUS_IDENT)
+	go Metrics.Report()
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
@@ -42,7 +43,7 @@ func main() {
 		signal.Notify(c, syscall.SIGKILL)
 		signal.Notify(c, syscall.SIGQUIT)
 		utils.Logger.Info("Catch", <-c)
-		Metrics.StopAll()
+		Metrics.Stop()
 		levi.Exit()
 	}()
 	go levi.Read()
