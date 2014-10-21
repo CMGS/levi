@@ -14,12 +14,14 @@ import (
 type CpuStats struct {
 	user   uint64
 	system uint64
+	usage  uint64
 }
 
 func NewCpuStats(stats cgroups.CpuStats) CpuStats {
 	c := CpuStats{}
 	c.user = stats.CpuUsage.UsageInUsermode
 	c.system = stats.CpuUsage.UsageInKernelmode
+	c.usage = stats.CpuUsage.TotalUsage
 	return c
 }
 
@@ -54,6 +56,7 @@ type StatsdSender struct {
 	memRss            string
 	cpuUser           string
 	cpuSystem         string
+	cpuUsage          string
 	interfaceInBytes  string
 	interfaceOutBytes string
 	client            *statsd.Client
@@ -84,6 +87,7 @@ func NewStatsdSender(appname, apptype string, client *statsd.Client) *StatsdSend
 	s.memRss = fmt.Sprintf("%s.%s.mem.rss", appname, apptype)
 	s.cpuUser = fmt.Sprintf("%s.%s.cpu.system", appname, apptype)
 	s.cpuSystem = fmt.Sprintf("%s.%s.cpu.user", appname, apptype)
+	s.cpuUsage = fmt.Sprintf("%s.%s.cpu.usage", appname, apptype)
 	s.interfaceInBytes = fmt.Sprintf("%s.%s.interfaces.inbytes", appname, apptype)
 	s.interfaceOutBytes = fmt.Sprintf("%s.%s.interfaces.outbytes", appname, apptype)
 	s.client = client

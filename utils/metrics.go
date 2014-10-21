@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -123,19 +122,4 @@ func GetIfStats() (m map[string]interface{}, err error) {
 	}
 	err = cmd.Wait()
 	return
-}
-
-func GetIfAddr(ifname string) net.Addr {
-	i, err := net.InterfaceByName(ifname)
-	if err == nil {
-		addrs, err := i.Addrs()
-		if err == nil {
-			for _, addr := range addrs {
-				if addr.(*net.IPNet).IP.DefaultMask() != nil {
-					return addr
-				}
-			}
-		}
-	}
-	return nil
 }
