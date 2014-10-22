@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"../defines"
 	. "../utils"
@@ -174,6 +175,7 @@ func NewLogPump(stdout, stderr io.Reader, id, name, aid, atype string) *LogPump 
 				AppID:   aid,
 				AppType: atype,
 				Type:    typ,
+				Time:    time.Now().Unix(),
 			})
 		}
 	}
