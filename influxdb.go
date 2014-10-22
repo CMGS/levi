@@ -33,20 +33,22 @@ func NewInfluxDBClient() *InfluxDBClient {
 
 func (self *InfluxDBClient) GenSeries(cid string, app *MetricData) {
 	points := [][]interface{}{
-		[]interface{}{config.Name, app.apptype, cid, "cpu_usage", app.cpu_usage_rate},
-		[]interface{}{config.Name, app.apptype, cid, "cpu_system", app.cpu_system_rate},
-		[]interface{}{config.Name, app.apptype, cid, "cpu_user", app.cpu_user_rate},
-		[]interface{}{config.Name, app.apptype, cid, "mem_usage", app.mem_usage},
-		[]interface{}{config.Name, app.apptype, cid, "mem_rss", app.mem_rss},
+		{config.Name, app.apptype, cid, "cpu_usage", app.cpu_usage_rate},
+		{config.Name, app.apptype, cid, "cpu_system", app.cpu_system_rate},
+		{config.Name, app.apptype, cid, "cpu_user", app.cpu_user_rate},
+		{config.Name, app.apptype, cid, "mem_usage", app.mem_usage},
+		{config.Name, app.apptype, cid, "mem_rss", app.mem_rss},
 	}
 	if app.isapp {
-		p2 := []interface{}{
-			[]interface{}{config.Name, app.apptype, cid, "net_recv", app.net_inbytes},
-			[]interface{}{config.Name, app.apptype, cid, "net_send", app.net_outbytes},
-			[]interface{}{config.Name, app.apptype, cid, "net_recv_err", app.net_inerrs},
-			[]interface{}{config.Name, app.apptype, cid, "net_send_err", app.net_outerrs},
+		p2 := [][]interface{}{
+			{config.Name, app.apptype, cid, "net_recv", app.net_inbytes},
+			{config.Name, app.apptype, cid, "net_send", app.net_outbytes},
+			{config.Name, app.apptype, cid, "net_recv_err", app.net_inerrs},
+			{config.Name, app.apptype, cid, "net_send_err", app.net_outerrs},
 		}
-		points = append(points, p2)
+		for _, p := range p2 {
+			points = append(points, p)
+		}
 	}
 	series := &client.Series{
 		Name:    app.appname,

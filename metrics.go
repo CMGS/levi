@@ -150,7 +150,7 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 	self.net_inbytes = (inbytes - self.old_net_inbytes) / t
 	self.net_outbytes = (outbytes - self.old_net_outbytes) / t
 	self.net_inerrs = (inerrs - self.old_net_inerrs) / t
-	self.net_outerrs = (outerrs - self.old_net_outbytes) / t
+	self.net_outerrs = (outerrs - self.old_net_outerrs) / t
 
 	self.old_net_inbytes = inbytes
 	self.old_net_outbytes = outbytes
