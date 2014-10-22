@@ -12,7 +12,7 @@ type InfluxDBClient struct {
 	series []*client.Series
 }
 
-var influxdb_columns []string = []string{"apptype", "appid", "metric", "value"}
+var influxdb_columns []string = []string{"host", "apptype", "appid", "metric", "value"}
 
 func NewInfluxDBClient() *InfluxDBClient {
 	c := &client.ClientConfig{
@@ -33,15 +33,20 @@ func NewInfluxDBClient() *InfluxDBClient {
 
 func (self *InfluxDBClient) GenSeries(cid string, app *MetricData) {
 	points := [][]interface{}{
-		[]interface{}{app.apptype, cid, "cpu_usage", app.cpu_usage_rate},
-		[]interface{}{app.apptype, cid, "cpu_system", app.cpu_system_rate},
-		[]interface{}{app.apptype, cid, "cpu_user", app.cpu_user_rate},
-		[]interface{}{app.apptype, cid, "mem_usage", app.mem_usage},
-		[]interface{}{app.apptype, cid, "mem_rss", app.mem_rss},
-		[]interface{}{app.apptype, cid, "net_recv", app.net_inbytes},
-		[]interface{}{app.apptype, cid, "net_send", app.net_outbytes},
-		[]interface{}{app.apptype, cid, "net_recv_err", app.net_inerrs},
-		[]interface{}{app.apptype, cid, "net_send_err", app.net_outerrs},
+		[]interface{}{config.Name, app.apptype, cid, "cpu_usage", app.cpu_usage_rate},
+		[]interface{}{config.Name, app.apptype, cid, "cpu_system", app.cpu_system_rate},
+		[]interface{}{config.Name, app.apptype, cid, "cpu_user", app.cpu_user_rate},
+		[]interface{}{config.Name, app.apptype, cid, "mem_usage", app.mem_usage},
+		[]interface{}{config.Name, app.apptype, cid, "mem_rss", app.mem_rss},
+	}
+	if app.isapp {
+		p2 := []interface{}{
+			[]interface{}{config.Name, app.apptype, cid, "net_recv", app.net_inbytes},
+			[]interface{}{config.Name, app.apptype, cid, "net_send", app.net_outbytes},
+			[]interface{}{config.Name, app.apptype, cid, "net_recv_err", app.net_inerrs},
+			[]interface{}{config.Name, app.apptype, cid, "net_send_err", app.net_outerrs},
+		}
+		points = append(points, p2)
 	}
 	series := &client.Series{
 		Name:    app.appname,
@@ -53,7 +58,7 @@ func (self *InfluxDBClient) GenSeries(cid string, app *MetricData) {
 
 func (self *InfluxDBClient) Send() {
 	if err := self.client.WriteSeries(self.series); err != nil {
-		Logger.Info("Write to InfluxDB Failed", self.series)
+		Logger.Info("Write to InfluxDB Failed", err)
 	}
 	self.series = []*client.Series{}
 }

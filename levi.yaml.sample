@@ -42,5 +42,7 @@ lenz:
 
 metrics:
   reportinterval: 10
-  statsd: 10.1.201.42:8125
-  rate: 1.0
+  host: 10.1.201.110:8086
+  username: root
+  password: root
+  database: NBE

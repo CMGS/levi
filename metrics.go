@@ -14,7 +14,7 @@ type MetricData struct {
 	appname string
 	apptype string
 	isapp   bool
-	first   bool
+	t       time.Time
 
 	mem_usage uint64
 	mem_rss   uint64
@@ -45,76 +45,118 @@ func NewMetricData(appname, apptype string) *MetricData {
 	if apptype == DEFAULT_TYPE {
 		m.isapp = true
 	}
-	m.first = true
 	return m
 }
 
-func (self *MetricData) Update(cid string) bool {
-	var iStats map[string]interface{}
-	stats, err := GetCgroupStats(cid)
+func (self *MetricData) InitStats(cid string) bool {
+	stats, err := self.GetStats(cid)
 	if err != nil {
-		Logger.Info("Get CPU,MEM Failed", err, cid, self.appname)
+		Logger.Info("Get Stats Failed", err, cid)
 		return false
 	}
+	self.old_cpu_user = stats.CpuStats.CpuUsage.UsageInUsermode
+	self.old_cpu_system = stats.CpuStats.CpuUsage.UsageInKernelmode
+	self.old_cpu_usage = stats.CpuStats.CpuUsage.TotalUsage
 
 	if self.isapp {
-		pid, err := GetContainerPID(cid)
+		iStats, err := self.GetNetStats(cid)
 		if err != nil {
-			Logger.Info("Get PID Failed", err, cid, self.appname)
+			Logger.Info("Get Interface Stats Failed", err, cid)
 			return false
 		}
-		err = NetNsSynchronize(pid, func() (err error) {
-			var e error
-			iStats, e = GetIfStats()
-			if e != nil {
-				return e
-			}
-			return nil
-		})
-		if err != nil {
-			Logger.Info("Get NET Failed", err, cid, self.appname)
-			return false
-		}
-	}
-
-	if self.first {
-		self.saveData(stats, iStats)
-		self.first = false
-	}
-
-	t := float64(config.Metrics.ReportInterval * 1e9)
-	self.mem_usage = stats.MemoryStats.Usage
-	self.mem_rss = stats.MemoryStats.Stats["rss"]
-	self.cpu_user_rate = float64((stats.CpuStats.CpuUsage.UsageInUsermode - self.old_cpu_user)) / t
-	self.cpu_system_rate = float64((stats.CpuStats.CpuUsage.UsageInKernelmode - self.old_cpu_system)) / t
-	self.cpu_usage_rate = float64((stats.CpuStats.CpuUsage.TotalUsage - self.old_cpu_usage)) / t
-
-	if self.isapp {
 		inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
 		outbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
 		inerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
 		outerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
-		t := int64(config.Metrics.ReportInterval)
-		self.net_inbytes = (inbytes - self.old_net_inbytes) / t
-		self.net_outbytes = (outbytes - self.old_net_outbytes) / t
-		self.net_inerrs = (inerrs - self.old_net_inerrs) / t
-		self.net_outerrs = (outerrs - self.old_net_outbytes) / t
+		self.old_net_inbytes = inbytes
+		self.old_net_outbytes = outbytes
+		self.old_net_inerrs = inerrs
+		self.old_net_outerrs = outerrs
 	}
 
-	self.saveData(stats, iStats)
+	self.UpdateTime()
 	return true
 }
 
-func (self *MetricData) saveData(stats *cgroups.Stats, iStats map[string]interface{}) {
+func (self *MetricData) GetStats(cid string) (*cgroups.Stats, error) {
+	stats, err := GetCgroupStats(cid)
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
+
+func (self *MetricData) GetNetStats(cid string) (map[string]interface{}, error) {
+	var iStats map[string]interface{}
+	pid, err := GetContainerPID(cid)
+	if err != nil {
+		return nil, err
+	}
+	err = NetNsSynchronize(pid, func() (err error) {
+		var e error
+		iStats, e = GetIfStats()
+		if e != nil {
+			return e
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return iStats, nil
+}
+
+func (self *MetricData) UpdateTime() {
+	self.t = time.Now()
+}
+
+func (self *MetricData) UpdateStats(cid string) bool {
+	stats, err := self.GetStats(cid)
+	if err != nil {
+		Logger.Info("Get Stats Failed", err, cid)
+		return false
+	}
+
+	self.mem_usage = stats.MemoryStats.Usage
+	self.mem_rss = stats.MemoryStats.Stats["rss"]
+
+	t := float64(time.Now().Sub(self.t).Nanoseconds())
+	self.cpu_user_rate = float64((stats.CpuStats.CpuUsage.UsageInUsermode - self.old_cpu_user)) / t
+	self.cpu_system_rate = float64((stats.CpuStats.CpuUsage.UsageInKernelmode - self.old_cpu_system)) / t
+	self.cpu_usage_rate = float64((stats.CpuStats.CpuUsage.TotalUsage - self.old_cpu_usage)) / t
+
 	self.old_cpu_user = stats.CpuStats.CpuUsage.UsageInUsermode
 	self.old_cpu_system = stats.CpuStats.CpuUsage.UsageInKernelmode
 	self.old_cpu_usage = stats.CpuStats.CpuUsage.TotalUsage
-	if self.isapp {
-		self.old_net_inbytes, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
-		self.old_net_outbytes, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
-		self.old_net_inerrs, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
-		self.old_net_outerrs, _ = strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
+	return true
+}
+
+func (self *MetricData) UpdateNetStats(cid string) bool {
+	if !self.isapp {
+		return true
 	}
+	iStats, err := self.GetNetStats(cid)
+	if err != nil {
+		Logger.Info("Get Interface Stats Failed", err, cid)
+		return false
+	}
+
+	t := int64(time.Now().Sub(self.t).Seconds())
+	inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
+	outbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
+	inerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
+	outerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
+
+	self.net_inbytes = (inbytes - self.old_net_inbytes) / t
+	self.net_outbytes = (outbytes - self.old_net_outbytes) / t
+	self.net_inerrs = (inerrs - self.old_net_inerrs) / t
+	self.net_outerrs = (outerrs - self.old_net_outbytes) / t
+
+	self.old_net_inbytes = inbytes
+	self.old_net_outbytes = outbytes
+	self.old_net_inerrs = inerrs
+	self.old_net_outerrs = outerrs
+	return true
 }
 
 type MetricsRecorder struct {
@@ -122,7 +164,6 @@ type MetricsRecorder struct {
 	apps   map[string]*MetricData
 	client *InfluxDBClient
 	stop   chan bool
-	done   chan int
 }
 
 func NewMetricsRecorder() *MetricsRecorder {
@@ -131,7 +172,6 @@ func NewMetricsRecorder() *MetricsRecorder {
 	r.apps = map[string]*MetricData{}
 	r.client = NewInfluxDBClient()
 	r.stop = make(chan bool)
-	r.done = make(chan int)
 	return r
 }
 
@@ -142,6 +182,7 @@ func (self *MetricsRecorder) Add(appname, cid, apptype string) {
 		return
 	}
 	self.apps[cid] = NewMetricData(appname, apptype)
+	self.apps[cid].InitStats(cid)
 }
 
 func (self *MetricsRecorder) Remove(cid string) {
@@ -165,20 +206,21 @@ func (self *MetricsRecorder) Report() {
 		}
 	}
 	Logger.Info("Metrics Stop")
-	self.done <- 1
+	self.stop <- true
 }
 
 func (self *MetricsRecorder) Stop() {
 	self.stop <- true
-	<-self.done
+	<-self.stop
 }
 
 func (self *MetricsRecorder) Send() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	for cid, app := range self.apps {
-		if app.Update(cid) {
+		if app.UpdateStats(cid) && app.UpdateNetStats(cid) {
 			self.client.GenSeries(cid, app)
+			app.UpdateTime()
 		}
 	}
 	self.client.Send()
