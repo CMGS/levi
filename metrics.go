@@ -23,10 +23,10 @@ type MetricData struct {
 	cpu_system_rate float64
 	cpu_usage_rate  float64
 
-	net_inbytes  int64
-	net_outbytes int64
-	net_inerrs   int64
-	net_outerrs  int64
+	net_inbytes  float64
+	net_outbytes float64
+	net_inerrs   float64
+	net_outerrs  float64
 
 	old_cpu_user   uint64
 	old_cpu_system uint64
@@ -141,16 +141,16 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 		return false
 	}
 
-	t := int64(time.Now().Sub(self.t).Seconds())
+	t := time.Now().Sub(self.t).Seconds()
 	inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
 	outbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
 	inerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
 	outerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
 
-	self.net_inbytes = (inbytes - self.old_net_inbytes) / t
-	self.net_outbytes = (outbytes - self.old_net_outbytes) / t
-	self.net_inerrs = (inerrs - self.old_net_inerrs) / t
-	self.net_outerrs = (outerrs - self.old_net_outerrs) / t
+	self.net_inbytes = float64(inbytes-self.old_net_inbytes) / t
+	self.net_outbytes = float64(outbytes-self.old_net_outbytes) / t
+	self.net_inerrs = float64(inerrs-self.old_net_inerrs) / t
+	self.net_outerrs = float64(outerrs-self.old_net_outerrs) / t
 
 	self.old_net_inbytes = inbytes
 	self.old_net_outbytes = outbytes
