@@ -24,8 +24,11 @@ func (self *StatusMoniter) Listen() {
 	Logger.Info("Status Monitor Start")
 	for event := range self.events {
 		Logger.Debug("Status:", event.Status, event.ID, event.From)
-		if _, ok := self.Removable[event.ID]; ok && event.Status == STATUS_DIE {
-			self.die(event.ID)
+		if event.Status == STATUS_DIE {
+			Metrics.Remove(event.ID[:12])
+			if _, ok := self.Removable[event.ID]; ok {
+				self.die(event.ID)
+			}
 		}
 	}
 }
@@ -58,6 +61,7 @@ func (self *StatusMoniter) Report(id string) {
 		shortID := container.ID[:12]
 		Logger.Debug("Container", name, shortID, status)
 		if status != STATUS_DIE {
+			Metrics.Add(name, shortID, at)
 			Lenz.Attacher.Attach(shortID, name, aid, at)
 		}
 		self.Removable[container.ID] = struct{}{}

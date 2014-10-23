@@ -15,6 +15,7 @@ var Docker *defines.DockerWrapper
 
 var Status *StatusMoniter
 var Lenz *LenzForwarder
+var Metrics *MetricsRecorder
 
 func main() {
 	LoadConfig()
@@ -22,6 +23,7 @@ func main() {
 	Docker = defines.NewDocker(config.Docker.Endpoint)
 	Lenz = NewLenz()
 	Status = NewStatus()
+	Metrics = NewMetricsRecorder()
 
 	defer os.Remove(config.PidFile)
 	utils.WritePid(config.PidFile)
@@ -32,6 +34,7 @@ func main() {
 	levi := NewLevi()
 	go Status.Listen()
 	go Status.Report(STATUS_IDENT)
+	go Metrics.Report()
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
@@ -40,6 +43,7 @@ func main() {
 		signal.Notify(c, syscall.SIGKILL)
 		signal.Notify(c, syscall.SIGQUIT)
 		utils.Logger.Info("Catch", <-c)
+		Metrics.Stop()
 		levi.Exit()
 	}()
 	go levi.Read()

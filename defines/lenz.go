@@ -18,6 +18,7 @@ type Log struct {
 	AppID   string `json:"appid"`
 	Data    string `json:"data"`
 	Tag     string `json:"tag"`
+	Time    int64  `json:"time"`
 }
 
 type Route struct {

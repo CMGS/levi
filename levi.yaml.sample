@@ -39,3 +39,10 @@ lenz:
     - udp://0.0.0.0:11111
     - udp://0.0.0.0:11111
   stdout: True
+
+metrics:
+  reportinterval: 10
+  host: 10.1.201.110:8086
+  username: root
+  password: root
+  database: NBE

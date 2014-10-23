@@ -141,6 +141,7 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		return
 	}
 	job := self.Tasks.Add[index]
+	shortID := cid[:12]
 	var aid, at string
 	switch {
 	case job.IsTest():
@@ -155,7 +156,8 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		at = DEFAULT_TYPE
 		Status.Removable[cid] = struct{}{}
 	}
-	Lenz.Attacher.Attach(cid[:12], self.Name, aid, at)
+	Metrics.Add(self.Name, shortID, at)
+	Lenz.Attacher.Attach(shortID, self.Name, aid, at)
 }
 
 func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
@@ -207,6 +209,7 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	defer func() {
 		if !self.result.Remove[index] {
 			Status.Removable[job.Container] = struct{}{}
+			return
 		}
 	}()
 	container := Container{
