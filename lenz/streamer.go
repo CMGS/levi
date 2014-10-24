@@ -12,7 +12,7 @@ import (
 	. "../utils"
 )
 
-func streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
+func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 	var types map[string]struct{}
 	if route.Source != nil {
 		types = make(map[string]struct{})

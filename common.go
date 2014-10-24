@@ -10,4 +10,6 @@ const (
 	DAEMON_TYPE            = "daemon"
 	TEST_TYPE              = "test"
 	DEFAULT_TYPE           = "app"
+	BUILD_TYPE             = "build"
+	PULL_TYPE              = "pull"
 )

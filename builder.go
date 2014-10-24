@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 
@@ -71,10 +72,13 @@ func (self *Builder) Build() error {
 	if err := self.createTar(); err != nil {
 		return err
 	}
-	if err := self.buildImage(); err != nil {
+
+	outputStream := GetBuffer(self.name, self.build.Version, BUILD_TYPE)
+	defer outputStream.Close()
+	if err := self.buildImage(outputStream); err != nil {
 		return err
 	}
-	if err := self.pushImage(); err != nil {
+	if err := self.pushImage(outputStream); err != nil {
 		return err
 	}
 	return nil
@@ -141,7 +145,7 @@ func (self *Builder) createTar() error {
 	return nil
 }
 
-func (self *Builder) buildImage() error {
+func (self *Builder) buildImage(out io.Writer) error {
 	file, err := os.Open(self.tarPath)
 	if err != nil {
 		return err
@@ -155,7 +159,8 @@ func (self *Builder) buildImage() error {
 		RmTmpContainer:      true,
 		ForceRmTmpContainer: true,
 		InputStream:         file,
-		OutputStream:        GetBuffer(),
+		OutputStream:        out,
+		RawJSONStream:       false,
 	}
 
 	if err := Docker.BuildImage(opts); err != nil {
@@ -164,11 +169,11 @@ func (self *Builder) buildImage() error {
 	return nil
 }
 
-func (self *Builder) pushImage() error {
+func (self *Builder) pushImage(out io.Writer) error {
 	if err := Docker.PushImage(
 		docker.PushImageOptions{
 			self.registryURL, self.build.Version,
-			self.registryURL, GetBuffer(),
+			self.registryURL, out, false,
 		},
 		docker.AuthConfiguration{}); err != nil {
 		return err
