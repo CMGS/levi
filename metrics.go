@@ -51,7 +51,7 @@ func NewMetricData(appname, apptype string) *MetricData {
 func (self *MetricData) InitStats(cid string) bool {
 	stats, err := self.GetStats(cid)
 	if err != nil {
-		Logger.Info("Get Stats Failed", err, cid)
+		Logger.Info("Get Stats Failed", err)
 		return false
 	}
 	self.old_cpu_user = stats.CpuStats.CpuUsage.UsageInUsermode
@@ -61,7 +61,7 @@ func (self *MetricData) InitStats(cid string) bool {
 	if self.isapp {
 		iStats, err := self.GetNetStats(cid)
 		if err != nil {
-			Logger.Info("Get Interface Stats Failed", err, cid)
+			Logger.Info("Get Interface Stats Failed", err)
 			return false
 		}
 		inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
@@ -113,7 +113,7 @@ func (self *MetricData) UpdateTime() {
 func (self *MetricData) UpdateStats(cid string) bool {
 	stats, err := self.GetStats(cid)
 	if err != nil {
-		Logger.Info("Get Stats Failed", err, cid)
+		Logger.Info("Get Stats Failed", err)
 		return false
 	}
 
@@ -137,7 +137,7 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 	}
 	iStats, err := self.GetNetStats(cid)
 	if err != nil {
-		Logger.Info("Get Interface Stats Failed", err, cid)
+		Logger.Info("Get Interface Stats Failed", err)
 		return false
 	}
 
