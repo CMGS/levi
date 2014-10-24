@@ -80,3 +80,18 @@ func (self Stdout) Write(p []byte) (n int, err error) {
 
 func (self Stdout) Close() {
 }
+
+func GetDevBuffer() io.Writer {
+	if config.Lenz.Stdout {
+		return os.Stdout
+	} else {
+		return DevBuffer{}
+	}
+}
+
+type DevBuffer struct {
+}
+
+func (self DevBuffer) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}

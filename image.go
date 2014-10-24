@@ -16,8 +16,7 @@ type Image struct {
 
 func (self *Image) Pull() error {
 	url := UrlJoin(config.Docker.Registry, self.appname)
-	outputStream := GetBuffer(self.appname, self.version, PULL_TYPE)
-	defer outputStream.Close()
+	outputStream := DevBuffer{}
 	if err := Docker.PullImage(
 		docker.PullImageOptions{url, config.Docker.Registry, self.version, outputStream, false},
 		docker.AuthConfiguration{}); err != nil {
