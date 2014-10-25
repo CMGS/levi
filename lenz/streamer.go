@@ -38,7 +38,7 @@ func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 					Logger.Info("Get backend failed", err, logline.Name, logline.Data)
 					break
 				}
-				Logger.Debug(logline.Name, addr)
+				Logger.Debug("Lenz Send", logline.Name, "to", addr)
 				switch u, err := url.Parse(addr); {
 				case err != nil:
 					Logger.Info("Lenz", err)
