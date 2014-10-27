@@ -18,7 +18,7 @@ type Log struct {
 	AppID   string `json:"appid"`
 	Data    string `json:"data"`
 	Tag     string `json:"tag"`
-	Time    int64  `json:"time"`
+	Count   int64  `json:"count"`
 }
 
 type Route struct {

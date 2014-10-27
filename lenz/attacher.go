@@ -5,7 +5,6 @@ import (
 	"io"
 	"strings"
 	"sync"
-	"time"
 
 	"../defines"
 	. "../utils"
@@ -160,6 +159,7 @@ func NewLogPump(stdout, stderr io.Reader, id, name, aid, atype string) *LogPump 
 	}
 	pump := func(typ string, source io.Reader) {
 		buf := bufio.NewReader(source)
+		var counter int64 = 0
 		for {
 			data, err := buf.ReadBytes('\n')
 			if err != nil {
@@ -175,8 +175,9 @@ func NewLogPump(stdout, stderr io.Reader, id, name, aid, atype string) *LogPump 
 				AppID:   aid,
 				AppType: atype,
 				Type:    typ,
-				Time:    time.Now().Unix(),
+				Count:   counter,
 			})
+			counter++
 		}
 	}
 	go pump("stdout", stdout)
