@@ -108,8 +108,8 @@ func Test_StatusDie(t *testing.T) {
 
 func Test_StatusListen(t *testing.T) {
 	go Status.Listen()
-	id := "abc"
-	event := &docker.APIEvents{"die", id, "zzz", 12345}
+	id := "abcdefghijklmnopqrstuvwxyz"
+	event := &docker.APIEvents{"die", id, "zzzzzzzzzzzzzzzzz", 12345}
 	Status.events <- event
 	Docker.InspectContainer = func(string) (*docker.Container, error) {
 		t.Error("Wrong event")

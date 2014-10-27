@@ -63,13 +63,15 @@ func Test_CreateTar(t *testing.T) {
 }
 
 func Test_BuildImage(t *testing.T) {
-	if err := builder.buildImage(); err != nil {
+	outputStream := Stdout{}
+	if err := builder.buildImage(outputStream); err != nil {
 		t.Error(err)
 	}
 }
 
 func Test_PushImage(t *testing.T) {
-	if err := builder.pushImage(); err != nil {
+	outputStream := Stdout{}
+	if err := builder.pushImage(outputStream); err != nil {
 		t.Error(err)
 	}
 }

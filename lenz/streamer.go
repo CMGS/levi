@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/syslog"
+	"math"
 	"net"
 	"net/url"
 
@@ -14,6 +15,7 @@ import (
 
 func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 	var types map[string]struct{}
+	var count int64 = 0
 	if route.Source != nil {
 		types = make(map[string]struct{})
 		for _, t := range route.Source.Types {
@@ -27,10 +29,11 @@ func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 			}
 		}
 		logline.Tag = route.Target.AppendTag
+		logline.Count = count
 
 		switch stdout {
 		case true:
-			Logger.Info(logline)
+			Logger.Info("Debug Output", logline)
 		default:
 			for offset := 0; offset < route.Backends.Len(); offset++ {
 				addr, err := route.Backends.Get(logline.Name, offset)
@@ -62,6 +65,11 @@ func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 				}
 				break
 			}
+		}
+		if count == math.MaxInt64 {
+			count = 0
+		} else {
+			count++
 		}
 	}
 }

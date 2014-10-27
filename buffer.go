@@ -19,13 +19,12 @@ type ForwardOutput struct {
 	name     string
 	version  string
 	typ      string
-	counter  int64
 	routes   []*defines.Route
 	channels []chan *defines.Log
 }
 
 func NewForwardOutput(name, version, typ string, routes []*defines.Route) *ForwardOutput {
-	o := &ForwardOutput{name: name, version: version, typ: typ, counter: 0}
+	o := &ForwardOutput{name: name, version: version, typ: typ}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
 	for i, route := range routes {
@@ -52,11 +51,9 @@ func (self ForwardOutput) send(data string) {
 			AppID:   "",
 			AppType: self.typ,
 			Type:    "stdout",
-			Count:   self.counter,
 		}
 		chann <- o
 	}
-	self.counter++
 }
 
 func (self ForwardOutput) Close() {

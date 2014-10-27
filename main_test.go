@@ -24,6 +24,9 @@ func InitTest() {
 	if Lenz == nil {
 		Lenz = NewLenz()
 	}
+	if Metrics == nil {
+		Metrics = NewMetricsRecorder()
+	}
 }
 
 func MockDocker(d *DockerWrapper) {
