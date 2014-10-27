@@ -96,7 +96,7 @@ func (rm *RouteManager) Add(route *defines.Route) error {
 	go func() {
 		logstream := make(chan *defines.Log)
 		defer close(logstream)
-		go streamer(route, logstream, rm.stdout)
+		go Streamer(route, logstream, rm.stdout)
 		rm.attacher.Listen(route.Source, logstream, route.Closer)
 	}()
 	if rm.persistor != nil {

@@ -11,12 +11,6 @@ import (
 	"strings"
 )
 
-type FakeOut struct{}
-
-func (self FakeOut) Write(p []byte) (n int, err error) {
-	return len(p), nil
-}
-
 func UrlJoin(strs ...string) string {
 	ss := make([]string, len(strs))
 	for i, s := range strs {
@@ -32,14 +26,6 @@ func UrlJoin(strs ...string) string {
 func WritePid(path string) {
 	if err := ioutil.WriteFile(path, []byte(strconv.Itoa(os.Getpid())), 0755); err != nil {
 		Logger.Assert(err, "Save pid file failed")
-	}
-}
-
-func GetBuffer() io.Writer {
-	if Logger.Mode {
-		return os.Stdout
-	} else {
-		return FakeOut{}
 	}
 }
 
