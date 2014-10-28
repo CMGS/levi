@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"./defines"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -22,7 +23,7 @@ func init() {
 	}
 	apptask.wg = &sync.WaitGroup{}
 	apptask.Tasks = &Tasks{}
-	apptask.result = &TaskResult{Id: apptask.Id}
+	apptask.result = &defines.TaskResult{Id: apptask.Id}
 }
 
 func Test_SetAddTaskType(t *testing.T) {

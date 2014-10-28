@@ -3,8 +3,11 @@ package main
 import (
 	"reflect"
 
-	. "./defines"
-	"./utils"
+	"./defines"
+	"./lenz"
+	"./logs"
+	"./metrics"
+	"./status"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gorilla/websocket"
@@ -12,37 +15,37 @@ import (
 
 func InitTest() {
 	load("levi.yaml")
-	Docker = NewDocker(config.Docker.Endpoint)
+	Docker = defines.NewDocker(config.Docker.Endpoint)
 	MockDocker(Docker)
-	Ws = NewWebSocket(config.Master, config.ReadBufferSize, config.WriteBufferSize)
+	Ws = defines.NewWebSocket(config.Master, config.ReadBufferSize, config.WriteBufferSize)
 	MockWebSocket(Ws)
-	Etcd = NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
+	Etcd = defines.NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
 	MockEtcd(Etcd)
 	if Status == nil {
-		Status = NewStatus()
+		Status = status.NewStatus(Docker, Metrics, Lenz, Ws, config.Docker)
 	}
 	if Lenz == nil {
-		Lenz = NewLenz()
+		Lenz = lenz.NewLenz(Docker, config.Lenz)
 	}
 	if Metrics == nil {
-		Metrics = NewMetricsRecorder()
+		Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics)
 	}
 }
 
-func MockDocker(d *DockerWrapper) {
-	var makeMockedDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper
+func MockDocker(d *defines.DockerWrapper) {
+	var makeMockedDockerWrapper func(*defines.DockerWrapper, *docker.Client) *defines.DockerWrapper
 	MakeMockedWrapper(&makeMockedDockerWrapper)
 	makeMockedDockerWrapper(d, d.Client)
 }
 
-func MockEtcd(e *EtcdWrapper) {
-	var makeMockedEtcdWrapper func(*EtcdWrapper, *etcd.Client) *EtcdWrapper
+func MockEtcd(e *defines.EtcdWrapper) {
+	var makeMockedEtcdWrapper func(*defines.EtcdWrapper, *etcd.Client) *defines.EtcdWrapper
 	MakeMockedWrapper(&makeMockedEtcdWrapper)
 	makeMockedEtcdWrapper(e, e.Client)
 }
 
-func MockWebSocket(w *WebSocketWrapper) {
-	var makeMockedWebSocketWrapper func(*WebSocketWrapper, *websocket.Conn) *WebSocketWrapper
+func MockWebSocket(w *defines.WebSocketWrapper) {
+	var makeMockedWebSocketWrapper func(*defines.WebSocketWrapper, *websocket.Conn) *defines.WebSocketWrapper
 	MakeMockedWrapper(&makeMockedWebSocketWrapper)
 	makeMockedWebSocketWrapper(w, w.Conn)
 }
@@ -56,7 +59,7 @@ func MakeMockedWrapper(fptr interface{}) {
 			field := wrapper.Field(i)
 			fd, ok := client.Type().MethodByName(wrapperType.Field(i).Name)
 			if !ok {
-				utils.Logger.Info("Reflect Failed")
+				logs.Info("Reflect Failed")
 				continue
 			}
 			fdt := fd.Type

@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"../logs"
 )
 
 func UrlJoin(strs ...string) string {
@@ -25,7 +27,7 @@ func UrlJoin(strs ...string) string {
 
 func WritePid(path string) {
 	if err := ioutil.WriteFile(path, []byte(strconv.Itoa(os.Getpid())), 0755); err != nil {
-		Logger.Assert(err, "Save pid file failed")
+		logs.Assert(err, "Save pid file failed")
 	}
 }
 
@@ -118,7 +120,7 @@ func MakeWrapper(fptr interface{}) {
 func Marshal(obj interface{}) []byte {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
-		Logger.Info("Utils Marshal:", err)
+		logs.Info("Utils Marshal:", err)
 	}
 	return bytes
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"./defines"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -22,7 +23,7 @@ func Test_WaitForTester(t *testing.T) {
 		return &docker.Container{Volumes: m}, nil
 	}
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*TaskResult)
+		x, ok := d.(*defines.TaskResult)
 		if !ok {
 			t.Error("Wrong Data")
 		}

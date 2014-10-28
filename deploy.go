@@ -3,7 +3,7 @@ package main
 import (
 	"sync"
 
-	. "./utils"
+	"./logs"
 )
 
 type Deploy struct {
@@ -20,7 +20,7 @@ func (self *Deploy) doDeploy() {
 			if apptask.Tasks == nil {
 				return
 			}
-			Logger.Info("Appname", apptask.Name)
+			logs.Info("Appname", apptask.Name)
 			env := &Env{apptask.Name, apptask.Uid}
 			apptask.Deploy(env, self.nginx)
 			apptask.Wait()
@@ -29,8 +29,8 @@ func (self *Deploy) doDeploy() {
 }
 
 func (self *Deploy) Deploy() {
-	Logger.Debug("Got tasks", len(self.tasks))
-	Logger.Debug(self.nginx.upstreams)
+	logs.Debug("Got tasks", len(self.tasks))
+	logs.Debug(self.nginx.upstreams)
 	//Do Deploy
 	self.doDeploy()
 	//Wait For Container Control Finish

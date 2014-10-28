@@ -1,6 +1,10 @@
-package utils
+package metrics
+
+import (
+	"../logs"
+)
 
 func NetNsSynchronize(pid string, fn func() error) (err error) {
-	Logger.Info("OSX not support Setns.")
+	logs.Info("OSX not support Setns.")
 	return fn()
 }
