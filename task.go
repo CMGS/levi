@@ -154,7 +154,7 @@ func (self *AppTask) storeNewContainerInfo(index int) {
 		at = common.DAEMON_TYPE
 		Status.Removable[cid] = struct{}{}
 	default:
-		aid = string(job.Port)
+		aid = fmt.Sprintf("%d", job.Bind)
 		at = common.DEFAULT_TYPE
 		Status.Removable[cid] = struct{}{}
 	}
