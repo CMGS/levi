@@ -169,12 +169,12 @@ type MetricsRecorder struct {
 	t      int
 }
 
-func NewMetricsRecorder(config defines.LeviConfig) *MetricsRecorder {
+func NewMetricsRecorder(hostname string, config defines.MetricsConfig) *MetricsRecorder {
 	r := &MetricsRecorder{}
 	r.mu = &sync.Mutex{}
 	r.apps = map[string]*MetricData{}
-	r.client = NewInfluxDBClient(config)
-	r.t = config.Metrics.ReportInterval
+	r.client = NewInfluxDBClient(hostname, config)
+	r.t = config.ReportInterval
 	r.stop = make(chan bool)
 	return r
 }

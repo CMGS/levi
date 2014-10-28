@@ -29,7 +29,7 @@ func main() {
 	Docker = defines.NewDocker(config.Docker.Endpoint)
 
 	Lenz = lenz.NewLenz(Docker, config.Lenz)
-	Metrics = metrics.NewMetricsRecorder(config)
+	Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics)
 
 	utils.WritePid(config.PidFile)
 	defer os.Remove(config.PidFile)

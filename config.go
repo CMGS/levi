@@ -7,7 +7,7 @@ import (
 
 	"./defines"
 	"./logs"
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 )
 
 var config = defines.LeviConfig{}

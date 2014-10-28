@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"./common"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -34,7 +35,7 @@ func Test_Run(t *testing.T) {
 		if opts.Name != "test_12345" {
 			t.Error("Name invaild")
 		}
-		if opts.Config.Env[0] != fmt.Sprintf("NBE_RUNENV=%s", PRODUCTION) {
+		if opts.Config.Env[0] != fmt.Sprintf("NBE_RUNENV=%s", common.PRODUCTION) {
 			t.Error("Env invaild")
 		}
 		return &docker.Container{ID: "abcdefg"}, nil

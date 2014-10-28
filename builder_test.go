@@ -7,6 +7,8 @@ import (
 	"path"
 	"strings"
 	"testing"
+
+	"./lenz"
 )
 
 var builder *Builder
@@ -63,14 +65,14 @@ func Test_CreateTar(t *testing.T) {
 }
 
 func Test_BuildImage(t *testing.T) {
-	outputStream := Stdout{}
+	outputStream := lenz.Stdout{}
 	if err := builder.buildImage(outputStream); err != nil {
 		t.Error(err)
 	}
 }
 
 func Test_PushImage(t *testing.T) {
-	outputStream := Stdout{}
+	outputStream := lenz.Stdout{}
 	if err := builder.pushImage(outputStream); err != nil {
 		t.Error(err)
 	}

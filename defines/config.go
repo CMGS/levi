@@ -44,7 +44,7 @@ type MetricsConfig struct {
 }
 
 type LeviConfig struct {
-	Name            string
+	HostName        string
 	Master          string
 	PidFile         string
 	TaskNum         int

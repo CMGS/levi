@@ -16,12 +16,12 @@ type InfluxDBClient struct {
 
 var influxdb_columns []string = []string{"host", "apptype", "appid", "metric", "value"}
 
-func NewInfluxDBClient(config defines.LeviConfig) *InfluxDBClient {
+func NewInfluxDBClient(hostname string, config defines.MetricsConfig) *InfluxDBClient {
 	c := &client.ClientConfig{
-		Host:       config.Metrics.Host,
-		Username:   config.Metrics.Username,
-		Password:   config.Metrics.Password,
-		Database:   config.Metrics.Database,
+		Host:       config.Host,
+		Username:   config.Username,
+		Password:   config.Password,
+		Database:   config.Database,
 		HttpClient: http.DefaultClient,
 		IsSecure:   false,
 		IsUDP:      false,
@@ -30,7 +30,7 @@ func NewInfluxDBClient(config defines.LeviConfig) *InfluxDBClient {
 	if err != nil {
 		logs.Assert(err, "InfluxDB")
 	}
-	return &InfluxDBClient{config.Name, i, []*client.Series{}}
+	return &InfluxDBClient{hostname, i, []*client.Series{}}
 }
 
 func (self *InfluxDBClient) GenSeries(cid string, app *MetricData) {
