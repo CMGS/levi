@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	. "./utils"
+	"./logs"
 )
 
 type Levi struct {
@@ -47,7 +47,7 @@ func (self *Levi) Loop() {
 	for !self.finish {
 		select {
 		case err := <-self.err:
-			Logger.Info(err)
+			logs.Info(err)
 			if len(self.deploy.tasks) != 0 {
 				self.deploy.Deploy()
 			}
@@ -62,7 +62,7 @@ func (self *Levi) Loop() {
 				self.deploy.Deploy()
 			}
 		case <-time.After(time.Second * time.Duration(config.TaskInterval)):
-			Logger.Debug("Time Check")
+			logs.Debug("Time Check")
 			if len(self.deploy.tasks) != 0 {
 				self.deploy.Deploy()
 			}

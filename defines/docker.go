@@ -1,6 +1,7 @@
 package defines
 
 import (
+	"../logs"
 	"../utils"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -25,7 +26,7 @@ type DockerWrapper struct {
 func NewDocker(endpoint string) *DockerWrapper {
 	client, err := docker.NewClient(endpoint)
 	if err != nil {
-		utils.Logger.Assert(err, "Docker")
+		logs.Assert(err, "Docker")
 	}
 	d := &DockerWrapper{Client: client}
 	var makeDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper

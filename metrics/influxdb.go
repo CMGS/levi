@@ -1,20 +1,22 @@
-package main
+package metrics
 
 import (
 	"net/http"
 
-	. "./utils"
+	"../defines"
+	"../logs"
 	"github.com/influxdb/influxdb/client"
 )
 
 type InfluxDBClient struct {
-	client *client.Client
-	series []*client.Series
+	hostname string
+	client   *client.Client
+	series   []*client.Series
 }
 
 var influxdb_columns []string = []string{"host", "apptype", "appid", "metric", "value"}
 
-func NewInfluxDBClient() *InfluxDBClient {
+func NewInfluxDBClient(config defines.LeviConfig) *InfluxDBClient {
 	c := &client.ClientConfig{
 		Host:       config.Metrics.Host,
 		Username:   config.Metrics.Username,
@@ -26,25 +28,25 @@ func NewInfluxDBClient() *InfluxDBClient {
 	}
 	i, err := client.New(c)
 	if err != nil {
-		Logger.Assert(err, "InfluxDB")
+		logs.Assert(err, "InfluxDB")
 	}
-	return &InfluxDBClient{i, []*client.Series{}}
+	return &InfluxDBClient{config.Name, i, []*client.Series{}}
 }
 
 func (self *InfluxDBClient) GenSeries(cid string, app *MetricData) {
 	points := [][]interface{}{
-		{config.Name, app.apptype, cid, "cpu_usage", app.cpu_usage_rate},
-		{config.Name, app.apptype, cid, "cpu_system", app.cpu_system_rate},
-		{config.Name, app.apptype, cid, "cpu_user", app.cpu_user_rate},
-		{config.Name, app.apptype, cid, "mem_usage", app.mem_usage},
-		{config.Name, app.apptype, cid, "mem_rss", app.mem_rss},
+		{self.hostname, app.apptype, cid, "cpu_usage", app.cpu_usage_rate},
+		{self.hostname, app.apptype, cid, "cpu_system", app.cpu_system_rate},
+		{self.hostname, app.apptype, cid, "cpu_user", app.cpu_user_rate},
+		{self.hostname, app.apptype, cid, "mem_usage", app.mem_usage},
+		{self.hostname, app.apptype, cid, "mem_rss", app.mem_rss},
 	}
 	if app.isapp {
 		p2 := [][]interface{}{
-			{config.Name, app.apptype, cid, "net_recv", app.net_inbytes},
-			{config.Name, app.apptype, cid, "net_send", app.net_outbytes},
-			{config.Name, app.apptype, cid, "net_recv_err", app.net_inerrs},
-			{config.Name, app.apptype, cid, "net_send_err", app.net_outerrs},
+			{self.hostname, app.apptype, cid, "net_recv", app.net_inbytes},
+			{self.hostname, app.apptype, cid, "net_send", app.net_outbytes},
+			{self.hostname, app.apptype, cid, "net_recv_err", app.net_inerrs},
+			{self.hostname, app.apptype, cid, "net_send_err", app.net_outerrs},
 		}
 		for _, p := range p2 {
 			points = append(points, p)
@@ -60,7 +62,7 @@ func (self *InfluxDBClient) GenSeries(cid string, app *MetricData) {
 
 func (self *InfluxDBClient) Send() {
 	if err := self.client.WriteSeries(self.series); err != nil {
-		Logger.Info("Write to InfluxDB Failed", err)
+		logs.Info("Write to InfluxDB Failed", err)
 	}
 	self.series = []*client.Series{}
 }

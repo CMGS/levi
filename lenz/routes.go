@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"../defines"
+	"../logs"
 	"../utils"
 )
 
@@ -101,7 +102,7 @@ func (rm *RouteManager) Add(route *defines.Route) error {
 	}()
 	if rm.persistor != nil {
 		if err := rm.persistor.Add(route); err != nil {
-			utils.Logger.Info("Lenz Persistor:", err)
+			logs.Info("Lenz Persistor:", err)
 		}
 	}
 	return nil

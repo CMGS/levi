@@ -6,7 +6,10 @@ import (
 	"os"
 	"path"
 
-	. "./utils"
+	"./common"
+	"./lenz"
+	"./logs"
+	"./utils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/juju/utils/tar"
 	"github.com/libgit2/git2go"
@@ -29,11 +32,11 @@ func NewBuilder(name string, build *BuildTask) *Builder {
 	builder := Builder{name: name, build: build}
 	builder.extendDir = path.Join(config.Git.ExtendDir, name, build.Version)
 	builder.workDir = path.Join(config.Git.WorkDir, name, build.Version)
-	builder.repoURL = UrlJoin(config.Git.Endpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
+	builder.repoURL = utils.UrlJoin(config.Git.Endpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
 	builder.codeDir = path.Join(builder.workDir, name)
 	builder.dockerFilePath = path.Join(builder.workDir, "Dockerfile")
 	builder.tarPath = path.Join(builder.workDir, fmt.Sprintf("%s.tar.gz", name))
-	builder.registryURL = UrlJoin(config.Docker.Registry, name)
+	builder.registryURL = utils.UrlJoin(config.Docker.Registry, name)
 	builder.repoTag = fmt.Sprintf("%s:%s", builder.registryURL, build.Version)
 	return &builder
 }
@@ -73,7 +76,7 @@ func (self *Builder) Build() error {
 		return err
 	}
 
-	outputStream := GetBuffer(self.name, self.build.Version, BUILD_TYPE)
+	outputStream := lenz.GetBuffer(Lenz, self.name, self.build.Version, common.BUILD_TYPE, config.Lenz.Stdout)
 	defer outputStream.Close()
 	if err := self.buildImage(outputStream); err != nil {
 		return err
@@ -86,7 +89,7 @@ func (self *Builder) Build() error {
 
 func (self *Builder) fetchCode() error {
 	repo, err := git.Clone(self.repoURL, self.codeDir, &git.CloneOptions{})
-	Logger.Debug(self.repoURL, self.codeDir)
+	logs.Debug(self.repoURL, self.codeDir)
 	if err != nil {
 		return err
 	}
@@ -96,17 +99,17 @@ func (self *Builder) fetchCode() error {
 		return err
 	}
 
-	if err := MakeDir(self.extendDir); err != nil {
+	if err := utils.MakeDir(self.extendDir); err != nil {
 		return err
 	}
 
 	if self.build.Static != "" {
-		if err := CopyDir(path.Join(self.codeDir, self.build.Static), path.Join(self.extendDir, self.build.Static)); err != nil {
+		if err := utils.CopyDir(path.Join(self.codeDir, self.build.Static), path.Join(self.extendDir, self.build.Static)); err != nil {
 			return err
 		}
 	}
 	if self.build.Schema != "" {
-		if err := CopyFile(path.Join(self.codeDir, self.build.Schema), path.Join(self.extendDir, self.build.Schema)); err != nil {
+		if err := utils.CopyFile(path.Join(self.codeDir, self.build.Schema), path.Join(self.extendDir, self.build.Schema)); err != nil {
 			return err
 		}
 	}
@@ -114,7 +117,7 @@ func (self *Builder) fetchCode() error {
 }
 
 func (self *Builder) createDockerFile() error {
-	Logger.Debug(self.dockerFilePath)
+	logs.Debug(self.dockerFilePath)
 	f, err := os.Create(self.dockerFilePath)
 	if err != nil {
 		return err
@@ -135,7 +138,7 @@ func (self *Builder) createDockerFile() error {
 }
 
 func (self *Builder) createTar() error {
-	Logger.Debug(self.tarPath)
+	logs.Debug(self.tarPath)
 
 	file, _ := os.Create(self.tarPath)
 	defer file.Close()
@@ -185,7 +188,7 @@ func (self *Builder) clear() {
 	defer os.RemoveAll(self.workDir)
 	images, err := Docker.ListImages(false)
 	if err != nil {
-		Logger.Debug(err)
+		logs.Debug(err)
 	}
 	for _, image := range images {
 		flag := false

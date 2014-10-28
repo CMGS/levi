@@ -4,7 +4,8 @@ import (
 	"os"
 	"strings"
 
-	. "./utils"
+	"./common"
+	"./logs"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -14,8 +15,8 @@ type Container struct {
 }
 
 func (self *Container) Stop() error {
-	if err := Docker.StopContainer(self.id, CONTAINER_STOP_TIMEOUT); err != nil {
-		Logger.Info(err)
+	if err := Docker.StopContainer(self.id, common.CONTAINER_STOP_TIMEOUT); err != nil {
+		logs.Info("Stop Container", err)
 		if err := Docker.KillContainer(docker.KillContainerOptions{ID: self.id}); err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package main
+package lenz
 
 import (
 	"fmt"
@@ -6,8 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"./defines"
-	"./lenz"
+	"../defines"
 )
 
 type Writer interface {
@@ -23,13 +22,13 @@ type ForwardOutput struct {
 	channels []chan *defines.Log
 }
 
-func NewForwardOutput(name, version, typ string, routes []*defines.Route) *ForwardOutput {
+func NewForwardOutput(name, version, typ string, stdout bool, routes []*defines.Route) *ForwardOutput {
 	o := &ForwardOutput{name: name, version: version, typ: typ}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
 	for i, route := range routes {
 		o.channels[i] = make(chan *defines.Log)
-		go lenz.Streamer(route, o.channels[i], config.Lenz.Stdout)
+		go Streamer(route, o.channels[i], stdout)
 	}
 	return o
 }
@@ -62,12 +61,12 @@ func (self ForwardOutput) Close() {
 	}
 }
 
-func GetBuffer(name, version, typ string) Writer {
+func GetBuffer(Lenz *LenzForwarder, name, version, typ string, stdout bool) Writer {
 	routes, err := Lenz.Router.GetAll()
 	if err != nil {
 		return Stdout{}
 	}
-	return NewForwardOutput(name, version, typ, routes)
+	return NewForwardOutput(name, version, typ, stdout, routes)
 }
 
 type Stdout struct{}
@@ -79,8 +78,8 @@ func (self Stdout) Write(p []byte) (n int, err error) {
 func (self Stdout) Close() {
 }
 
-func GetDevBuffer() io.Writer {
-	if config.Lenz.Stdout {
+func GetDevBuffer(stdout bool) io.Writer {
+	if stdout {
 		return os.Stdout
 	} else {
 		return DevBuffer{}

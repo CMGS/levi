@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	"../defines"
-	. "../utils"
+	"../logs"
 )
 
 func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
@@ -33,33 +33,33 @@ func Streamer(route *defines.Route, logstream chan *defines.Log, stdout bool) {
 
 		switch stdout {
 		case true:
-			Logger.Info("Debug Output", logline)
+			logs.Info("Debug Output", logline)
 		default:
 			for offset := 0; offset < route.Backends.Len(); offset++ {
 				addr, err := route.Backends.Get(logline.Name, offset)
 				if err != nil {
-					Logger.Info("Get backend failed", err, logline.Name, logline.Data)
+					logs.Info("Get backend failed", err, logline.Name, logline.Data)
 					break
 				}
-				Logger.Debug("Lenz Send", logline.Name, "to", addr)
+				logs.Debug("Lenz Send", logline.Name, "to", addr)
 				switch u, err := url.Parse(addr); {
 				case err != nil:
-					Logger.Info("Lenz", err)
+					logs.Info("Lenz", err)
 					route.Backends.Remove(addr)
 					continue
 				case u.Scheme == "udp":
 					if err := udpStreamer(logline, u.Host); err != nil {
-						Logger.Info("Lenz Send to", u.Host, "by udp failed", err)
+						logs.Info("Lenz Send to", u.Host, "by udp failed", err)
 						continue
 					}
 				case u.Scheme == "tcp":
 					if err := tcpStreamer(logline, u.Host); err != nil {
-						Logger.Info("Lenz Send to", u.Host, "by tcp failed", err)
+						logs.Info("Lenz Send to", u.Host, "by tcp failed", err)
 						continue
 					}
 				case u.Scheme == "syslog":
 					if err := syslogStreamer(logline, u.Host); err != nil {
-						Logger.Info("Lenz Sent to syslog failed", err)
+						logs.Info("Lenz Sent to syslog failed", err)
 						continue
 					}
 				}
@@ -87,13 +87,13 @@ func syslogStreamer(logline *defines.Log, addr string) error {
 func tcpStreamer(logline *defines.Log, addr string) error {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		Logger.Debug("Resolve tcp failed", err)
+		logs.Debug("Resolve tcp failed", err)
 		return err
 	}
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		Logger.Debug("Connect backend failed", err)
+		logs.Debug("Connect backend failed", err)
 		return err
 	}
 	defer conn.Close()
@@ -104,13 +104,13 @@ func tcpStreamer(logline *defines.Log, addr string) error {
 func udpStreamer(logline *defines.Log, addr string) error {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
-		Logger.Debug("Resolve udp failed", err)
+		logs.Debug("Resolve udp failed", err)
 		return err
 	}
 
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
-		Logger.Debug("Connect backend failed", err)
+		logs.Debug("Connect backend failed", err)
 		return err
 	}
 	defer conn.Close()

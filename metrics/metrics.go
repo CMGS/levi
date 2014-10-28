@@ -1,4 +1,4 @@
-package main
+package metrics
 
 import (
 	"fmt"
@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
-	. "./utils"
+	"../common"
+	"../defines"
+	"../logs"
 	"github.com/docker/libcontainer/cgroups"
 )
 
@@ -42,7 +44,7 @@ func NewMetricData(appname, apptype string) *MetricData {
 	m := &MetricData{}
 	m.appname = appname
 	m.apptype = apptype
-	if apptype == DEFAULT_TYPE {
+	if apptype == common.DEFAULT_TYPE {
 		m.isapp = true
 	}
 	return m
@@ -51,7 +53,7 @@ func NewMetricData(appname, apptype string) *MetricData {
 func (self *MetricData) InitStats(cid string) bool {
 	stats, err := self.GetStats(cid)
 	if err != nil {
-		Logger.Info("Get Stats Failed", err)
+		logs.Info("Get Stats Failed", err)
 		return false
 	}
 	self.old_cpu_user = stats.CpuStats.CpuUsage.UsageInUsermode
@@ -61,7 +63,7 @@ func (self *MetricData) InitStats(cid string) bool {
 	if self.isapp {
 		iStats, err := self.GetNetStats(cid)
 		if err != nil {
-			Logger.Info("Get Interface Stats Failed", err)
+			logs.Info("Get Interface Stats Failed", err)
 			return false
 		}
 		inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
@@ -113,7 +115,7 @@ func (self *MetricData) UpdateTime() {
 func (self *MetricData) UpdateStats(cid string) bool {
 	stats, err := self.GetStats(cid)
 	if err != nil {
-		Logger.Info("Get Stats Failed", err)
+		logs.Info("Get Stats Failed", err)
 		return false
 	}
 
@@ -137,7 +139,7 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 	}
 	iStats, err := self.GetNetStats(cid)
 	if err != nil {
-		Logger.Info("Get Interface Stats Failed", err)
+		logs.Info("Get Interface Stats Failed", err)
 		return false
 	}
 
@@ -164,13 +166,15 @@ type MetricsRecorder struct {
 	apps   map[string]*MetricData
 	client *InfluxDBClient
 	stop   chan bool
+	t      int
 }
 
-func NewMetricsRecorder() *MetricsRecorder {
+func NewMetricsRecorder(config defines.LeviConfig) *MetricsRecorder {
 	r := &MetricsRecorder{}
 	r.mu = &sync.Mutex{}
 	r.apps = map[string]*MetricData{}
-	r.client = NewInfluxDBClient()
+	r.client = NewInfluxDBClient(config)
+	r.t = config.Metrics.ReportInterval
 	r.stop = make(chan bool)
 	return r
 }
@@ -199,13 +203,13 @@ func (self *MetricsRecorder) Report() {
 	var finish bool = false
 	for !finish {
 		select {
-		case <-time.After(time.Second * time.Duration(config.Metrics.ReportInterval)):
+		case <-time.After(time.Second * time.Duration(self.t)):
 			self.Send()
 		case f := <-self.stop:
 			finish = f
 		}
 	}
-	Logger.Info("Metrics Stop")
+	logs.Info("Metrics Stop")
 	self.stop <- true
 }
 

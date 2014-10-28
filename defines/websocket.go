@@ -3,6 +3,7 @@ package defines
 import (
 	"net/http"
 
+	"../logs"
 	"../utils"
 	"github.com/gorilla/websocket"
 )
@@ -20,7 +21,7 @@ func NewWebSocket(endpoint string, readBufferSize, writeBufferSize int) *WebSock
 
 	conn, _, err := dialer.Dial(endpoint, http.Header{})
 	if err != nil {
-		utils.Logger.Assert(err, "Master")
+		logs.Assert(err, "Master")
 	}
 
 	ws := &WebSocketWrapper{Conn: conn}

@@ -3,6 +3,7 @@ package defines
 import (
 	"strings"
 
+	"../logs"
 	"../utils"
 	"github.com/coreos/go-etcd/etcd"
 )
@@ -19,7 +20,7 @@ type EtcdWrapper struct {
 func NewEtcd(machines []string, sync bool) *EtcdWrapper {
 	var client *etcd.Client
 	if strings.HasPrefix(machines[0], "https://") {
-		utils.Logger.Assert(nil, "TLS not support")
+		logs.Assert(nil, "TLS not support")
 	} else {
 		client = etcd.NewClient(machines)
 	}

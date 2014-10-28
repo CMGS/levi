@@ -8,7 +8,8 @@ import (
 	"path"
 	"strconv"
 
-	. "./utils"
+	"./logs"
+	"./utils"
 )
 
 func (self *Env) CheckUser() bool {
@@ -20,7 +21,7 @@ func (self *Env) CheckUser() bool {
 
 func (self *Env) CreateUser() {
 	if self.CheckUser() {
-		Logger.Info("User", self.appname, "exist")
+		logs.Info("User", self.appname, "exist")
 		return
 	}
 	cmd := exec.Command(
@@ -31,7 +32,7 @@ func (self *Env) CreateUser() {
 	)
 	err := cmd.Run()
 	if err != nil {
-		Logger.Info(err)
+		logs.Info(err)
 	}
 }
 
@@ -44,7 +45,7 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 
 func (self *Env) CreatePermdir(job *AddTask) error {
 	permdir := GeneratePermdirPath(self.appname, job.ident, job.IsTest())
-	if err := MakeDir(permdir); err != nil {
+	if err := utils.MakeDir(permdir); err != nil {
 		return err
 	}
 	return os.Chown(permdir, self.appuid, self.appuid)

@@ -1,6 +1,9 @@
 package main
 
-import . "./utils"
+import (
+	"./defines"
+	"./logs"
+)
 
 type Tester struct {
 	id   string
@@ -9,10 +12,10 @@ type Tester struct {
 
 func (self *Tester) WaitForTester() {
 	var err error
-	result := &TaskResult{Id: self.id}
-	result.Test = make(map[string]*TestResult, len(self.cids))
+	result := &defines.TaskResult{Id: self.id}
+	result.Test = make(map[string]*defines.TestResult, len(self.cids))
 	for cid, _ := range self.cids {
-		r := &TestResult{}
+		r := &defines.TestResult{}
 		if cid != "" {
 			r.ExitCode, err = Docker.WaitContainer(cid)
 			if err != nil {
@@ -26,8 +29,8 @@ func (self *Tester) WaitForTester() {
 		RemoveContainer(cid, true, false)
 	}
 
-	Logger.Info("Test finished", self.id)
+	logs.Info("Test finished", self.id)
 	if err := Ws.WriteJSON(result); err != nil {
-		Logger.Info(err)
+		logs.Info(err)
 	}
 }

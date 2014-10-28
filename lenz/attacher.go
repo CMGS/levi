@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"../defines"
-	. "../utils"
+	"../logs"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -54,7 +54,7 @@ func (m *AttachManager) Attach(id, name, aid, atype string) {
 		})
 		outwr.Close()
 		errwr.Close()
-		Logger.Debug("Lenz Attach:", id, "finished")
+		logs.Debug("Lenz Attach:", id, "finished")
 		if err != nil {
 			close(success)
 			failure <- err
@@ -71,10 +71,10 @@ func (m *AttachManager) Attach(id, name, aid, atype string) {
 		m.Unlock()
 		success <- struct{}{}
 		m.send(&defines.AttachEvent{Type: "attach", ID: id, Name: name, AppID: aid, AppType: atype})
-		Logger.Debug("Lenz Attach:", id, "success")
+		logs.Debug("Lenz Attach:", id, "success")
 		return
 	}
-	Logger.Debug("Lenz Attach:", id, "failure:", <-failure)
+	logs.Debug("Lenz Attach:", id, "failure:", <-failure)
 }
 
 func (m *AttachManager) send(event *defines.AttachEvent) {
@@ -163,7 +163,7 @@ func NewLogPump(stdout, stderr io.Reader, id, name, aid, atype string) *LogPump 
 			data, err := buf.ReadBytes('\n')
 			if err != nil {
 				if err != io.EOF {
-					Logger.Debug("Lenz Pump:", id, typ, err)
+					logs.Debug("Lenz Pump:", id, typ, err)
 				}
 				return
 			}

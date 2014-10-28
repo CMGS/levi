@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	. "./utils"
+	"./common"
+	"./lenz"
+	"./logs"
+	"./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -15,8 +18,8 @@ type Image struct {
 }
 
 func (self *Image) Pull() error {
-	url := UrlJoin(config.Docker.Registry, self.appname)
-	outputStream := DevBuffer{}
+	url := utils.UrlJoin(config.Docker.Registry, self.appname)
+	outputStream := lenz.GetDevBuffer(config.Lenz.Stdout)
 	if err := Docker.PullImage(
 		docker.PullImageOptions{url, config.Docker.Registry, self.version, outputStream, false},
 		docker.AuthConfiguration{}); err != nil {
@@ -29,9 +32,9 @@ func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.ident)
 	mPermdir := fmt.Sprintf("/%s/permdir", self.appname)
-	runenv := PRODUCTION
+	runenv := common.PRODUCTION
 	if job.IsTest() {
-		runenv = TESTING
+		runenv = common.TESTING
 	}
 	permdir := GeneratePermdirPath(self.appname, job.ident, job.IsTest())
 
@@ -83,7 +86,7 @@ func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
 
 	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
 		// Have to remove resource when start failed
-		Logger.Debug("Rollback add files")
+		logs.Debug("Rollback add files")
 		RemoveContainer(container.ID, job.IsTest(), false)
 		return nil, err
 	}
