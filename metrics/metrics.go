@@ -9,7 +9,6 @@ import (
 	"../common"
 	"../defines"
 	"../logs"
-	"github.com/docker/libcontainer/cgroups"
 )
 
 type MetricData struct {
@@ -51,7 +50,7 @@ func NewMetricData(appname, apptype string) *MetricData {
 }
 
 func (self *MetricData) InitStats(cid string) bool {
-	stats, err := self.GetStats(cid)
+	stats, err := GetCgroupStats(cid)
 	if err != nil {
 		logs.Info("Get Stats Failed", err)
 		return false
@@ -63,7 +62,7 @@ func (self *MetricData) InitStats(cid string) bool {
 	if self.isapp {
 		iStats, err := self.GetNetStats(cid)
 		if err != nil {
-			logs.Info("Get Interface Stats Failed", err)
+			logs.Info(err)
 			return false
 		}
 		inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
@@ -78,14 +77,6 @@ func (self *MetricData) InitStats(cid string) bool {
 
 	self.UpdateTime()
 	return true
-}
-
-func (self *MetricData) GetStats(cid string) (*cgroups.Stats, error) {
-	stats, err := GetCgroupStats(cid)
-	if err != nil {
-		return nil, err
-	}
-	return stats, nil
 }
 
 func (self *MetricData) GetNetStats(cid string) (map[string]interface{}, error) {
@@ -113,7 +104,7 @@ func (self *MetricData) UpdateTime() {
 }
 
 func (self *MetricData) UpdateStats(cid string) bool {
-	stats, err := self.GetStats(cid)
+	stats, err := GetCgroupStats(cid)
 	if err != nil {
 		logs.Info("Get Stats Failed", err)
 		return false
@@ -170,6 +161,7 @@ type MetricsRecorder struct {
 }
 
 func NewMetricsRecorder(hostname string, config defines.MetricsConfig) *MetricsRecorder {
+	InitDevDir()
 	r := &MetricsRecorder{}
 	r.mu = &sync.Mutex{}
 	r.apps = map[string]*MetricData{}
