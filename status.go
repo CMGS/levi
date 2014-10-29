@@ -1,36 +1,24 @@
-package status
+package main
 
 import (
 	"strings"
 
-	"../common"
-	"../defines"
-	"../lenz"
-	"../logs"
-	"../metrics"
+	"./common"
+	"./defines"
+	"./logs"
 	"github.com/fsouza/go-dockerclient"
 )
 
 type StatusMoniter struct {
-	events          chan *docker.APIEvents
-	docker_registry string
-	docker          *defines.DockerWrapper
-	ws              *defines.WebSocketWrapper
-	metrics         *metrics.MetricsRecorder
-	lenz            *lenz.LenzForwarder
-	Removable       map[string]struct{}
+	events    chan *docker.APIEvents
+	Removable map[string]struct{}
 }
 
-func NewStatus(Docker *defines.DockerWrapper, Metrics *metrics.MetricsRecorder, Lenz *lenz.LenzForwarder, Ws *defines.WebSocketWrapper, config defines.DockerConfig) *StatusMoniter {
+func NewStatus() *StatusMoniter {
 	status := &StatusMoniter{}
 	status.events = make(chan *docker.APIEvents)
 	status.Removable = map[string]struct{}{}
-	status.docker_registry = config.Registry
-	status.docker = Docker
-	status.metrics = Metrics
-	status.lenz = Lenz
-	status.ws = Ws
-	logs.Assert(status.docker.AddEventListener(status.events), "Attacher")
+	logs.Assert(Docker.AddEventListener(status.events), "Attacher")
 	return status
 }
 
@@ -39,7 +27,7 @@ func (self *StatusMoniter) Listen() {
 	for event := range self.events {
 		logs.Debug("Status:", event.Status, event.ID, event.From)
 		if event.Status == common.STATUS_DIE {
-			self.metrics.Remove(event.ID[:12])
+			Metrics.Remove(event.ID[:12])
 			if _, ok := self.Removable[event.ID]; ok {
 				self.die(event.ID)
 			}
@@ -57,7 +45,7 @@ func (self *StatusMoniter) getStatus(s string) string {
 }
 
 func (self *StatusMoniter) Report(id string) {
-	containers, err := self.docker.ListContainers(docker.ListContainersOptions{All: true})
+	containers, err := Docker.ListContainers(docker.ListContainersOptions{All: true})
 	if err != nil {
 		logs.Info(err, "Load")
 	}
@@ -67,7 +55,7 @@ func (self *StatusMoniter) Report(id string) {
 
 	logs.Info("Load container")
 	for _, container := range containers {
-		if !strings.HasPrefix(container.Image, self.docker_registry) {
+		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
 		status := self.getStatus(container.Status)
@@ -75,14 +63,14 @@ func (self *StatusMoniter) Report(id string) {
 		shortID := container.ID[:12]
 		logs.Debug("Container", name, shortID, status)
 		if status != common.STATUS_DIE {
-			self.metrics.Add(name, shortID, at)
-			self.lenz.Attacher.Attach(shortID, name, aid, at)
+			Metrics.Add(name, shortID, at)
+			Lenz.Attacher.Attach(shortID, name, aid, at)
 		}
 		self.Removable[container.ID] = struct{}{}
 		s := &defines.StatusInfo{status, name, container.ID}
 		result.Status = append(result.Status, s)
 	}
-	if err := self.ws.WriteJSON(result); err != nil {
+	if err := Ws.WriteJSON(result); err != nil {
 		logs.Info(err, result)
 	}
 }
@@ -91,14 +79,14 @@ func (self *StatusMoniter) die(id string) {
 	result := &defines.TaskResult{Id: common.STATUS_IDENT}
 	result.Status = make([]*defines.StatusInfo, 1)
 
-	container, err := self.docker.InspectContainer(id)
+	container, err := Docker.InspectContainer(id)
 	if err != nil {
 		logs.Info("Status inspect docker failed", err)
 		return
 	}
 	appname, _, _ := self.getAppInfo(container.Name)
 	result.Status[0] = &defines.StatusInfo{common.STATUS_DIE, appname, id}
-	if err := self.ws.WriteJSON(result); err != nil {
+	if err := Ws.WriteJSON(result); err != nil {
 		logs.Info(err, result)
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"./lenz"
 	"./logs"
 	"./metrics"
-	"./status"
 	"./utils"
 )
 
@@ -18,9 +17,10 @@ var Ws *defines.WebSocketWrapper
 var Etcd *defines.EtcdWrapper
 var Docker *defines.DockerWrapper
 
-var Status *status.StatusMoniter
 var Lenz *lenz.LenzForwarder
 var Metrics *metrics.MetricsRecorder
+
+var Status *StatusMoniter
 
 func main() {
 	LoadConfig()
@@ -37,8 +37,7 @@ func main() {
 	Ws = defines.NewWebSocket(config.Master, config.ReadBufferSize, config.WriteBufferSize)
 	defer Ws.Close()
 
-	Status = status.NewStatus(Docker, Metrics, Lenz, Ws, config.Docker)
-
+	Status = NewStatus()
 	levi := NewLevi()
 	go Status.Listen()
 	go Status.Report(common.STATUS_IDENT)
