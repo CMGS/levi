@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"./common"
+	"./defines"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -20,18 +22,18 @@ func Test_GetName(t *testing.T) {
 	if appid != "1234" {
 		t.Error("Get appid failed")
 	}
-	if apptype != DEFAULT_TYPE {
+	if apptype != common.DEFAULT_TYPE {
 		t.Error("Get apptype failed")
 	}
 }
 
 func Test_GetStatus(t *testing.T) {
 	a := "Exited (0) 9 days ago"
-	if Status.getStatus(a) != STATUS_DIE {
+	if Status.getStatus(a) != common.STATUS_DIE {
 		t.Error("Wrong Status")
 	}
 	a = "Up 8 days"
-	if Status.getStatus(a) != STATUS_START {
+	if Status.getStatus(a) != common.STATUS_START {
 		t.Error("Wrong Status")
 	}
 }
@@ -50,7 +52,7 @@ func Test_StatusReport(t *testing.T) {
 	}
 	tid := "zzzzzzzzzzzz"
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*TaskResult)
+		x, ok := d.(*defines.TaskResult)
 		if !ok {
 			t.Error("Wrong Data")
 		}
@@ -67,7 +69,7 @@ func Test_StatusReport(t *testing.T) {
 		if i.Id != id {
 			t.Error("Wrong Id")
 		}
-		if i.Type != STATUS_DIE {
+		if i.Type != common.STATUS_DIE {
 			t.Error("Wrong Status")
 		}
 		return nil
@@ -84,7 +86,7 @@ func Test_StatusDie(t *testing.T) {
 		return &docker.Container{Name: "/test_1234"}, nil
 	}
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*TaskResult)
+		x, ok := d.(*defines.TaskResult)
 		if !ok {
 			t.Error("Wrong Data")
 		}
@@ -98,7 +100,7 @@ func Test_StatusDie(t *testing.T) {
 		if i.Id != id {
 			t.Error("Wrong Id")
 		}
-		if i.Type != STATUS_DIE {
+		if i.Type != common.STATUS_DIE {
 			t.Error("Wrong Status")
 		}
 		return nil
@@ -123,7 +125,7 @@ func Test_StatusListen(t *testing.T) {
 		return &docker.Container{ID: id, Name: "/test_1234"}, nil
 	}
 	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*TaskResult)
+		x, ok := d.(*defines.TaskResult)
 		if !ok {
 			t.Error("Wrong Data")
 		}
@@ -137,7 +139,7 @@ func Test_StatusListen(t *testing.T) {
 		if i.Id != id {
 			t.Error("Wrong Id")
 		}
-		if i.Type != STATUS_DIE {
+		if i.Type != common.STATUS_DIE {
 			t.Error("Wrong Status")
 		}
 		return nil

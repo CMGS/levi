@@ -7,7 +7,6 @@ import (
 	"./lenz"
 	"./logs"
 	"./metrics"
-	"./status"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gorilla/websocket"
@@ -22,7 +21,7 @@ func InitTest() {
 	Etcd = defines.NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
 	MockEtcd(Etcd)
 	if Status == nil {
-		Status = status.NewStatus(Docker, Metrics, Lenz, Ws, config.Docker)
+		Status = NewStatus()
 	}
 	if Lenz == nil {
 		Lenz = lenz.NewLenz(Docker, config.Lenz)
