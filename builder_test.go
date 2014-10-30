@@ -52,18 +52,6 @@ func Test_CreateDockerFile(t *testing.T) {
 	}
 }
 
-func Test_CreateTar(t *testing.T) {
-	if _, err := os.Stat(builder.tarPath); err == nil {
-		t.Error("Tar exists")
-	}
-	if err := builder.createTar(); err != nil {
-		t.Error(err)
-	}
-	if _, err := os.Stat(builder.tarPath); err != nil {
-		t.Error(err)
-	}
-}
-
 func Test_BuildImage(t *testing.T) {
 	outputStream := lenz.Stdout{}
 	if err := builder.buildImage(outputStream); err != nil {

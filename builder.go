@@ -11,7 +11,6 @@ import (
 	"./logs"
 	"./utils"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/juju/utils/tar"
 	"github.com/libgit2/git2go"
 )
 
@@ -20,7 +19,6 @@ type Builder struct {
 	workDir        string
 	codeDir        string
 	dockerFilePath string
-	tarPath        string
 	repoURL        string
 	registryURL    string
 	repoTag        string
@@ -35,7 +33,6 @@ func NewBuilder(name string, build *BuildTask) *Builder {
 	builder.repoURL = utils.UrlJoin(config.Git.Endpoint, build.Group, fmt.Sprintf("%s.git", build.Name))
 	builder.codeDir = path.Join(builder.workDir, name)
 	builder.dockerFilePath = path.Join(builder.workDir, "Dockerfile")
-	builder.tarPath = path.Join(builder.workDir, fmt.Sprintf("%s.tar.gz", name))
 	builder.registryURL = utils.UrlJoin(config.Docker.Registry, name)
 	builder.repoTag = fmt.Sprintf("%s:%s", builder.registryURL, build.Version)
 	return &builder
@@ -72,10 +69,6 @@ func (self *Builder) Build() error {
 	if err := self.createDockerFile(); err != nil {
 		return err
 	}
-	if err := self.createTar(); err != nil {
-		return err
-	}
-
 	outputStream := lenz.GetBuffer(Lenz, self.name, self.build.Version, common.BUILD_TYPE, config.Lenz.Stdout)
 	defer outputStream.Close()
 	if err := self.buildImage(outputStream); err != nil {
@@ -137,33 +130,16 @@ func (self *Builder) createDockerFile() error {
 	return nil
 }
 
-func (self *Builder) createTar() error {
-	logs.Debug(self.tarPath)
-
-	file, _ := os.Create(self.tarPath)
-	defer file.Close()
-	if _, err := tar.TarFiles([]string{self.dockerFilePath, self.codeDir}, file, self.workDir); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (self *Builder) buildImage(out io.Writer) error {
-	file, err := os.Open(self.tarPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
 	opts := docker.BuildImageOptions{
 		Name:                self.repoTag,
 		NoCache:             false,
 		SuppressOutput:      true,
 		RmTmpContainer:      true,
 		ForceRmTmpContainer: true,
-		InputStream:         file,
 		OutputStream:        out,
 		RawJSONStream:       false,
+		ContextDir:          self.workDir,
 	}
 
 	if err := Docker.BuildImage(opts); err != nil {
