@@ -17,6 +17,7 @@ import (
 )
 
 func InitDevDir() {
+	var err error
 	devDir, err = cgroups.FindCgroupMountpoint("devices")
 	if err != nil {
 		return
