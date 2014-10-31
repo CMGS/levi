@@ -49,7 +49,7 @@ func NewMetricData(appname, apptype string) *MetricData {
 	return m
 }
 
-func (self *MetricData) InitStats(cid string) bool {
+func (self *MetricData) InitStats(cid string, client *defines.DockerWrapper) bool {
 	stats, err := GetCgroupStats(cid)
 	if err != nil {
 		logs.Info("Get Stats Failed", err)
@@ -60,7 +60,7 @@ func (self *MetricData) InitStats(cid string) bool {
 	self.old_cpu_usage = stats.CpuStats.CpuUsage.TotalUsage
 
 	if self.isapp {
-		iStats, err := self.GetNetStats(cid)
+		iStats, err := self.GetNetStats(cid, client)
 		if err != nil {
 			logs.Info(err)
 			return false
@@ -79,24 +79,8 @@ func (self *MetricData) InitStats(cid string) bool {
 	return true
 }
 
-func (self *MetricData) GetNetStats(cid string) (map[string]interface{}, error) {
-	var iStats map[string]interface{}
-	pid, err := GetContainerPID(cid)
-	if err != nil {
-		return nil, err
-	}
-	err = NetNsSynchronize(pid, func() (err error) {
-		var e error
-		iStats, e = GetIfStats()
-		if e != nil {
-			return e
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return iStats, nil
+func (self *MetricData) GetNetStats(cid string, client *defines.DockerWrapper) (map[string]uint64, error) {
+	return GetNetStats(client, cid)
 }
 
 func (self *MetricData) UpdateTime() {
@@ -124,11 +108,11 @@ func (self *MetricData) UpdateStats(cid string) bool {
 	return true
 }
 
-func (self *MetricData) UpdateNetStats(cid string) bool {
+func (self *MetricData) UpdateNetStats(cid string, client *defines.DockerWrapper) bool {
 	if !self.isapp {
 		return true
 	}
-	iStats, err := self.GetNetStats(cid)
+	iStats, err := self.GetNetStats(cid, client)
 	if err != nil {
 		logs.Info("Get Interface Stats Failed", err)
 		return false
@@ -153,14 +137,15 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 }
 
 type MetricsRecorder struct {
-	mu     *sync.Mutex
-	apps   map[string]*MetricData
-	client *InfluxDBClient
-	stop   chan bool
-	t      int
+	mu      *sync.Mutex
+	apps    map[string]*MetricData
+	client  *InfluxDBClient
+	dclient *defines.DockerWrapper
+	stop    chan bool
+	t       int
 }
 
-func NewMetricsRecorder(hostname string, config defines.MetricsConfig) *MetricsRecorder {
+func NewMetricsRecorder(hostname string, config defines.MetricsConfig, dclient *defines.DockerWrapper) *MetricsRecorder {
 	InitDevDir()
 	r := &MetricsRecorder{}
 	r.mu = &sync.Mutex{}
@@ -168,6 +153,7 @@ func NewMetricsRecorder(hostname string, config defines.MetricsConfig) *MetricsR
 	r.client = NewInfluxDBClient(hostname, config)
 	r.t = config.ReportInterval
 	r.stop = make(chan bool)
+	r.dclient = dclient
 	return r
 }
 
@@ -178,7 +164,7 @@ func (self *MetricsRecorder) Add(appname, cid, apptype string) {
 		return
 	}
 	self.apps[cid] = NewMetricData(appname, apptype)
-	self.apps[cid].InitStats(cid)
+	self.apps[cid].InitStats(cid, self.dclient)
 }
 
 func (self *MetricsRecorder) Remove(cid string) {
@@ -214,7 +200,7 @@ func (self *MetricsRecorder) Send() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	for cid, app := range self.apps {
-		if app.UpdateStats(cid) && app.UpdateNetStats(cid) {
+		if app.UpdateStats(cid) && app.UpdateNetStats(cid, self.dclient) {
 			self.client.GenSeries(cid, app)
 			app.UpdateTime()
 		}
