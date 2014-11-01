@@ -1,8 +1,6 @@
 package metrics
 
 import (
-	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
@@ -33,10 +31,10 @@ type MetricData struct {
 	old_cpu_system uint64
 	old_cpu_usage  uint64
 
-	old_net_inbytes  int64
-	old_net_outbytes int64
-	old_net_inerrs   int64
-	old_net_outerrs  int64
+	old_net_inbytes  uint64
+	old_net_outbytes uint64
+	old_net_inerrs   uint64
+	old_net_outerrs  uint64
 }
 
 func NewMetricData(appname, apptype string) *MetricData {
@@ -65,14 +63,10 @@ func (self *MetricData) InitStats(cid string, client *defines.DockerWrapper) boo
 			logs.Info(err)
 			return false
 		}
-		inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
-		outbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
-		inerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
-		outerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
-		self.old_net_inbytes = inbytes
-		self.old_net_outbytes = outbytes
-		self.old_net_inerrs = inerrs
-		self.old_net_outerrs = outerrs
+		self.old_net_inbytes = iStats["inbytes.0"]
+		self.old_net_outbytes = iStats["outbytes.0"]
+		self.old_net_inerrs = iStats["inerrs.0"]
+		self.old_net_outerrs = iStats["outerrs.0"]
 	}
 
 	self.UpdateTime()
@@ -119,20 +113,15 @@ func (self *MetricData) UpdateNetStats(cid string, client *defines.DockerWrapper
 	}
 
 	t := time.Now().Sub(self.t).Seconds()
-	inbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inbytes.0"]), 10, 64)
-	outbytes, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outbytes.0"]), 10, 64)
-	inerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["inerrs.0"]), 10, 64)
-	outerrs, _ := strconv.ParseInt(fmt.Sprintf("%v", iStats["outerrs.0"]), 10, 64)
+	self.net_inbytes = float64(iStats["inbytes.0"]-self.old_net_inbytes) / t
+	self.net_outbytes = float64(iStats["outbytes.0"]-self.old_net_outbytes) / t
+	self.net_inerrs = float64(iStats["inerrs.0"]-self.old_net_inerrs) / t
+	self.net_outerrs = float64(iStats["outerrs.0"]-self.old_net_outerrs) / t
 
-	self.net_inbytes = float64(inbytes-self.old_net_inbytes) / t
-	self.net_outbytes = float64(outbytes-self.old_net_outbytes) / t
-	self.net_inerrs = float64(inerrs-self.old_net_inerrs) / t
-	self.net_outerrs = float64(outerrs-self.old_net_outerrs) / t
-
-	self.old_net_inbytes = inbytes
-	self.old_net_outbytes = outbytes
-	self.old_net_inerrs = inerrs
-	self.old_net_outerrs = outerrs
+	self.old_net_inbytes = iStats["inbytes.0"]
+	self.old_net_outbytes = iStats["outbytes.0"]
+	self.old_net_inerrs = iStats["inerrs.0"]
+	self.old_net_outerrs = iStats["outerrs.0"]
 	return true
 }
 
