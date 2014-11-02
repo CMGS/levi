@@ -46,47 +46,65 @@ func GetNetStats(client *defines.DockerWrapper, cid string) (result map[string]u
 	}
 	logs.Debug("Create exec id", exec.Id)
 	outr, outw := io.Pipe()
+	errr, errw := io.Pipe()
 	defer outr.Close()
+	defer errr.Close()
+
+	success := make(chan struct{})
+	failure := make(chan error)
+
 	go func() {
 		err = client.StartExec(
 			exec.Id,
 			docker.StartExecOptions{
 				OutputStream: outw,
+				ErrorStream:  errw,
+				Success:      success,
 			},
 		)
 		outw.Close()
+		errr.Close()
+		if err != nil {
+			close(success)
+			failure <- err
+		}
 	}()
-	result = map[string]uint64{}
-	s := bufio.NewScanner(outr)
-	var d uint64
-	for i := 0; s.Scan(); {
-		var name string
-		var n [8]uint64
-		text := s.Text()
-		if strings.Index(text, ":") < 1 {
-			continue
+	if _, ok := <-success; ok {
+		success <- struct{}{}
+		result = map[string]uint64{}
+		s := bufio.NewScanner(outr)
+		var d uint64
+		for i := 0; s.Scan(); {
+			var name string
+			var n [8]uint64
+			text := s.Text()
+			if strings.Index(text, ":") < 1 {
+				continue
+			}
+			ts := strings.Split(text, ":")
+			fmt.Sscanf(ts[0], "%s", &name)
+			if strings.HasPrefix(name, "veth") || name == "lo" {
+				continue
+			}
+			fmt.Sscanf(ts[1],
+				"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+				&n[0], &n[1], &n[2], &n[3], &d, &d, &d, &d,
+				&n[4], &n[5], &n[6], &n[7], &d, &d, &d, &d,
+			)
+			j := "." + strconv.Itoa(i)
+			result["inbytes"+j] = n[0]
+			result["inpackets"+j] = n[1]
+			result["inerrs"+j] = n[2]
+			result["indrop"+j] = n[3]
+			result["outbytes"+j] = n[4]
+			result["outpackets"+j] = n[5]
+			result["outerrs"+j] = n[6]
+			result["outdrop"+j] = n[7]
+			i++
 		}
-		ts := strings.Split(text, ":")
-		fmt.Sscanf(ts[0], "%s", &name)
-		if strings.HasPrefix(name, "veth") || name == "lo" {
-			continue
-		}
-		fmt.Sscanf(ts[1],
-			"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-			&n[0], &n[1], &n[2], &n[3], &d, &d, &d, &d,
-			&n[4], &n[5], &n[6], &n[7], &d, &d, &d, &d,
-		)
-		j := "." + strconv.Itoa(i)
-		result["inbytes"+j] = n[0]
-		result["inpackets"+j] = n[1]
-		result["inerrs"+j] = n[2]
-		result["indrop"+j] = n[3]
-		result["outbytes"+j] = n[4]
-		result["outpackets"+j] = n[5]
-		result["outerrs"+j] = n[6]
-		result["outdrop"+j] = n[7]
-		i++
+		logs.Debug("Container net status", cid, result)
+		return
 	}
-	logs.Debug("Container net status", cid, result)
+	err = <-failure
 	return
 }
