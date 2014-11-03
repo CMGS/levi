@@ -21,6 +21,6 @@ func InitTest() {
 		Lenz = lenz.NewLenz(Docker, config.Lenz)
 	}
 	if Metrics == nil {
-		Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics)
+		Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics, Docker)
 	}
 }

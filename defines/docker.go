@@ -21,6 +21,8 @@ type DockerWrapper struct {
 	RemoveContainer  func(docker.RemoveContainerOptions) error
 	WaitContainer    func(string) (int, error)
 	RemoveImage      func(string) error
+	CreateExec       func(docker.CreateExecOptions) (*docker.Exec, error)
+	StartExec        func(string, docker.StartExecOptions) error
 }
 
 func NewDocker(endpoint string) *DockerWrapper {
