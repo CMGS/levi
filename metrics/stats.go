@@ -52,7 +52,6 @@ func GetNetStats(client *defines.DockerWrapper, cid string) (result map[string]u
 
 	success := make(chan struct{})
 	failure := make(chan error)
-
 	go func() {
 		err = client.StartExec(
 			exec.Id,
