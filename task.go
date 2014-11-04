@@ -122,6 +122,7 @@ func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
 		var aid, at string
 		if job.IsTest() {
 			result.Done = false
+			self.writeBack(result)
 			at = common.TEST_TYPE
 			tester := Tester{
 				id:      result.Id,
@@ -131,7 +132,8 @@ func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
 				index:   result.Index,
 			}
 			tester.GetLogs()
-			go tester.Wait()
+			tester.Wait()
+			return
 		} else {
 			switch {
 			case job.IsDaemon():
@@ -247,16 +249,17 @@ func (self *AppTask) BuildImage(index int) {
 	job := self.Tasks.Build[index]
 	result := &defines.Result{
 		Id:    self.Id,
-		Done:  true,
+		Done:  false,
 		Index: index,
 		Type:  common.BUILD_TASK,
 	}
 	defer self.writeBack(result)
 	builder := NewBuilder(self.Name, job)
-	if err := builder.Build(self.Id, index); err != nil {
+	if err := builder.Build(result); err != nil {
 		logs.Info(err)
 		return
 	}
+	result.Done = true
 	result.Data = builder.repoTag
 	logs.Info("Build Finished", builder.repoTag)
 }

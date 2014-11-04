@@ -61,7 +61,7 @@ func (self *Builder) checkout(repo *git.Repository, opts *git.CheckoutOpts) erro
 	return nil
 }
 
-func (self *Builder) Build(id string, index int) error {
+func (self *Builder) Build(result *defines.Result) error {
 	defer self.clear()
 
 	if err := self.fetchCode(); err != nil {
@@ -69,12 +69,6 @@ func (self *Builder) Build(id string, index int) error {
 	}
 	if err := self.createDockerFile(); err != nil {
 		return err
-	}
-	result := &defines.Result{
-		Id:    id,
-		Done:  false,
-		Index: index,
-		Type:  common.BUILD_TASK,
 	}
 	outputStream := lenz.GetBuffer(
 		Lenz, result, self.name,

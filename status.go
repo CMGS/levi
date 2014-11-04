@@ -68,10 +68,10 @@ func (self *StatusMoniter) Report(id string) {
 		logs.Debug("Container", name, shortID, status)
 		if status != common.STATUS_DIE {
 			Metrics.Add(name, shortID, at)
-			Lenz.Attacher.Attach(shortID, name, aid, at)
-		}
-		if at != common.TEST_TYPE {
-			self.Removable[container.ID] = struct{}{}
+			if at != common.TEST_TYPE {
+				Lenz.Attacher.Attach(shortID, name, aid, at)
+				self.Removable[container.ID] = struct{}{}
+			}
 		}
 		result := &defines.Result{
 			Id:    id,
