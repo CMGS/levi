@@ -115,15 +115,13 @@ func (self *AppTask) Wait() {
 }
 
 func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
-	self.writeBack(result)
 	if result.Data != "" {
 		job := self.Tasks.Add[result.Index]
 		cid := result.Data
 		shortID := cid[:12]
 		var aid, at string
-		switch {
-		case job.IsTest():
-			aid = job.Test
+		if job.IsTest() {
+			result.Done = false
 			at = common.TEST_TYPE
 			tester := Tester{
 				id:      result.Id,
@@ -134,19 +132,21 @@ func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
 			}
 			tester.GetLogs()
 			go tester.Wait()
-		case job.IsDaemon():
-			aid = job.Daemon
-			at = common.DAEMON_TYPE
-			Status.Removable[cid] = struct{}{}
-			Lenz.Attacher.Attach(shortID, self.Name, aid, at)
-		default:
-			aid = fmt.Sprintf("%d", job.Bind)
-			at = common.DEFAULT_TYPE
+		} else {
+			switch {
+			case job.IsDaemon():
+				aid = job.Daemon
+				at = common.DAEMON_TYPE
+			default:
+				aid = fmt.Sprintf("%d", job.Bind)
+				at = common.DEFAULT_TYPE
+			}
 			Status.Removable[cid] = struct{}{}
 			Lenz.Attacher.Attach(shortID, self.Name, aid, at)
 		}
 		Metrics.Add(self.Name, shortID, at)
 	}
+	self.writeBack(result)
 }
 
 func (self *AppTask) writeBack(result *defines.Result) {
@@ -160,7 +160,7 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 	job := self.Tasks.Add[index]
 	result := &defines.Result{
 		Id:    self.Id,
-		Done:  !job.IsTest(),
+		Done:  true,
 		Index: index,
 		Type:  common.ADD_TASK,
 	}

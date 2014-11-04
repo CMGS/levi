@@ -13,7 +13,7 @@ func InitDevDir() {
 }
 
 func GetCgroupStats(id string) (m *cgroups.Stats, err error) {
-	logs.Info("OSX not support get cgroup stats")
+	logs.Info("OSX not support get cgroup stats", id)
 	err = nil
 	rand.Seed(time.Now().UnixNano())
 	x := rand.Int63n(1e9)

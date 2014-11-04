@@ -17,6 +17,7 @@ type Tester struct {
 }
 
 func (self *Tester) Wait() {
+	defer RemoveContainer(self.cid, true, false)
 	result := &defines.Result{
 		Id:    self.id,
 		Done:  true,
