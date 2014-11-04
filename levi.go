@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"./common"
 	"./logs"
 )
 
@@ -35,7 +36,7 @@ func (self *Levi) Exit() {
 func (self *Levi) Read() {
 	for {
 		apptask := &AppTask{wg: &sync.WaitGroup{}}
-		if err := Ws.ReadJSON(apptask); err != nil {
+		if err := common.Ws.ReadJSON(apptask); err != nil {
 			self.err <- err
 			continue
 		}

@@ -13,10 +13,6 @@ import (
 	"./utils"
 )
 
-var Ws *defines.WebSocketWrapper
-var Etcd *defines.EtcdWrapper
-var Docker *defines.DockerWrapper
-
 var Lenz *lenz.LenzForwarder
 var Metrics *metrics.MetricsRecorder
 
@@ -25,17 +21,17 @@ var Status *StatusMoniter
 func main() {
 	LoadConfig()
 
-	Etcd = defines.NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
-	Docker = defines.NewDocker(config.Docker.Endpoint)
+	common.Etcd = defines.NewEtcd(config.Etcd.Machines, config.Etcd.Sync)
+	common.Docker = defines.NewDocker(config.Docker.Endpoint)
 
-	Lenz = lenz.NewLenz(Docker, config.Lenz)
-	Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics, Docker)
+	Lenz = lenz.NewLenz(config.Lenz)
+	Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics)
 
 	utils.WritePid(config.PidFile)
 	defer os.Remove(config.PidFile)
 
-	Ws = defines.NewWebSocket(config.Master, config.ReadBufferSize, config.WriteBufferSize)
-	defer Ws.Close()
+	common.Ws = defines.NewWebSocket(config.Master, config.ReadBufferSize, config.WriteBufferSize)
+	defer common.Ws.Close()
 
 	Status = NewStatus()
 	levi := NewLevi()

@@ -15,9 +15,9 @@ type Container struct {
 }
 
 func (self *Container) Stop() error {
-	if err := Docker.StopContainer(self.id, common.CONTAINER_STOP_TIMEOUT); err != nil {
+	if err := common.Docker.StopContainer(self.id, common.CONTAINER_STOP_TIMEOUT); err != nil {
 		logs.Info("Stop Container", err)
-		if err := Docker.KillContainer(docker.KillContainerOptions{ID: self.id}); err != nil {
+		if err := common.Docker.KillContainer(docker.KillContainerOptions{ID: self.id}); err != nil {
 			return err
 		}
 	}
@@ -25,7 +25,7 @@ func (self *Container) Stop() error {
 }
 
 func RemoveContainer(id string, test bool, rmi bool) error {
-	container, err := Docker.InspectContainer(id)
+	container, err := common.Docker.InspectContainer(id)
 	if err != nil {
 		return err
 	}
@@ -41,11 +41,11 @@ func RemoveContainer(id string, test bool, rmi bool) error {
 			}
 		}
 	}
-	if err := Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
+	if err := common.Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
 		return err
 	}
 	if rmi {
-		if err := Docker.RemoveImage(container.Image); err != nil {
+		if err := common.Docker.RemoveImage(container.Image); err != nil {
 			return err
 		}
 	}

@@ -19,3 +19,11 @@ type TaskResult struct {
 	Test   map[string]*TestResult
 	Status []*StatusInfo
 }
+
+type Result struct {
+	Id    string
+	Done  bool
+	Index int
+	Type  int
+	Data  string
+}

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../defines"
+	"../common"
 	"../logs"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -30,9 +30,9 @@ func getLongID(shortID string) (parentName string, longID string, err error) {
 	return
 }
 
-func GetNetStats(client *defines.DockerWrapper, cid string) (result map[string]uint64, err error) {
+func GetNetStats(cid string) (result map[string]uint64, err error) {
 	var exec *docker.Exec
-	exec, err = client.CreateExec(
+	exec, err = common.Docker.CreateExec(
 		docker.CreateExecOptions{
 			AttachStdout: true,
 			Cmd: []string{
@@ -53,7 +53,7 @@ func GetNetStats(client *defines.DockerWrapper, cid string) (result map[string]u
 	success := make(chan struct{})
 	failure := make(chan error)
 	go func() {
-		err = client.StartExec(
+		err = common.Docker.StartExec(
 			exec.Id,
 			docker.StartExecOptions{
 				OutputStream: outw,

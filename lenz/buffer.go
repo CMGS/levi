@@ -6,7 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"../common"
 	"../defines"
+	"../logs"
 )
 
 type Writer interface {
@@ -15,6 +17,7 @@ type Writer interface {
 }
 
 type ForwardOutput struct {
+	result   *defines.Result
 	name     string
 	version  string
 	typ      string
@@ -22,8 +25,8 @@ type ForwardOutput struct {
 	channels []chan *defines.Log
 }
 
-func NewForwardOutput(name, version, typ string, stdout bool, routes []*defines.Route) *ForwardOutput {
-	o := &ForwardOutput{name: name, version: version, typ: typ}
+func NewForwardOutput(result *defines.Result, name, version, typ string, stdout bool, routes []*defines.Route) *ForwardOutput {
+	o := &ForwardOutput{result: result, name: name, version: version, typ: typ}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
 	for i, route := range routes {
@@ -38,7 +41,15 @@ func (self ForwardOutput) Write(p []byte) (n int, err error) {
 	data = strings.TrimSuffix(data, "\n")
 	data = strings.TrimSuffix(data, "\r")
 	self.send(data)
+	self.report(data)
 	return len(p), nil
+}
+
+func (self ForwardOutput) report(data string) {
+	self.result.Data = data
+	if err := common.Ws.WriteJSON(self.result); err != nil {
+		logs.Info(err, self.result)
+	}
 }
 
 func (self ForwardOutput) send(data string) {
@@ -61,12 +72,12 @@ func (self ForwardOutput) Close() {
 	}
 }
 
-func GetBuffer(Lenz *LenzForwarder, name, version, typ string, stdout bool) Writer {
+func GetBuffer(Lenz *LenzForwarder, result *defines.Result, name, version, typ string, stdout bool) Writer {
 	routes, err := Lenz.Router.GetAll()
 	if err != nil {
 		return Stdout{}
 	}
-	return NewForwardOutput(name, version, typ, stdout, routes)
+	return NewForwardOutput(result, name, version, typ, stdout, routes)
 }
 
 type Stdout struct{}
