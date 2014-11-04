@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"./common"
@@ -44,17 +45,20 @@ func (self *StatusMoniter) getStatus(s string) string {
 	}
 }
 
+func (self *StatusMoniter) writeBack(result *defines.Result) {
+	if err := common.Ws.WriteJSON(result); err != nil {
+		logs.Info(err, result)
+	}
+}
+
 func (self *StatusMoniter) Report(id string) {
 	containers, err := common.Docker.ListContainers(docker.ListContainersOptions{All: true})
 	if err != nil {
 		logs.Info(err, "Load")
 	}
 
-	result := &defines.TaskResult{Id: id}
-	result.Status = []*defines.StatusInfo{}
-
 	logs.Info("Load container")
-	for _, container := range containers {
+	for index, container := range containers {
 		if !strings.HasPrefix(container.Image, config.Docker.Registry) {
 			continue
 		}
@@ -66,29 +70,35 @@ func (self *StatusMoniter) Report(id string) {
 			Metrics.Add(name, shortID, at)
 			Lenz.Attacher.Attach(shortID, name, aid, at)
 		}
-		self.Removable[container.ID] = struct{}{}
-		s := &defines.StatusInfo{status, name, container.ID}
-		result.Status = append(result.Status, s)
-	}
-	if err := common.Ws.WriteJSON(result); err != nil {
-		logs.Info(err, result)
+		if at != common.TEST_TYPE {
+			self.Removable[container.ID] = struct{}{}
+		}
+		result := &defines.Result{
+			Id:    id,
+			Done:  true,
+			Index: index,
+			Type:  common.INFO_TASK,
+			Data:  fmt.Sprintf("%s|%s|%s", status, name, container.ID),
+		}
+		self.writeBack(result)
 	}
 }
 
 func (self *StatusMoniter) die(id string) {
-	result := &defines.TaskResult{Id: common.STATUS_IDENT}
-	result.Status = make([]*defines.StatusInfo, 1)
-
 	container, err := common.Docker.InspectContainer(id)
 	if err != nil {
 		logs.Info("Status inspect docker failed", err)
 		return
 	}
 	appname, _, _ := self.getAppInfo(container.Name)
-	result.Status[0] = &defines.StatusInfo{common.STATUS_DIE, appname, id}
-	if err := common.Ws.WriteJSON(result); err != nil {
-		logs.Info(err, result)
+	result := &defines.Result{
+		Id:    common.STATUS_IDENT,
+		Done:  true,
+		Index: 0,
+		Type:  common.INFO_TASK,
+		Data:  fmt.Sprintf("%s|%s|%s", common.STATUS_DIE, appname, id),
 	}
+	self.writeBack(result)
 }
 
 func (self *StatusMoniter) getAppInfo(containerName string) (string, string, string) {
