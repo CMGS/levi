@@ -166,9 +166,6 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 		Index: index,
 		Type:  common.ADD_TASK,
 	}
-	if job.IsTest() {
-		result.Type = common.TEST_TASK
-	}
 	env.CreateUser()
 	defer self.storeNewContainerInfo(result)
 	if err := env.CreateConfigFile(job); err != nil {

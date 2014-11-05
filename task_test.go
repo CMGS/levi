@@ -124,6 +124,10 @@ func Test_TaskRemoveContainer(t *testing.T) {
 }
 
 func Test_TaskAddContainer(t *testing.T) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
+		m := map[string]string{}
+		return &docker.Container{Volumes: m}, nil
+	}
 	common.Ws.WriteJSON = func(d interface{}) error {
 		x, ok := d.(*defines.Result)
 		if !ok {
@@ -132,7 +136,10 @@ func Test_TaskAddContainer(t *testing.T) {
 		if x.Id != apptask.Id {
 			t.Error("Wrong Id")
 		}
-		if x.Type != common.TEST_TASK {
+		if x.Type == common.ADD_TASK && x.Done == true {
+			t.Error("Wrong Type")
+		}
+		if x.Type == common.TEST_TASK && x.Done == false {
 			t.Error("Wrong Type")
 		}
 		if x.Index != 0 {
