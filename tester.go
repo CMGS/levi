@@ -17,7 +17,6 @@ type Tester struct {
 }
 
 func (self *Tester) Wait() {
-	defer RemoveContainer(self.cid, true, false)
 	result := &defines.Result{
 		Id:    self.id,
 		Done:  true,
@@ -25,11 +24,16 @@ func (self *Tester) Wait() {
 		Type:  common.TEST_TASK,
 		Data:  "0",
 	}
+	defer func() {
+		RemoveContainer(self.cid, true, false)
+		if err := common.Ws.WriteJSON(result); err != nil {
+			logs.Info(err, result)
+		}
+		// clean removable flag in some case
+		delete(Status.Removable, self.cid)
+	}()
 	if _, err := common.Docker.WaitContainer(self.cid); err != nil {
 		result.Data = err.Error()
-	}
-	if err := common.Ws.WriteJSON(result); err != nil {
-		logs.Info(err, result)
 	}
 }
 

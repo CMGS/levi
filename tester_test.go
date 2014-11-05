@@ -4,40 +4,58 @@ import (
 	"errors"
 	"testing"
 
+	"./common"
 	"./defines"
 	"github.com/fsouza/go-dockerclient"
 )
 
+var tester *Tester
+
 func init() {
 	InitTest()
+	tester = &Tester{
+		"xxxxxx",
+		"zzzzzzzzzzzz",
+		"test",
+		"abcdefg",
+		0,
+	}
 }
 
-func Test_WaitForTester(t *testing.T) {
-	tester := Tester{"xxxxxx", map[string]struct{}{}}
-	tester.cids["abc"] = struct{}{}
-	Docker.WaitContainer = func(id string) (int, error) {
-		return 0, errors.New(id)
+func Test_TesterGetLogs(t *testing.T) {
+	// Not Implement Yet
+}
+
+func Test_TesterWait(t *testing.T) {
+	errData := "abc"
+	common.Docker.WaitContainer = func(id string) (int, error) {
+		return 0, errors.New(errData)
 	}
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
 		m := map[string]string{}
 		return &docker.Container{Volumes: m}, nil
 	}
-	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*defines.TaskResult)
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
 		if !ok {
 			t.Error("Wrong Data")
 		}
-		if len(x.Test) == 0 {
+		if x.Id != "xxxxxx" {
+			t.Error("Wrong Id")
+		}
+		if x.Done != true {
+			t.Error("Wrong Done")
+		}
+		if x.Index != 0 {
+			t.Error("Wrong Index")
+		}
+		if x.Type != common.TEST_TASK {
+			t.Error("Wrong Type")
+		}
+		if x.Data != errData {
 			t.Error("Wrong Data")
-		}
-		r := x.Test["abc"]
-		if r.ExitCode != 0 {
-			t.Error("Wrong Exit Code")
-		}
-		if r.Err != "abc" {
-			t.Error("Wrong ErrStr")
 		}
 		return nil
 	}
-	tester.WaitForTester()
+	tester.Wait()
 }

@@ -5,6 +5,7 @@ import (
 	"path"
 	"testing"
 
+	"./common"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -23,7 +24,7 @@ func Test_RemoveContainer(t *testing.T) {
 	ppath := path.Join(config.App.Home, "d1")
 	cpath := path.Join(config.App.Home, "t1")
 	image := "testimage"
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
 		m := map[string]string{}
 		m["/test/config.yaml"] = cpath
 		m["/test/permdir"] = ppath
@@ -37,7 +38,7 @@ func Test_RemoveContainer(t *testing.T) {
 	f.WriteString("test")
 	f.Sync()
 	f.Close()
-	Docker.RemoveImage = func(p string) error {
+	common.Docker.RemoveImage = func(p string) error {
 		if p != image {
 			t.Error("Wrong Image")
 		}

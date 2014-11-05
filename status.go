@@ -70,9 +70,9 @@ func (self *StatusMoniter) Report(id string) {
 			Metrics.Add(name, shortID, at)
 			if at != common.TEST_TYPE {
 				Lenz.Attacher.Attach(shortID, name, aid, at)
-				self.Removable[container.ID] = struct{}{}
 			}
 		}
+		self.Removable[container.ID] = struct{}{}
 		result := &defines.Result{
 			Id:    id,
 			Done:  true,
