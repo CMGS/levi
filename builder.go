@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"./common"
+	"./defines"
 	"./lenz"
 	"./logs"
 	"./utils"
@@ -60,7 +61,7 @@ func (self *Builder) checkout(repo *git.Repository, opts *git.CheckoutOpts) erro
 	return nil
 }
 
-func (self *Builder) Build() error {
+func (self *Builder) Build(result *defines.Result) error {
 	defer self.clear()
 
 	if err := self.fetchCode(); err != nil {
@@ -69,7 +70,12 @@ func (self *Builder) Build() error {
 	if err := self.createDockerFile(); err != nil {
 		return err
 	}
-	outputStream := lenz.GetBuffer(Lenz, self.name, self.build.Version, common.BUILD_TYPE, config.Lenz.Stdout)
+	outputStream := lenz.GetBuffer(
+		Lenz, result, self.name,
+		self.build.Version,
+		common.BUILD_TYPE,
+		config.Lenz.Stdout,
+	)
 	defer outputStream.Close()
 	if err := self.buildImage(outputStream); err != nil {
 		return err
@@ -142,14 +148,14 @@ func (self *Builder) buildImage(out io.Writer) error {
 		ContextDir:          self.workDir,
 	}
 
-	if err := Docker.BuildImage(opts); err != nil {
+	if err := common.Docker.BuildImage(opts); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (self *Builder) pushImage(out io.Writer) error {
-	if err := Docker.PushImage(
+	if err := common.Docker.PushImage(
 		docker.PushImageOptions{
 			self.registryURL, self.build.Version,
 			self.registryURL, out, false,
@@ -162,7 +168,7 @@ func (self *Builder) pushImage(out io.Writer) error {
 
 func (self *Builder) clear() {
 	defer os.RemoveAll(self.workDir)
-	images, err := Docker.ListImages(false)
+	images, err := common.Docker.ListImages(false)
 	if err != nil {
 		logs.Debug(err)
 	}
@@ -174,7 +180,7 @@ func (self *Builder) clear() {
 			}
 		}
 		if flag {
-			Docker.RemoveImage(image.ID)
+			common.Docker.RemoveImage(image.ID)
 		}
 	}
 }

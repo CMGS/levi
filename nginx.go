@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	"./common"
 	"./logs"
 	"./utils"
 	"github.com/fsouza/go-dockerclient"
@@ -28,7 +29,7 @@ func NewNginx() *Nginx {
 		make(map[string]*Upstream),
 		make(map[string]struct{}),
 	}
-	containers, err := Docker.ListContainers(docker.ListContainersOptions{})
+	containers, err := common.Docker.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
 		logs.Assert(err, "Load")
 	}

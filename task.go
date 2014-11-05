@@ -72,21 +72,18 @@ type Tasks struct {
 }
 
 type AppTask struct {
-	Id     string
-	Uid    int
-	Name   string
-	Info   bool
-	Tasks  *Tasks
-	wg     *sync.WaitGroup
-	result *defines.TaskResult
+	Id    string
+	Uid   int
+	Name  string
+	Info  bool
+	Tasks *Tasks
+	wg    *sync.WaitGroup
 }
 
 func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
-	self.result = &defines.TaskResult{Id: self.Id}
 	self.wg = &sync.WaitGroup{}
 	if len(self.Tasks.Add) != 0 {
 		self.wg.Add(len(self.Tasks.Add))
-		self.result.Add = make([]string, len(self.Tasks.Add))
 		for index, job := range self.Tasks.Add {
 			switch {
 			case job.IsTest():
@@ -101,14 +98,12 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 	}
 	if len(self.Tasks.Remove) != 0 {
 		self.wg.Add(len(self.Tasks.Remove))
-		self.result.Remove = make([]bool, len(self.Tasks.Remove))
 		for index, _ := range self.Tasks.Remove {
 			go self.RemoveContainer(index, nginx)
 		}
 	}
 	if len(self.Tasks.Build) != 0 {
 		self.wg.Add(len(self.Tasks.Build))
-		self.result.Build = make([]string, len(self.Tasks.Build))
 		for index, _ := range self.Tasks.Build {
 			go self.BuildImage(index)
 		}
@@ -117,56 +112,62 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 
 func (self *AppTask) Wait() {
 	self.wg.Wait()
-	if err := Ws.WriteJSON(self.result); err != nil {
-		logs.Info(err, self.result)
-	}
-	if len(self.Tasks.Add) != 0 {
-		go func() {
-			cids := map[string]struct{}{}
-			for index, job := range self.Tasks.Add {
-				if !job.IsTest() {
-					continue
-				}
-				cids[self.result.Add[index]] = struct{}{}
-			}
-			if len(cids) != 0 {
-				tester := Tester{self.Id, cids}
-				tester.WaitForTester()
-			}
-		}()
-	}
 }
 
-func (self *AppTask) storeNewContainerInfo(index int) {
-	cid := self.result.Add[index]
-	if cid == "" {
-		return
+func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
+	if result.Data != "" {
+		job := self.Tasks.Add[result.Index]
+		cid := result.Data
+		shortID := cid[:12]
+		var aid, at string
+		if job.IsTest() {
+			result.Done = false
+			self.writeBack(result)
+			at = common.TEST_TYPE
+			tester := Tester{
+				id:      result.Id,
+				cid:     cid,
+				name:    self.Name,
+				version: job.Version,
+				index:   result.Index,
+			}
+			tester.GetLogs()
+			tester.Wait()
+			return
+		} else {
+			switch {
+			case job.IsDaemon():
+				aid = job.Daemon
+				at = common.DAEMON_TYPE
+			default:
+				aid = fmt.Sprintf("%d", job.Bind)
+				at = common.DEFAULT_TYPE
+			}
+			Status.Removable[cid] = struct{}{}
+			Lenz.Attacher.Attach(shortID, self.Name, aid, at)
+		}
+		Metrics.Add(self.Name, shortID, at)
 	}
-	job := self.Tasks.Add[index]
-	shortID := cid[:12]
-	var aid, at string
-	switch {
-	case job.IsTest():
-		aid = job.Test
-		at = common.TEST_TYPE
-	case job.IsDaemon():
-		aid = job.Daemon
-		at = common.DAEMON_TYPE
-		Status.Removable[cid] = struct{}{}
-	default:
-		aid = fmt.Sprintf("%d", job.Bind)
-		at = common.DEFAULT_TYPE
-		Status.Removable[cid] = struct{}{}
+	self.writeBack(result)
+}
+
+func (self *AppTask) writeBack(result *defines.Result) {
+	if err := common.Ws.WriteJSON(result); err != nil {
+		logs.Info(err, result)
 	}
-	Metrics.Add(self.Name, shortID, at)
-	Lenz.Attacher.Attach(shortID, self.Name, aid, at)
 }
 
 func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 	defer self.wg.Done()
 	job := self.Tasks.Add[index]
-	defer self.storeNewContainerInfo(index)
+	result := &defines.Result{
+		Id:    self.Id,
+		Done:  true,
+		Index: index,
+		Type:  common.ADD_TASK,
+	}
 	env.CreateUser()
+	defer self.storeNewContainerInfo(result)
 	if err := env.CreateConfigFile(job); err != nil {
 		logs.Info("Create app config failed", err)
 		return
@@ -195,13 +196,19 @@ func (self *AppTask) AddContainer(index int, env *Env, nginx *Nginx) {
 		nginx.New(self.Name, container.ID, job.ident)
 		nginx.SetUpdate(self.Name)
 	}
-	self.result.Add[index] = container.ID
+	result.Data = container.ID
 	logs.Info("Add Finished", container.ID)
 }
 
 func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	defer self.wg.Done()
 	job := self.Tasks.Remove[index]
+	result := &defines.Result{
+		Id:    self.Id,
+		Done:  true,
+		Index: index,
+		Type:  common.REMOVE_TASK,
+	}
 	logs.Info("Remove Container", self.Name, job.Container)
 	if _, ok := Status.Removable[job.Container]; !ok {
 		logs.Info("Not Record")
@@ -209,10 +216,10 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	}
 	delete(Status.Removable, job.Container)
 	defer func() {
-		if !self.result.Remove[index] {
+		if result.Data == "" {
 			Status.Removable[job.Container] = struct{}{}
-			return
 		}
+		self.writeBack(result)
 	}()
 	container := Container{
 		id:      job.Container,
@@ -230,18 +237,26 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	if ok := nginx.Remove(self.Name, job.Container); ok {
 		nginx.SetUpdate(self.Name)
 	}
-	self.result.Remove[index] = true
-	logs.Info("Remove Finished", self.result.Remove[index])
+	result.Data = "1"
+	logs.Info("Remove Finished")
 }
 
 func (self *AppTask) BuildImage(index int) {
 	defer self.wg.Done()
 	job := self.Tasks.Build[index]
+	result := &defines.Result{
+		Id:    self.Id,
+		Done:  false,
+		Index: index,
+		Type:  common.BUILD_TASK,
+	}
+	defer self.writeBack(result)
 	builder := NewBuilder(self.Name, job)
-	if err := builder.Build(); err != nil {
+	if err := builder.Build(result); err != nil {
 		logs.Info(err)
 		return
 	}
-	self.result.Build[index] = builder.repoTag
-	logs.Info("Build Finished", self.result.Build[index])
+	result.Done = true
+	result.Data = builder.repoTag
+	logs.Info("Build Finished", builder.repoTag)
 }

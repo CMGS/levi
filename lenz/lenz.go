@@ -3,6 +3,7 @@ package lenz
 import (
 	"os"
 
+	"../common"
 	"../defines"
 	"../logs"
 )
@@ -13,9 +14,9 @@ type LenzForwarder struct {
 	Routefs  RouteFileStore
 }
 
-func NewLenz(docker *defines.DockerWrapper, config defines.LenzConfig) *LenzForwarder {
+func NewLenz(config defines.LenzConfig) *LenzForwarder {
 	obj := &LenzForwarder{}
-	obj.Attacher = NewAttachManager(docker)
+	obj.Attacher = NewAttachManager(common.Docker)
 	obj.Router = NewRouteManager(obj.Attacher, config.Stdout)
 	obj.Routefs = RouteFileStore(config.Routes)
 

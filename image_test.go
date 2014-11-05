@@ -31,7 +31,7 @@ func Test_Run(t *testing.T) {
 		Port:      9999,
 		Bind:      5000,
 	}
-	Docker.CreateContainer = func(opts docker.CreateContainerOptions) (*docker.Container, error) {
+	common.Docker.CreateContainer = func(opts docker.CreateContainerOptions) (*docker.Container, error) {
 		if opts.Name != "test_12345" {
 			t.Error("Name invaild")
 		}
@@ -40,7 +40,7 @@ func Test_Run(t *testing.T) {
 		}
 		return &docker.Container{ID: "abcdefg"}, nil
 	}
-	Docker.StartContainer = func(id string, opts *docker.HostConfig) error {
+	common.Docker.StartContainer = func(id string, opts *docker.HostConfig) error {
 		if strings.LastIndex(opts.Binds[0], "/test/config.yaml:ro") == -1 {
 			t.Error("Bind invaild")
 		}

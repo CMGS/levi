@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"./common"
 	"./defines"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/fsouza/go-dockerclient"
@@ -17,13 +18,12 @@ var apptask *AppTask
 func init() {
 	InitTest()
 	apptask = &AppTask{
-		Id:   "abc",
-		Uid:  4001,
-		Name: "nbetest",
+		Id:    "abc",
+		Uid:   4001,
+		Name:  "nbetest",
+		wg:    &sync.WaitGroup{},
+		Tasks: &Tasks{},
 	}
-	apptask.wg = &sync.WaitGroup{}
-	apptask.Tasks = &Tasks{}
-	apptask.result = &defines.TaskResult{Id: apptask.Id}
 }
 
 func Test_SetAddTaskType(t *testing.T) {
@@ -49,6 +49,22 @@ func Test_SetAddTaskType(t *testing.T) {
 }
 
 func Test_TaskBuildImage(t *testing.T) {
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
+		if !ok {
+			t.Error("Wrong Data")
+		}
+		if x.Id != apptask.Id {
+			t.Error("Wrong Id")
+		}
+		if x.Type != common.BUILD_TASK {
+			t.Error("Wrong Type")
+		}
+		if x.Index != 0 {
+			t.Error("Wrong Index")
+		}
+		return nil
+	}
 	ver := "082d405"
 	name := "nbetest"
 	job := &BuildTask{
@@ -60,62 +76,77 @@ func Test_TaskBuildImage(t *testing.T) {
 		Static:  "static",
 	}
 	apptask.Tasks.Build = []*BuildTask{job}
-	apptask.result.Build = make([]string, 1)
 	apptask.wg.Add(1)
 	apptask.BuildImage(0)
-	if len(apptask.result.Build) == 0 {
-		t.Error("Wrong Result")
-	}
-	if apptask.result.Build[0] != fmt.Sprintf("%s/%s:%s", config.Docker.Registry, name, ver) {
-		t.Error("Wrong Data")
-	}
 }
 
 func Test_TaskRemoveContainer(t *testing.T) {
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
+		if !ok {
+			t.Error("Wrong Data")
+		}
+		if x.Id != apptask.Id {
+			t.Error("Wrong Id")
+		}
+		if x.Type != common.REMOVE_TASK {
+			t.Error("Wrong Type")
+		}
+		if x.Index != 0 {
+			t.Error("Wrong Index")
+		}
+		return nil
+	}
 	id := "abcdefg"
 	job := &RemoveTask{id, true}
 	nginx := NewNginx()
 	apptask.Tasks.Remove = []*RemoveTask{job}
-	apptask.result.Remove = make([]bool, 1)
 	apptask.wg.Add(1)
 	apptask.RemoveContainer(0, nginx)
-	if len(apptask.result.Remove) == 0 {
-		t.Error("Wrong Result")
-	}
-	if apptask.result.Remove[0] {
-		t.Error("Wrong Data")
-	}
 	Status.Removable[id] = struct{}{}
 	apptask.wg.Add(1)
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
 		return &docker.Container{Volumes: map[string]string{}, ID: id}, nil
 	}
 	apptask.RemoveContainer(0, nginx)
-	if len(apptask.result.Remove) == 0 {
-		t.Error("Wrong Result")
-	}
-	if !apptask.result.Remove[0] {
-		t.Error("Wrong Data")
-	}
 	if _, ok := Status.Removable[id]; ok {
 		t.Error("Wrong Status")
 	}
 	Status.Removable[id] = struct{}{}
-	apptask.result.Remove = make([]bool, 1)
 	apptask.wg.Add(1)
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
 		return nil, errors.New("made by test")
 	}
 	apptask.RemoveContainer(0, nginx)
-	if apptask.result.Remove[0] {
-		t.Error("Wrong Data")
-	}
 	if _, ok := Status.Removable[id]; !ok {
 		t.Error("Wrong Status")
 	}
 }
 
 func Test_TaskAddContainer(t *testing.T) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
+		m := map[string]string{}
+		return &docker.Container{Volumes: m}, nil
+	}
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
+		if !ok {
+			t.Error("Wrong Data")
+		}
+		if x.Id != apptask.Id {
+			t.Error("Wrong Id")
+		}
+		if x.Type == common.ADD_TASK && x.Done == true {
+			t.Error("Wrong Type")
+		}
+		if x.Type == common.TEST_TASK && x.Done == false {
+			t.Error("Wrong Type")
+		}
+		if x.Index != 0 {
+			t.Error("Wrong Index")
+		}
+		return nil
+	}
 	cid := "1234567890abcdefg"
 	appname := "nbetest"
 	ver := "v1"
@@ -134,24 +165,17 @@ func Test_TaskAddContainer(t *testing.T) {
 	nginx := NewNginx()
 	env := &Env{appname, 4011}
 	apptask.Tasks.Add = []*AddTask{job}
-	apptask.result.Add = make([]string, 1)
 	apptask.wg.Add(1)
-	Etcd.Get = func(string, bool, bool) (*etcd.Response, error) {
+	common.Etcd.Get = func(string, bool, bool) (*etcd.Response, error) {
 		ret := &etcd.Response{Node: &etcd.Node{Value: ""}}
 		return ret, nil
 	}
-	Docker.CreateContainer = func(docker.CreateContainerOptions) (*docker.Container, error) {
+	common.Docker.CreateContainer = func(docker.CreateContainerOptions) (*docker.Container, error) {
 		return &docker.Container{ID: cid}, nil
 	}
 	defer os.RemoveAll(cpath)
 	defer os.RemoveAll(dpath)
 	apptask.AddContainer(0, env, nginx)
-	if len(apptask.result.Add) == 0 {
-		t.Error("Wrong Result")
-	}
-	if apptask.result.Add[0] != cid {
-		t.Error("Wrong Data")
-	}
 	if _, ok := Status.Removable[cid]; ok {
 		t.Error("Wrong Container Flag")
 	}

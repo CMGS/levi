@@ -20,7 +20,7 @@ type Image struct {
 func (self *Image) Pull() error {
 	url := utils.UrlJoin(config.Docker.Registry, self.appname)
 	outputStream := lenz.GetDevBuffer(config.Lenz.Stdout)
-	if err := Docker.PullImage(
+	if err := common.Docker.PullImage(
 		docker.PullImageOptions{url, config.Docker.Registry, self.version, outputStream, false},
 		docker.AuthConfiguration{}); err != nil {
 		return err
@@ -79,12 +79,12 @@ func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
 		&containerConfig,
 	}
 
-	container, err := Docker.CreateContainer(opts)
+	container, err := common.Docker.CreateContainer(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := Docker.StartContainer(container.ID, &hostConfig); err != nil {
+	if err := common.Docker.StartContainer(container.ID, &hostConfig); err != nil {
 		// Have to remove resource when start failed
 		logs.Debug("Rollback add files")
 		RemoveContainer(container.ID, job.IsTest(), false)

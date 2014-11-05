@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 
+	"./common"
 	"gopkg.in/yaml.v1"
 )
 
@@ -36,7 +37,7 @@ func (self *Env) CreateConfigFile(job *AddTask) error {
 func (self *Env) createConfigFile(job *AddTask, filename string) error {
 	configPath := GenerateConfigPath(self.appname, job.ident)
 
-	resp, err := Etcd.Get(path.Join("/NBE", self.appname, job.Version, filename), false, false)
+	resp, err := common.Etcd.Get(path.Join("/NBE", self.appname, job.Version, filename), false, false)
 	if err != nil {
 		return err
 	}

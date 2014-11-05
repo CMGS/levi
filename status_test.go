@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"./common"
@@ -40,7 +41,7 @@ func Test_GetStatus(t *testing.T) {
 
 func Test_StatusReport(t *testing.T) {
 	id := "xxxxxxxxxxxx"
-	Docker.ListContainers = func(opt docker.ListContainersOptions) ([]docker.APIContainers, error) {
+	common.Docker.ListContainers = func(opt docker.ListContainersOptions) ([]docker.APIContainers, error) {
 		c1 := docker.APIContainers{
 			Names:  []string{"/test_1234"},
 			ID:     id,
@@ -51,26 +52,25 @@ func Test_StatusReport(t *testing.T) {
 		return c, nil
 	}
 	tid := "zzzzzzzzzzzz"
-	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*defines.TaskResult)
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
 		if !ok {
 			t.Error("Wrong Data")
 		}
 		if x.Id != tid {
 			t.Error("Wrong Task ID")
 		}
-		if len(x.Status) == 0 {
-			t.Error("Wrong Status")
+		if x.Done != true {
+			t.Error("Wrong Done")
 		}
-		i := x.Status[0]
-		if i.Appname != "test" {
-			t.Error("Wrong Appname")
+		if x.Index != 0 {
+			t.Error("Wrong Index")
 		}
-		if i.Id != id {
-			t.Error("Wrong Id")
+		if x.Type != common.INFO_TASK {
+			t.Error("Wrong Task")
 		}
-		if i.Type != common.STATUS_DIE {
-			t.Error("Wrong Status")
+		if x.Data != fmt.Sprintf("%s|test|%s", common.STATUS_DIE, id) {
+			t.Error("Wrong Data")
 		}
 		return nil
 	}
@@ -82,26 +82,25 @@ func Test_StatusReport(t *testing.T) {
 
 func Test_StatusDie(t *testing.T) {
 	id := "xxx"
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
 		return &docker.Container{Name: "/test_1234"}, nil
 	}
-	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*defines.TaskResult)
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
 		if !ok {
 			t.Error("Wrong Data")
 		}
-		if len(x.Status) == 0 {
-			t.Error("Wrong Status")
+		if x.Id != common.STATUS_IDENT {
+			t.Error("Wrong Task ID")
 		}
-		i := x.Status[0]
-		if i.Appname != "test" {
-			t.Error("Wrong Appname")
+		if x.Index != 0 {
+			t.Error("Wrong Index")
 		}
-		if i.Id != id {
-			t.Error("Wrong Id")
+		if x.Type != common.INFO_TASK {
+			t.Error("Wrong Task")
 		}
-		if i.Type != common.STATUS_DIE {
-			t.Error("Wrong Status")
+		if x.Data != fmt.Sprintf("%s|test|%s", common.STATUS_DIE, id) {
+			t.Error("Wrong Data")
 		}
 		return nil
 	}
@@ -111,36 +110,34 @@ func Test_StatusDie(t *testing.T) {
 func Test_StatusListen(t *testing.T) {
 	go Status.Listen()
 	id := "abcdefghijklmnopqrstuvwxyz"
-	event := &docker.APIEvents{"die", id, "zzzzzzzzzzzzzzzzz", 12345}
-	Status.events <- event
-	Docker.InspectContainer = func(string) (*docker.Container, error) {
+	event := &docker.APIEvents{"die", id, "test", 12345}
+	common.Docker.InspectContainer = func(string) (*docker.Container, error) {
 		t.Error("Wrong event")
 		return nil, nil
 	}
 	Status.Removable[id] = struct{}{}
-	Docker.InspectContainer = func(i string) (*docker.Container, error) {
+	common.Docker.InspectContainer = func(i string) (*docker.Container, error) {
 		if i != id {
 			t.Error("Wrong event")
 		}
 		return &docker.Container{ID: id, Name: "/test_1234"}, nil
 	}
-	Ws.WriteJSON = func(d interface{}) error {
-		x, ok := d.(*defines.TaskResult)
+	common.Ws.WriteJSON = func(d interface{}) error {
+		x, ok := d.(*defines.Result)
 		if !ok {
 			t.Error("Wrong Data")
 		}
-		if len(x.Status) == 0 {
-			t.Error("Wrong Status")
+		if x.Id != common.STATUS_IDENT {
+			t.Error("Wrong Task ID")
 		}
-		i := x.Status[0]
-		if i.Appname != "test" {
-			t.Error("Wrong Appname")
+		if x.Index != 0 {
+			t.Error("Wrong Index")
 		}
-		if i.Id != id {
-			t.Error("Wrong Id")
+		if x.Type != common.INFO_TASK {
+			t.Error("Wrong Task")
 		}
-		if i.Type != common.STATUS_DIE {
-			t.Error("Wrong Status")
+		if x.Data != fmt.Sprintf("%s|test|%s", common.STATUS_DIE, id) {
+			t.Error("Wrong Data")
 		}
 		return nil
 	}

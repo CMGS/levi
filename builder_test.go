@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"./common"
 	"./lenz"
 )
 
@@ -71,7 +72,7 @@ func Test_BuildClean(t *testing.T) {
 	if _, err := os.Stat(builder.workDir); err == nil {
 		t.Error("Clean work dir failed")
 	}
-	images, err := Docker.ListImages(false)
+	images, err := common.Docker.ListImages(false)
 	if err != nil {
 		t.Error(err)
 	}

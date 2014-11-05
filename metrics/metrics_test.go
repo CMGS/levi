@@ -10,14 +10,13 @@ import (
 )
 
 var Metrics *MetricsRecorder
-var Docker *defines.DockerWrapper
 var config defines.MetricsConfig
 
 func init() {
-	Docker = defines.NewDocker("tcp://192.168.59.103:2375")
-	defines.MockDocker(Docker)
+	common.Docker = defines.NewDocker("tcp://192.168.59.103:2375")
+	defines.MockDocker(common.Docker)
 	config = defines.MetricsConfig{10, "localhost:8083", "root", "root", "test"}
-	Metrics = NewMetricsRecorder("test", config, Docker)
+	Metrics = NewMetricsRecorder("test", config)
 }
 
 func Test_MetricData(t *testing.T) {
@@ -29,10 +28,10 @@ func Test_MetricData(t *testing.T) {
 
 func Test_MetricReporter(t *testing.T) {
 	cid := "123"
-	Docker.CreateExec = func(docker.CreateExecOptions) (*docker.Exec, error) {
+	common.Docker.CreateExec = func(docker.CreateExecOptions) (*docker.Exec, error) {
 		return &docker.Exec{"123"}, nil
 	}
-	Docker.StartExec = func(id string, opt docker.StartExecOptions) error {
+	common.Docker.StartExec = func(id string, opt docker.StartExecOptions) error {
 		opt.Success <- struct{}{}
 		<-opt.Success
 		return nil

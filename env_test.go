@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"./common"
 	"github.com/coreos/go-etcd/etcd"
 )
 
@@ -48,7 +49,7 @@ func Test_CreateConfigFile(t *testing.T) {
 		os.RemoveAll(configPath)
 		os.RemoveAll(dir)
 	}()
-	Etcd.Get = func(p string, _ bool, _ bool) (*etcd.Response, error) {
+	common.Etcd.Get = func(p string, _ bool, _ bool) (*etcd.Response, error) {
 		ret := &etcd.Response{Node: &etcd.Node{Value: ""}}
 		return ret, nil
 	}
