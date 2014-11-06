@@ -250,13 +250,17 @@ func (self *AppTask) BuildImage(index int) {
 		Index: index,
 		Type:  common.BUILD_TASK,
 	}
-	defer self.writeBack(result)
+	defer func() {
+		if result.Data != "" {
+			result.Done = true
+		}
+		self.writeBack(result)
+	}()
 	builder := NewBuilder(self.Name, job)
 	if err := builder.Build(result); err != nil {
-		logs.Info(err)
+		logs.Info("Build Failed", err)
 		return
 	}
-	result.Done = true
 	result.Data = builder.repoTag
 	logs.Info("Build Finished", builder.repoTag)
 }
