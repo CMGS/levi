@@ -22,28 +22,28 @@ func init() {
 		Uid:   4001,
 		Name:  "nbetest",
 		wg:    &sync.WaitGroup{},
-		Tasks: &Tasks{},
+		Tasks: &defines.Tasks{},
 	}
 }
 
 func Test_SetAddTaskType(t *testing.T) {
-	task := AddTask{
+	task := defines.AddTask{
 		Bind:   9999,
 		Daemon: "abc",
 		Test:   "def",
 	}
 	task.SetAsTest()
-	if !task.IsTest() || task.ident != "test_def" {
+	if !task.IsTest() || task.Ident != "test_def" {
 		t.Error("Test ident invaild")
 	}
 	task.SetAsDaemon()
-	if !task.IsDaemon() || task.ident != "daemon_abc" {
+	if !task.IsDaemon() || task.Ident != "daemon_abc" {
 		t.Error("Daemon ident invaild")
 	}
 	task.Daemon = ""
 	task.Test = ""
 	task.SetAsService()
-	if !task.ShouldExpose() || task.ident != "9999" {
+	if !task.ShouldExpose() || task.Ident != "9999" {
 		t.Error("Service ident invaild")
 	}
 }
@@ -67,7 +67,7 @@ func Test_TaskBuildImage(t *testing.T) {
 	}
 	ver := "082d405"
 	name := "nbetest"
-	job := &BuildTask{
+	job := &defines.BuildTask{
 		Group:   "platform",
 		Name:    name,
 		Version: ver,
@@ -75,7 +75,7 @@ func Test_TaskBuildImage(t *testing.T) {
 		Build:   "pip install -r requirements.txt",
 		Static:  "static",
 	}
-	apptask.Tasks.Build = []*BuildTask{job}
+	apptask.Tasks.Build = []*defines.BuildTask{job}
 	apptask.wg.Add(1)
 	apptask.BuildImage(0)
 }
@@ -98,9 +98,9 @@ func Test_TaskRemoveContainer(t *testing.T) {
 		return nil
 	}
 	id := "abcdefg"
-	job := &RemoveTask{id, true}
+	job := &defines.RemoveTask{id, true}
 	nginx := NewNginx()
-	apptask.Tasks.Remove = []*RemoveTask{job}
+	apptask.Tasks.Remove = []*defines.RemoveTask{job}
 	apptask.wg.Add(1)
 	apptask.RemoveContainer(0, nginx)
 	Status.Removable[id] = struct{}{}
@@ -151,7 +151,7 @@ func Test_TaskAddContainer(t *testing.T) {
 	appname := "nbetest"
 	ver := "v1"
 	tid := "abcdefg"
-	job := &AddTask{
+	job := &defines.AddTask{
 		Version:   ver,
 		Cmd:       []string{"python", "xxx.py"},
 		Memory:    99999,
@@ -160,11 +160,11 @@ func Test_TaskAddContainer(t *testing.T) {
 		Test:      tid,
 	}
 	job.SetAsTest()
-	cpath := GenerateConfigPath(appname, job.ident)
-	dpath := GeneratePermdirPath(appname, job.ident, true)
+	cpath := GenerateConfigPath(appname, job.Ident)
+	dpath := GeneratePermdirPath(appname, job.Ident, true)
 	nginx := NewNginx()
 	env := &Env{appname, 4011}
-	apptask.Tasks.Add = []*AddTask{job}
+	apptask.Tasks.Add = []*defines.AddTask{job}
 	apptask.wg.Add(1)
 	common.Etcd.Get = func(string, bool, bool) (*etcd.Response, error) {
 		ret := &etcd.Response{Node: &etcd.Node{Value: ""}}

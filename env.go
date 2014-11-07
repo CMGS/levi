@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"./common"
+	"./defines"
 	"gopkg.in/yaml.v1"
 )
 
@@ -27,15 +28,15 @@ func GeneratePermdirPath(appname, ident string, test bool) string {
 	return path.Join(config.App.Tmpdirs, name)
 }
 
-func (self *Env) CreateConfigFile(job *AddTask) error {
+func (self *Env) CreateConfigFile(job *defines.AddTask) error {
 	if job.IsTest() {
 		return self.createConfigFile(job, "test.yaml")
 	}
 	return self.createConfigFile(job, "config.yaml")
 }
 
-func (self *Env) createConfigFile(job *AddTask, filename string) error {
-	configPath := GenerateConfigPath(self.appname, job.ident)
+func (self *Env) createConfigFile(job *defines.AddTask, filename string) error {
+	configPath := GenerateConfigPath(self.appname, job.Ident)
 
 	resp, err := common.Etcd.Get(path.Join("/NBE", self.appname, job.Version, filename), false, false)
 	if err != nil {

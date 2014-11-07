@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"./common"
+	"./defines"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -22,8 +23,8 @@ func Test_Pull(t *testing.T) {
 
 func Test_Run(t *testing.T) {
 	image := Image{"test", "v1", 12345}
-	job := &AddTask{
-		ident:     "12345",
+	job := &defines.AddTask{
+		Ident:     "12345",
 		CpuShares: 512,
 		CpuSet:    "0,1",
 		Memory:    12345,

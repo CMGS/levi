@@ -9,15 +9,16 @@ import (
 	"testing"
 
 	"./common"
+	"./defines"
 	"./lenz"
 )
 
 var builder *Builder
-var info *BuildTask
+var info *defines.BuildTask
 
 func init() {
 	InitTest()
-	info = &BuildTask{
+	info = &defines.BuildTask{
 		Group:   "platform",
 		Name:    "nbetest",
 		Version: "082d405",

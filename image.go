@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"./common"
+	"./defines"
 	"./lenz"
 	"./logs"
 	"./utils"
@@ -28,15 +29,15 @@ func (self *Image) Pull() error {
 	return nil
 }
 
-func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
+func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
-	configPath := GenerateConfigPath(self.appname, job.ident)
+	configPath := GenerateConfigPath(self.appname, job.Ident)
 	mPermdir := fmt.Sprintf("/%s/permdir", self.appname)
 	runenv := common.PRODUCTION
 	if job.IsTest() {
 		runenv = common.TESTING
 	}
-	permdir := GeneratePermdirPath(self.appname, job.ident, job.IsTest())
+	permdir := GeneratePermdirPath(self.appname, job.Ident, job.IsTest())
 
 	containerConfig := docker.Config{
 		CpuShares: job.CpuShares,
@@ -75,7 +76,7 @@ func (self *Image) Run(job *AddTask, uid int) (*docker.Container, error) {
 	}
 
 	opts := docker.CreateContainerOptions{
-		fmt.Sprintf("%s_%s", self.appname, job.ident),
+		fmt.Sprintf("%s_%s", self.appname, job.Ident),
 		&containerConfig,
 	}
 

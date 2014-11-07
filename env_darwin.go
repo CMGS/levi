@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 
+	"./defines"
 	"./logs"
 	"./utils"
 )
@@ -19,8 +20,8 @@ func (self *Env) SaveFile(configPath string, out []byte) error {
 	return nil
 }
 
-func (self *Env) CreatePermdir(job *AddTask) error {
-	permdir := GeneratePermdirPath(self.appname, job.ident, job.IsTest())
+func (self *Env) CreatePermdir(job *defines.AddTask) error {
+	permdir := GeneratePermdirPath(self.appname, job.Ident, job.IsTest())
 	if err := utils.MakeDir(permdir); err != nil {
 		return err
 	}
