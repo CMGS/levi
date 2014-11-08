@@ -48,11 +48,9 @@ func (self *Tester) GetLogs() {
 	fopts := &defines.ForwardOpts{
 		self.tid, common.TEST_TYPE,
 		self.name, self.version,
-	}
-	outputStream := lenz.GetBuffer(
-		Lenz, result, fopts,
 		config.Lenz.Stdout,
-	)
+	}
+	outputStream := lenz.GetBuffer(Lenz, result, fopts)
 	opts := docker.LogsOptions{
 		Container:    self.cid,
 		OutputStream: outputStream,

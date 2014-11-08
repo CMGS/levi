@@ -23,13 +23,13 @@ type ForwardOutput struct {
 	channels []chan *defines.Log
 }
 
-func NewForwardOutput(result *defines.Result, opts *defines.ForwardOpts, stdout bool, routes []*defines.Route) *ForwardOutput {
+func NewForwardOutput(result *defines.Result, opts *defines.ForwardOpts, routes []*defines.Route) *ForwardOutput {
 	o := &ForwardOutput{result: result, opts: opts}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
 	for i, route := range routes {
 		o.channels[i] = make(chan *defines.Log)
-		go Streamer(route, o.channels[i], stdout)
+		go Streamer(route, o.channels[i], opts.Stdout)
 	}
 	return o
 }
@@ -70,12 +70,12 @@ func (self ForwardOutput) Close() {
 	}
 }
 
-func GetBuffer(Lenz *LenzForwarder, result *defines.Result, opts *defines.ForwardOpts, stdout bool) Writer {
+func GetBuffer(Lenz *LenzForwarder, result *defines.Result, opts *defines.ForwardOpts) Writer {
 	routes, err := Lenz.Router.GetAll()
 	if err != nil {
 		return Stdout{}
 	}
-	return NewForwardOutput(result, opts, stdout, routes)
+	return NewForwardOutput(result, opts, routes)
 }
 
 type Stdout struct{}

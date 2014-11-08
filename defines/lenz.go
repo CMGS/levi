@@ -7,6 +7,7 @@ type ForwardOpts struct {
 	Type    string
 	Name    string
 	Version string
+	Stdout  bool
 }
 
 type AttachEvent struct {
