@@ -67,6 +67,7 @@ func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
 				cid:     cid,
 				name:    self.Name,
 				version: job.Version,
+				aid:     job.Test,
 				index:   result.Index,
 			}
 			tester.GetLogs()

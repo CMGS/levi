@@ -13,6 +13,7 @@ type Tester struct {
 	cid     string
 	name    string
 	version string
+	aid     string
 	index   int
 }
 
@@ -45,8 +46,8 @@ func (self *Tester) GetLogs() {
 		Type:  common.TEST_TASK,
 	}
 	outputStream := lenz.GetBuffer(
-		Lenz, result, self.name,
-		self.version,
+		Lenz, result, self.aid,
+		self.name, self.version,
 		common.TEST_TYPE,
 		config.Lenz.Stdout,
 	)

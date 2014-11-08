@@ -21,12 +21,13 @@ type ForwardOutput struct {
 	name     string
 	version  string
 	typ      string
+	aid      string
 	routes   []*defines.Route
 	channels []chan *defines.Log
 }
 
-func NewForwardOutput(result *defines.Result, name, version, typ string, stdout bool, routes []*defines.Route) *ForwardOutput {
-	o := &ForwardOutput{result: result, name: name, version: version, typ: typ}
+func NewForwardOutput(result *defines.Result, aid, name, version, typ string, stdout bool, routes []*defines.Route) *ForwardOutput {
+	o := &ForwardOutput{result: result, aid: aid, name: name, version: version, typ: typ}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
 	for i, route := range routes {
@@ -58,7 +59,7 @@ func (self ForwardOutput) send(data string) {
 			Data:    data,
 			ID:      self.version,
 			Name:    self.name,
-			AppID:   "",
+			AppID:   self.aid,
 			AppType: self.typ,
 			Type:    "stdout",
 		}
@@ -72,12 +73,12 @@ func (self ForwardOutput) Close() {
 	}
 }
 
-func GetBuffer(Lenz *LenzForwarder, result *defines.Result, name, version, typ string, stdout bool) Writer {
+func GetBuffer(Lenz *LenzForwarder, result *defines.Result, aid, name, version, typ string, stdout bool) Writer {
 	routes, err := Lenz.Router.GetAll()
 	if err != nil {
 		return Stdout{}
 	}
-	return NewForwardOutput(result, name, version, typ, stdout, routes)
+	return NewForwardOutput(result, aid, name, version, typ, stdout, routes)
 }
 
 type Stdout struct{}

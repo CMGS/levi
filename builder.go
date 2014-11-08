@@ -71,8 +71,8 @@ func (self *Builder) Build(result *defines.Result) error {
 		return err
 	}
 	outputStream := lenz.GetBuffer(
-		Lenz, result, self.name,
-		self.build.Version,
+		Lenz, result, self.build.Bid,
+		self.name, self.build.Version,
 		common.BUILD_TYPE,
 		config.Lenz.Stdout,
 	)

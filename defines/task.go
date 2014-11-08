@@ -18,6 +18,7 @@ type BuildTask struct {
 	Build   string
 	Static  string
 	Schema  string
+	Bid     string
 }
 
 type RemoveTask struct {
