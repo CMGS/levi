@@ -2,6 +2,13 @@ package defines
 
 import "github.com/CMGS/consistent"
 
+type ForwardOpts struct {
+	Id      int
+	Type    string
+	Name    string
+	Version string
+}
+
 type AttachEvent struct {
 	Type    string
 	ID      string
