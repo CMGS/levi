@@ -45,7 +45,7 @@ func (self *Tester) GetLogs() {
 		Index: self.index,
 		Type:  common.TEST_TASK,
 	}
-	fopts := &defines.ForwardOpts{
+	fopts := &defines.ForwardOptions{
 		self.tid, common.TEST_TYPE,
 		self.name, self.version,
 		config.Lenz.Stdout,

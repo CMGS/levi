@@ -2,7 +2,7 @@ package defines
 
 import "github.com/CMGS/consistent"
 
-type ForwardOpts struct {
+type ForwardOptions struct {
 	Id      int
 	Type    string
 	Name    string

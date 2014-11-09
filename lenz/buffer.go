@@ -18,12 +18,12 @@ type Writer interface {
 
 type ForwardOutput struct {
 	result   *defines.Result
-	opts     *defines.ForwardOpts
+	opts     *defines.ForwardOptions
 	routes   []*defines.Route
 	channels []chan *defines.Log
 }
 
-func NewForwardOutput(result *defines.Result, opts *defines.ForwardOpts, routes []*defines.Route) *ForwardOutput {
+func NewForwardOutput(result *defines.Result, opts *defines.ForwardOptions, routes []*defines.Route) *ForwardOutput {
 	o := &ForwardOutput{result: result, opts: opts}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
@@ -70,7 +70,7 @@ func (self ForwardOutput) Close() {
 	}
 }
 
-func GetBuffer(Lenz *LenzForwarder, result *defines.Result, opts *defines.ForwardOpts) Writer {
+func GetBuffer(Lenz *LenzForwarder, result *defines.Result, opts *defines.ForwardOptions) Writer {
 	routes, err := Lenz.Router.GetAll()
 	if err != nil {
 		return Stdout{}
