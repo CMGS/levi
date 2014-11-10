@@ -190,9 +190,7 @@ func (self *AppTask) BuildImage(index int) {
 		Type:  common.BUILD_TASK,
 	}
 	defer func() {
-		if result.Data != "" {
-			result.Done = true
-		}
+		result.Done = true
 		self.writeBack(result)
 	}()
 	builder := NewBuilder(self.Name, job)
