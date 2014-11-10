@@ -151,6 +151,7 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 	logs.Info("Remove Container", self.Name, job.Container)
 	if _, ok := Status.Removable[job.Container]; !ok {
 		logs.Info("Not Record")
+		self.writeBack(result)
 		return
 	}
 	delete(Status.Removable, job.Container)
