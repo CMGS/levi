@@ -70,12 +70,12 @@ func (self *Builder) Build(result *defines.Result) error {
 	if err := self.createDockerFile(); err != nil {
 		return err
 	}
-	outputStream := lenz.GetBuffer(
-		Lenz, result, self.name,
-		self.build.Version,
-		common.BUILD_TYPE,
+	fopts := &defines.ForwardOptions{
+		self.build.Id, common.BUILD_TYPE,
+		self.name, self.build.Version,
 		config.Lenz.Stdout,
-	)
+	}
+	outputStream := lenz.GetBuffer(Lenz, result, fopts)
 	defer outputStream.Close()
 	if err := self.buildImage(outputStream); err != nil {
 		return err

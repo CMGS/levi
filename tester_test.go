@@ -19,6 +19,7 @@ func init() {
 		"test",
 		"abcdefg",
 		0,
+		0,
 	}
 }
 

@@ -98,7 +98,7 @@ func Test_TaskRemoveContainer(t *testing.T) {
 		return nil
 	}
 	id := "abcdefg"
-	job := &defines.RemoveTask{id, true}
+	job := &defines.RemoveTask{123, id, true}
 	nginx := NewNginx()
 	apptask.Tasks.Remove = []*defines.RemoveTask{job}
 	apptask.wg.Add(1)

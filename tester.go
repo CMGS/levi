@@ -13,6 +13,7 @@ type Tester struct {
 	cid     string
 	name    string
 	version string
+	tid     int
 	index   int
 }
 
@@ -44,12 +45,12 @@ func (self *Tester) GetLogs() {
 		Index: self.index,
 		Type:  common.TEST_TASK,
 	}
-	outputStream := lenz.GetBuffer(
-		Lenz, result, self.name,
-		self.version,
-		common.TEST_TYPE,
+	fopts := &defines.ForwardOptions{
+		self.tid, common.TEST_TYPE,
+		self.name, self.version,
 		config.Lenz.Stdout,
-	)
+	}
+	outputStream := lenz.GetBuffer(Lenz, result, fopts)
 	opts := docker.LogsOptions{
 		Container:    self.cid,
 		OutputStream: outputStream,

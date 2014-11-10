@@ -18,20 +18,18 @@ type Writer interface {
 
 type ForwardOutput struct {
 	result   *defines.Result
-	name     string
-	version  string
-	typ      string
+	opts     *defines.ForwardOptions
 	routes   []*defines.Route
 	channels []chan *defines.Log
 }
 
-func NewForwardOutput(result *defines.Result, name, version, typ string, stdout bool, routes []*defines.Route) *ForwardOutput {
-	o := &ForwardOutput{result: result, name: name, version: version, typ: typ}
+func NewForwardOutput(result *defines.Result, opts *defines.ForwardOptions, routes []*defines.Route) *ForwardOutput {
+	o := &ForwardOutput{result: result, opts: opts}
 	o.routes = routes
 	o.channels = make([]chan *defines.Log, len(routes))
 	for i, route := range routes {
 		o.channels[i] = make(chan *defines.Log)
-		go Streamer(route, o.channels[i], stdout)
+		go Streamer(route, o.channels[i], opts.Stdout)
 	}
 	return o
 }
@@ -56,10 +54,10 @@ func (self ForwardOutput) send(data string) {
 	for _, chann := range self.channels {
 		o := &defines.Log{
 			Data:    data,
-			ID:      self.version,
-			Name:    self.name,
-			AppID:   "",
-			AppType: self.typ,
+			ID:      fmt.Sprintf("%d", self.opts.Id),
+			Name:    self.opts.Name,
+			AppID:   self.opts.Version,
+			AppType: self.opts.Type,
 			Type:    "stdout",
 		}
 		chann <- o
@@ -72,12 +70,12 @@ func (self ForwardOutput) Close() {
 	}
 }
 
-func GetBuffer(Lenz *LenzForwarder, result *defines.Result, name, version, typ string, stdout bool) Writer {
+func GetBuffer(Lenz *LenzForwarder, result *defines.Result, opts *defines.ForwardOptions) Writer {
 	routes, err := Lenz.Router.GetAll()
 	if err != nil {
 		return Stdout{}
 	}
-	return NewForwardOutput(result, name, version, typ, stdout, routes)
+	return NewForwardOutput(result, opts, routes)
 }
 
 type Stdout struct{}

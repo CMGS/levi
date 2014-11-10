@@ -65,6 +65,7 @@ func (self *AppTask) storeNewContainerInfo(result *defines.Result) {
 			tester := Tester{
 				id:      result.Id,
 				cid:     cid,
+				tid:     job.Id,
 				name:    self.Name,
 				version: job.Version,
 				index:   result.Index,
@@ -147,18 +148,18 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 		Index: index,
 		Type:  common.REMOVE_TASK,
 	}
+	defer func() {
+		//TODO Not Safe
+		if result.Data != "" {
+			delete(Status.Removable, job.Container)
+		}
+		self.writeBack(result)
+	}()
 	logs.Info("Remove Container", self.Name, job.Container)
 	if _, ok := Status.Removable[job.Container]; !ok {
 		logs.Info("Not Record")
 		return
 	}
-	delete(Status.Removable, job.Container)
-	defer func() {
-		if result.Data == "" {
-			Status.Removable[job.Container] = struct{}{}
-		}
-		self.writeBack(result)
-	}()
 	container := Container{
 		id:      job.Container,
 		appname: self.Name,
@@ -189,9 +190,7 @@ func (self *AppTask) BuildImage(index int) {
 		Type:  common.BUILD_TASK,
 	}
 	defer func() {
-		if result.Data != "" {
-			result.Done = true
-		}
+		result.Done = true
 		self.writeBack(result)
 	}()
 	builder := NewBuilder(self.Name, job)

@@ -164,21 +164,20 @@ func (self *MetricsRecorder) Remove(cid string) {
 }
 
 func (self *MetricsRecorder) Report() {
-	defer close(self.stop)
 	var finish bool = false
 	for !finish {
 		select {
 		case <-time.After(time.Second * time.Duration(self.t)):
 			self.Send()
-		case f := <-self.stop:
-			finish = f
+		case finish = <-self.stop:
+			logs.Info("Metrics Stop")
 		}
 	}
-	logs.Info("Metrics Stop")
 	self.stop <- true
 }
 
 func (self *MetricsRecorder) Stop() {
+	defer close(self.stop)
 	self.stop <- true
 	<-self.stop
 }

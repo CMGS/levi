@@ -11,6 +11,7 @@ type Result struct {
 }
 
 type BuildTask struct {
+	Id      int
 	Group   string
 	Name    string
 	Version string
@@ -21,6 +22,7 @@ type BuildTask struct {
 }
 
 type RemoveTask struct {
+	Id        int
 	Container string
 	RmImage   bool
 }
@@ -30,6 +32,7 @@ func (self *RemoveTask) IsRemoveImage() bool {
 }
 
 type AddTask struct {
+	Id        int
 	Version   string
 	Bind      int64
 	Port      int64
