@@ -148,19 +148,18 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 		Index: index,
 		Type:  common.REMOVE_TASK,
 	}
-	logs.Info("Remove Container", self.Name, job.Container)
-	if _, ok := Status.Removable[job.Container]; !ok {
-		logs.Info("Not Record")
-		self.writeBack(result)
-		return
-	}
-	delete(Status.Removable, job.Container)
 	defer func() {
-		if result.Data == "" {
-			Status.Removable[job.Container] = struct{}{}
+		//TODO Not Safe
+		if result.Data != "" {
+			delete(Status.Removable, job.Container)
 		}
 		self.writeBack(result)
 	}()
+	logs.Info("Remove Container", self.Name, job.Container)
+	if _, ok := Status.Removable[job.Container]; !ok {
+		logs.Info("Not Record")
+		return
+	}
 	container := Container{
 		id:      job.Container,
 		appname: self.Name,
