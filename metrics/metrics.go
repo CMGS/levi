@@ -131,12 +131,14 @@ type MetricsRecorder struct {
 	client *InfluxDBClient
 	stop   chan bool
 	t      int
+	wg     *sync.WaitGroup
 }
 
 func NewMetricsRecorder(hostname string, config defines.MetricsConfig) *MetricsRecorder {
 	InitDevDir()
 	r := &MetricsRecorder{}
 	r.mu = &sync.Mutex{}
+	r.wg = &sync.WaitGroup{}
 	r.apps = map[string]*MetricData{}
 	r.client = NewInfluxDBClient(hostname, config)
 	r.t = config.ReportInterval
@@ -185,11 +187,16 @@ func (self *MetricsRecorder) Stop() {
 func (self *MetricsRecorder) Send() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
+	self.wg.Add(len(self.apps))
 	for cid, app := range self.apps {
-		if app.UpdateStats(cid) && app.UpdateNetStats(cid) {
-			self.client.GenSeries(cid, app)
-			app.UpdateTime()
-		}
+		go func(cid string, app *MetricData) {
+			defer self.wg.Done()
+			if app.UpdateStats(cid) && app.UpdateNetStats(cid) {
+				self.client.GenSeries(cid, app)
+				app.UpdateTime()
+			}
+		}(cid, app)
 	}
+	self.wg.Wait()
 	self.client.Send()
 }

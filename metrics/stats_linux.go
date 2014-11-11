@@ -3,7 +3,6 @@ package metrics
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,11 +23,12 @@ func InitDevDir() {
 	if err != nil {
 		return
 	}
+	logs.Debug("Device Dir", devDir)
 }
 
 func GetCgroupStats(id string) (m *cgroups.Stats, err error) {
 	var parentName string
-	if parentName, id, err = getLongID(id); err != nil {
+	if parentName, id, _, err = getLongID(id); err != nil {
 		return
 	}
 	c := cgroups.Cgroup{
@@ -40,7 +40,7 @@ func GetCgroupStats(id string) (m *cgroups.Stats, err error) {
 
 func GetNetStats(cid string) (map[string]uint64, error) {
 	var iStats map[string]uint64
-	pid, err := GetContainerPID(cid)
+	_, _, pid, err := getLongID(cid)
 	if err != nil {
 		return nil, err
 	}
@@ -134,23 +134,4 @@ func getIfStats() (m map[string]uint64, err error) {
 	}
 	err = cmd.Wait()
 	return
-}
-
-func GetContainerPID(id string) (pid string, err error) {
-	pat := filepath.Join(devDir, "*", fmt.Sprintf("*%s*", id), "tasks")
-	a, err := filepath.Glob(pat)
-	if err != nil {
-		return
-	}
-	if len(a) != 1 {
-		return "", fmt.Errorf("Get Container PID Failed %s", id)
-	}
-
-	contents, err := ioutil.ReadFile(a[0])
-	if err != nil {
-		return
-	}
-
-	a = strings.Split(string(contents), "\n")
-	return a[0], nil
 }
