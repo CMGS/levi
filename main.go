@@ -25,6 +25,7 @@ func main() {
 	common.Docker = defines.NewDocker(config.Docker.Endpoint)
 
 	Lenz = lenz.NewLenz(config.Lenz)
+	cleaner := lenz.NewCleaner(config.Cleaner)
 	Metrics = metrics.NewMetricsRecorder(config.HostName, config.Metrics)
 
 	utils.WritePid(config.PidFile)
@@ -35,6 +36,7 @@ func main() {
 
 	Status = NewStatus()
 	levi := NewLevi()
+	go cleaner.Clean()
 	go Status.Listen()
 	go Status.Report(common.STATUS_IDENT)
 	go Metrics.Report()
@@ -47,6 +49,7 @@ func main() {
 		signal.Notify(c, syscall.SIGQUIT)
 		logs.Info("Catch", <-c)
 		levi.Exit()
+		cleaner.Stop()
 		Metrics.Stop()
 	}()
 	go levi.Read()

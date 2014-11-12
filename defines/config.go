@@ -43,6 +43,11 @@ type MetricsConfig struct {
 	Database       string
 }
 
+type CleanerConfig struct {
+	Interval int
+	Dir      string
+}
+
 type LeviConfig struct {
 	HostName        string
 	Master          string
@@ -59,4 +64,5 @@ type LeviConfig struct {
 	Etcd    EtcdConfig
 	Lenz    LenzConfig
 	Metrics MetricsConfig
+	Cleaner CleanerConfig
 }

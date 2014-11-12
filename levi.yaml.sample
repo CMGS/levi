@@ -46,3 +46,7 @@ metrics:
   username: root
   password: root
   database: NBE
+
+cleaner:
+  interval: 10
+  dir: /var/lib/docker/containers
