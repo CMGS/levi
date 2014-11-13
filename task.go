@@ -31,7 +31,11 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 			default:
 				job.SetAsService()
 			}
-			go self.AddContainer(index, env, nginx)
+			if len(self.Tasks.Remove) != 0 {
+				self.AddContainer(index, env, nginx)
+			} else {
+				go self.AddContainer(index, env, nginx)
+			}
 		}
 	}
 	if len(self.Tasks.Remove) != 0 {
