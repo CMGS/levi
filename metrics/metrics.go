@@ -91,11 +91,14 @@ func (self *MetricData) UpdateStats(cid string) bool {
 	self.mem_usage = stats.MemoryStats.Usage
 	self.mem_rss = stats.MemoryStats.Stats["rss"]
 
-	t := float64(time.Now().Sub(self.t).Nanoseconds())
-	self.cpu_user_rate = float64((stats.CpuStats.CpuUsage.UsageInUsermode - self.old_cpu_user)) / t
-	self.cpu_system_rate = float64((stats.CpuStats.CpuUsage.UsageInKernelmode - self.old_cpu_system)) / t
-	self.cpu_usage_rate = float64((stats.CpuStats.CpuUsage.TotalUsage - self.old_cpu_usage)) / t
-
+	if (stats.CpuStats.CpuUsage.UsageInUsermode > self.old_cpu_user) &&
+		(stats.CpuStats.CpuUsage.UsageInKernelmode > self.old_cpu_system) &&
+		(stats.CpuStats.CpuUsage.TotalUsage > self.old_cpu_usage) {
+		t := float64(time.Now().Sub(self.t).Nanoseconds())
+		self.cpu_user_rate = float64((stats.CpuStats.CpuUsage.UsageInUsermode - self.old_cpu_user)) / t
+		self.cpu_system_rate = float64((stats.CpuStats.CpuUsage.UsageInKernelmode - self.old_cpu_system)) / t
+		self.cpu_usage_rate = float64((stats.CpuStats.CpuUsage.TotalUsage - self.old_cpu_usage)) / t
+	}
 	self.old_cpu_user = stats.CpuStats.CpuUsage.UsageInUsermode
 	self.old_cpu_system = stats.CpuStats.CpuUsage.UsageInKernelmode
 	self.old_cpu_usage = stats.CpuStats.CpuUsage.TotalUsage
@@ -112,12 +115,16 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 		return false
 	}
 
-	t := time.Now().Sub(self.t).Seconds()
-	self.net_inbytes = float64(iStats["inbytes.0"]-self.old_net_inbytes) / t
-	self.net_outbytes = float64(iStats["outbytes.0"]-self.old_net_outbytes) / t
-	self.net_inerrs = float64(iStats["inerrs.0"]-self.old_net_inerrs) / t
-	self.net_outerrs = float64(iStats["outerrs.0"]-self.old_net_outerrs) / t
-
+	if (iStats["inbytes.0"] > self.old_net_inbytes) &&
+		(iStats["outbytes.0"] > self.old_net_outbytes) &&
+		(iStats["inerrs.0"] > self.old_net_inerrs) &&
+		(iStats["outerrs.0"] > self.old_net_outerrs) {
+		t := time.Now().Sub(self.t).Seconds()
+		self.net_inbytes = float64(iStats["inbytes.0"]-self.old_net_inbytes) / t
+		self.net_outbytes = float64(iStats["outbytes.0"]-self.old_net_outbytes) / t
+		self.net_inerrs = float64(iStats["inerrs.0"]-self.old_net_inerrs) / t
+		self.net_outerrs = float64(iStats["outerrs.0"]-self.old_net_outerrs) / t
+	}
 	self.old_net_inbytes = iStats["inbytes.0"]
 	self.old_net_outbytes = iStats["outbytes.0"]
 	self.old_net_inerrs = iStats["inerrs.0"]
