@@ -140,7 +140,7 @@ func (self *Builder) buildImage(out io.Writer) error {
 	opts := docker.BuildImageOptions{
 		Name:                self.repoTag,
 		NoCache:             false,
-		SuppressOutput:      true,
+		SuppressOutput:      false,
 		RmTmpContainer:      true,
 		ForceRmTmpContainer: true,
 		OutputStream:        out,
