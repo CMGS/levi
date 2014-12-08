@@ -29,14 +29,14 @@ func GeneratePermdirPath(appname, ident string, test bool) string {
 }
 
 func (self *Env) CreateConfigFile(job *defines.AddTask) error {
-	var filename string = "resource-prod"
+	var filename string = common.PROD_CONFIG_FILE
 	if job.IsTest() {
-		filename = "resource-test"
+		filename = common.TEST_CONFIG_FILE
 	}
-	return self.createConfigFile(job.Ident, filename)
+	return self.DoCreateConfigFile(job.Ident, filename)
 }
 
-func (self *Env) createConfigFile(ident, filename string) error {
+func (self *Env) DoCreateConfigFile(ident, filename string) error {
 	configPath := GenerateConfigPath(self.appname, ident)
 
 	resp, err := common.Etcd.Get(path.Join("/NBE", self.appname, filename), false, false)

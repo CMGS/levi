@@ -69,8 +69,14 @@ func (self *AddTask) SetAsService() {
 	self.Ident = fmt.Sprintf("%d", self.Bind)
 }
 
+type UpdateTask struct {
+	Id        int
+	Container string
+}
+
 type Tasks struct {
 	Build  []*BuildTask
 	Add    []*AddTask
 	Remove []*RemoveTask
+	Update []*UpdateTask
 }

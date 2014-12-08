@@ -55,7 +55,7 @@ func Test_CreateConfigFile(t *testing.T) {
 		return ret, nil
 	}
 	env := Env{appname, 4011}
-	if err := env.createConfigFile(job, "config.yaml"); err != nil {
+	if err := env.CreateConfigFile(job); err != nil {
 		t.Error(err)
 	}
 	if _, err := os.Stat(configPath); err != nil {
