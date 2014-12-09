@@ -5,6 +5,7 @@ import (
 	"./defines"
 	"./lenz"
 	"./logs"
+	"./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -26,7 +27,7 @@ func (self *Tester) Wait() {
 		Data:  "0",
 	}
 	defer func() {
-		RemoveContainer(self.cid, true, false)
+		utils.RemoveContainer(self.cid, true, false)
 		if err := common.Ws.WriteJSON(result); err != nil {
 			logs.Info(err, result)
 		}

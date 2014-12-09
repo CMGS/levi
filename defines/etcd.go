@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"../logs"
-	"../utils"
 	"github.com/coreos/go-etcd/etcd"
 )
 
@@ -31,6 +30,6 @@ func NewEtcd(machines []string, sync bool) *EtcdWrapper {
 
 	e := &EtcdWrapper{Client: client}
 	var makeEtcdWrapper func(*EtcdWrapper, *etcd.Client) *EtcdWrapper
-	utils.MakeWrapper(&makeEtcdWrapper)
+	MakeWrapper(&makeEtcdWrapper)
 	return makeEtcdWrapper(e, client)
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"./common"
+	"./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -44,7 +45,7 @@ func Test_RemoveContainer(t *testing.T) {
 		}
 		return nil
 	}
-	if err := RemoveContainer("abcdefg", true, true); err != nil {
+	if err := utils.RemoveContainer("abcdefg", true, true); err != nil {
 		t.Error(err)
 	}
 	if _, err := os.Stat(cpath); err == nil {

@@ -29,7 +29,7 @@ func (self *Image) Pull() error {
 	return nil
 }
 
-func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error) {
+func (self *Image) Run(job *defines.AddTask, uid int) (container *docker.Container, err error) {
 	image := fmt.Sprintf("%s/%s:%s", config.Docker.Registry, self.appname, self.version)
 	configPath := GenerateConfigPath(self.appname, job.Ident)
 	mPermdir := fmt.Sprintf("/%s/permdir", self.appname)
@@ -37,8 +37,8 @@ func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error)
 	if job.IsTest() {
 		runenv = common.TESTING
 	}
-	permdir := GeneratePermdirPath(self.appname, job.Ident, job.IsTest())
 
+	permdir := GeneratePermdirPath(self.appname, job.Ident, job.IsTest())
 	containerConfig := docker.Config{
 		CPUShares: job.CpuShares,
 		CPUSet:    job.CpuSet,
@@ -81,16 +81,18 @@ func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error)
 		&hostConfig,
 	}
 
-	container, err := common.Docker.CreateContainer(opts)
-	if err != nil {
-		return nil, err
+	if container, err = common.Docker.CreateContainer(opts); err != nil {
+		return
 	}
 
-	if err := common.Docker.StartContainer(container.ID, &hostConfig); err != nil {
-		// Have to remove resource when start failed
-		logs.Debug("Rollback add files")
-		RemoveContainer(container.ID, job.IsTest(), false)
-		return nil, err
-	}
-	return container, nil
+	defer func() {
+		if err != nil {
+			// Have to remove resource when start failed
+			logs.Debug("Rollback add files")
+			utils.RemoveContainer(container.ID, job.IsTest(), false)
+		}
+	}()
+
+	err = common.Docker.StartContainer(container.ID, &hostConfig)
+	return
 }

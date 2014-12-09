@@ -7,6 +7,7 @@ import (
 	"./common"
 	"./defines"
 	"./logs"
+	"./utils"
 )
 
 type AppTask struct {
@@ -179,7 +180,7 @@ func (self *AppTask) RemoveContainer(index int, nginx *Nginx) {
 		return
 	}
 	// Test container will be automatic removed
-	if err := RemoveContainer(job.Container, false, job.IsRemoveImage()); err != nil {
+	if err := utils.RemoveContainer(job.Container, false, job.IsRemoveImage()); err != nil {
 		logs.Info("Remove Container", job.Container, "failed", err)
 		return
 	}

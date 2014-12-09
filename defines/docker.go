@@ -2,7 +2,6 @@ package defines
 
 import (
 	"../logs"
-	"../utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -32,6 +31,6 @@ func NewDocker(endpoint string) *DockerWrapper {
 	}
 	d := &DockerWrapper{Client: client}
 	var makeDockerWrapper func(*DockerWrapper, *docker.Client) *DockerWrapper
-	utils.MakeWrapper(&makeDockerWrapper)
+	MakeWrapper(&makeDockerWrapper)
 	return makeDockerWrapper(d, client)
 }

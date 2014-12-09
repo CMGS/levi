@@ -7,6 +7,7 @@ import (
 	"./common"
 	"./defines"
 	"./logs"
+	"./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -63,7 +64,7 @@ func (self *StatusMoniter) Report(id string) {
 			continue
 		}
 		status := self.getStatus(container.Status)
-		name, aid, at := GetAppInfo(container.Names[0])
+		name, aid, at := utils.GetAppInfo(container.Names[0])
 		shortID := container.ID[:12]
 		logs.Debug("Container", name, shortID, status)
 		if status != common.STATUS_DIE {
@@ -90,7 +91,7 @@ func (self *StatusMoniter) die(id string) {
 		logs.Info("Status inspect docker failed", err)
 		return
 	}
-	appname, _, _ := GetAppInfo(container.Name)
+	appname, _, _ := utils.GetAppInfo(container.Name)
 	result := &defines.Result{
 		Id:    common.STATUS_IDENT,
 		Done:  true,
@@ -99,25 +100,4 @@ func (self *StatusMoniter) die(id string) {
 		Data:  fmt.Sprintf("%s|%s|%s", common.STATUS_DIE, appname, id),
 	}
 	self.writeBack(result)
-}
-
-func GetAppInfo(containerName string) (appname string, appid string, apptyp string) {
-	containerName = strings.TrimLeft(containerName, "/")
-	if pos := strings.LastIndex(containerName, "_daemon_"); pos > -1 {
-		appname = containerName[:pos]
-		appid = containerName[pos+8:]
-		apptyp = common.DAEMON_TYPE
-		return
-	}
-	if pos := strings.LastIndex(containerName, "_test_"); pos > -1 {
-		appname = containerName[:pos]
-		appid = containerName[pos+6:]
-		apptyp = common.TEST_TYPE
-		return
-	}
-	appinfo := strings.Split(containerName, "_")
-	appname = strings.Join(appinfo[:len(appinfo)-1], "_")
-	appid = appinfo[len(appinfo)-1]
-	apptyp = common.DEFAULT_TYPE
-	return
 }
