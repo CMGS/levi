@@ -40,8 +40,8 @@ func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error)
 	permdir := GeneratePermdirPath(self.appname, job.Ident, job.IsTest())
 
 	containerConfig := docker.Config{
-		CpuShares: job.CpuShares,
-		CpuSet:    job.CpuSet,
+		CPUShares: job.CpuShares,
+		CPUSet:    job.CpuSet,
 		Memory:    job.Memory,
 		User:      strconv.Itoa(uid),
 		Image:     image,
@@ -69,7 +69,7 @@ func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error)
 
 		portBindings := make(map[docker.Port][]docker.PortBinding)
 		portBindings[port] = []docker.PortBinding{{
-			HostIp:   "0.0.0.0",
+			HostIP:   "0.0.0.0",
 			HostPort: strconv.FormatInt(job.Bind, 10),
 		}}
 		hostConfig.PortBindings = portBindings
@@ -78,6 +78,7 @@ func (self *Image) Run(job *defines.AddTask, uid int) (*docker.Container, error)
 	opts := docker.CreateContainerOptions{
 		fmt.Sprintf("%s_%s", self.appname, job.Ident),
 		&containerConfig,
+		&hostConfig,
 	}
 
 	container, err := common.Docker.CreateContainer(opts)

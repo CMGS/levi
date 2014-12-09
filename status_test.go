@@ -13,10 +13,10 @@ func init() {
 	InitTest()
 }
 
-func Test_GetName(t *testing.T) {
+func Test_GetAppInfo(t *testing.T) {
 	var containerName string
 	containerName = "test_1234"
-	appname, appid, apptype := Status.getAppInfo(containerName)
+	appname, appid, apptype := GetAppInfo(containerName)
 	if appname != "test" {
 		t.Error("Get appname failed")
 	}

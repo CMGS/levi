@@ -20,4 +20,8 @@ const (
 	BUILD_TASK  = 3
 	INFO_TASK   = 4
 	TEST_TASK   = 5
+	UPDATE_TASK = 6
+
+	PROD_CONFIG_FILE = "resource-prod"
+	TEST_CONFIG_FILE = "resource-test"
 )

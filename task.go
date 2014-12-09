@@ -50,6 +50,12 @@ func (self *AppTask) Deploy(env *Env, nginx *Nginx) {
 			go self.BuildImage(index)
 		}
 	}
+	if len(self.Tasks.Update) != 0 {
+		self.wg.Add(len(self.Tasks.Update))
+		for index, _ := range self.Tasks.Update {
+			go self.UpdateConfig(index, env)
+		}
+	}
 }
 
 func (self *AppTask) Wait() {
@@ -204,4 +210,29 @@ func (self *AppTask) BuildImage(index int) {
 	}
 	result.Data = builder.repoTag
 	logs.Info("Build Finished", builder.repoTag)
+}
+
+func (self *AppTask) UpdateConfig(index int, env *Env) {
+	defer self.wg.Done()
+	job := self.Tasks.Update[index]
+	result := &defines.Result{
+		Id:    self.Id,
+		Done:  true,
+		Index: index,
+		Type:  common.UPDATE_TASK,
+	}
+	defer self.writeBack(result)
+	logs.Info("Update Container Config", self.Name, job.Container)
+	container := Container{
+		id:      job.Container,
+		appname: self.Name,
+	}
+	ident, err := container.GetIdent()
+	if err != nil {
+		logs.Info("Update Config Failed", err)
+		return
+	}
+	env.DoCreateConfigFile(ident, common.PROD_CONFIG_FILE)
+	result.Data = "1"
+	logs.Info("Update Config Finished")
 }
