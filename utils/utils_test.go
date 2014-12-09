@@ -3,7 +3,24 @@ package utils
 import (
 	"os"
 	"testing"
+
+	"../common"
 )
+
+func Test_GetAppInfo(t *testing.T) {
+	var containerName string
+	containerName = "test_1234"
+	appname, appid, apptype := GetAppInfo(containerName)
+	if appname != "test" {
+		t.Error("Get appname failed")
+	}
+	if appid != "1234" {
+		t.Error("Get appid failed")
+	}
+	if apptype != common.DEFAULT_TYPE {
+		t.Error("Get apptype failed")
+	}
+}
 
 func Test_UrlJoin(t *testing.T) {
 	strs := []string{"http://a.b.c", "d", "e"}

@@ -6,12 +6,42 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/fsouza/go-dockerclient"
+
+	"../common"
 	"../logs"
 )
+
+func RemoveContainer(id string, test bool, rmi bool) error {
+	container, err := common.Docker.InspectContainer(id)
+	if err != nil {
+		return err
+	}
+	for p, rp := range container.Volumes {
+		switch {
+		case strings.HasSuffix(p, "/config.yaml"):
+			if err := os.RemoveAll(rp); err != nil {
+				return err
+			}
+		case test && strings.HasSuffix(p, "/permdir"):
+			if err := os.RemoveAll(rp); err != nil {
+				return err
+			}
+		}
+	}
+	if err := common.Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
+		return err
+	}
+	if rmi {
+		if err := common.Docker.RemoveImage(container.Image); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func UrlJoin(strs ...string) string {
 	ss := make([]string, len(strs))
@@ -100,23 +130,6 @@ func CopyFile(source string, dest string) (err error) {
 	return
 }
 
-func MakeWrapper(fptr interface{}) {
-	var maker = func(in []reflect.Value) []reflect.Value {
-		wrapper := in[0].Elem()
-		client := in[1]
-		wrapperType := wrapper.Type()
-		for i := 1; i < wrapperType.NumField(); i++ {
-			field := wrapper.Field(i)
-			f := client.MethodByName(wrapperType.Field(i).Name)
-			field.Set(f)
-		}
-		return []reflect.Value{in[0]}
-	}
-	fn := reflect.ValueOf(fptr).Elem()
-	v := reflect.MakeFunc(fn.Type(), maker)
-	fn.Set(v)
-}
-
 func Marshal(obj interface{}) []byte {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
@@ -135,4 +148,25 @@ func Unmarshal(input io.ReadCloser, obj interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func GetAppInfo(containerName string) (appname string, appid string, apptyp string) {
+	containerName = strings.TrimLeft(containerName, "/")
+	if pos := strings.LastIndex(containerName, "_daemon_"); pos > -1 {
+		appname = containerName[:pos]
+		appid = containerName[pos+8:]
+		apptyp = common.DAEMON_TYPE
+		return
+	}
+	if pos := strings.LastIndex(containerName, "_test_"); pos > -1 {
+		appname = containerName[:pos]
+		appid = containerName[pos+6:]
+		apptyp = common.TEST_TYPE
+		return
+	}
+	appinfo := strings.Split(containerName, "_")
+	appname = strings.Join(appinfo[:len(appinfo)-1], "_")
+	appid = appinfo[len(appinfo)-1]
+	apptyp = common.DEFAULT_TYPE
+	return
 }

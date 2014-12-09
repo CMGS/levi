@@ -1,11 +1,9 @@
 package main
 
 import (
-	"os"
-	"strings"
-
 	"./common"
 	"./logs"
+	"./utils"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -19,7 +17,7 @@ func (self *Container) GetIdent() (ident string, err error) {
 	if err != nil {
 		return
 	}
-	_, ident, _ = GetAppInfo(container.Name)
+	_, ident, _ = utils.GetAppInfo(container.Name)
 	return
 }
 
@@ -27,34 +25,6 @@ func (self *Container) Stop() error {
 	if err := common.Docker.StopContainer(self.id, common.CONTAINER_STOP_TIMEOUT); err != nil {
 		logs.Info("Stop Container", err)
 		if err := common.Docker.KillContainer(docker.KillContainerOptions{ID: self.id}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func RemoveContainer(id string, test bool, rmi bool) error {
-	container, err := common.Docker.InspectContainer(id)
-	if err != nil {
-		return err
-	}
-	for p, rp := range container.Volumes {
-		switch {
-		case strings.HasSuffix(p, "/config.yaml"):
-			if err := os.RemoveAll(rp); err != nil {
-				return err
-			}
-		case test && strings.HasSuffix(p, "/permdir"):
-			if err := os.RemoveAll(rp); err != nil {
-				return err
-			}
-		}
-	}
-	if err := common.Docker.RemoveContainer(docker.RemoveContainerOptions{ID: id}); err != nil {
-		return err
-	}
-	if rmi {
-		if err := common.Docker.RemoveImage(container.Image); err != nil {
 			return err
 		}
 	}

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"../logs"
-	"../utils"
 	"github.com/gorilla/websocket"
 )
 
@@ -26,6 +25,6 @@ func NewWebSocket(endpoint string, readBufferSize, writeBufferSize int) *WebSock
 
 	ws := &WebSocketWrapper{Conn: conn}
 	var makeWebSocketWrapper func(*WebSocketWrapper, *websocket.Conn) *WebSocketWrapper
-	utils.MakeWrapper(&makeWebSocketWrapper)
+	MakeWrapper(&makeWebSocketWrapper)
 	return makeWebSocketWrapper(ws, conn)
 }
