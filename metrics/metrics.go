@@ -118,7 +118,7 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 		return false
 	}
 
-	t := float64(time.Now().Sub(self.t).Nanoseconds())
+	t := time.Now().Sub(self.t).Seconds()
 	if iStats["inbytes.0"] > self.old_net_inbytes {
 		self.net_inbytes = float64(iStats["inbytes.0"]-self.old_net_inbytes) / t
 	}
