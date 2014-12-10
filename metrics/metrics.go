@@ -90,13 +90,15 @@ func (self *MetricData) UpdateStats(cid string) bool {
 
 	self.mem_usage = stats.MemoryStats.Usage
 	self.mem_rss = stats.MemoryStats.Stats["rss"]
+
 	t := float64(time.Now().Sub(self.t).Nanoseconds())
-	switch {
-	case stats.CpuStats.CpuUsage.UsageInUsermode > self.old_cpu_user:
+	if stats.CpuStats.CpuUsage.UsageInUsermode > self.old_cpu_user {
 		self.cpu_user_rate = float64((stats.CpuStats.CpuUsage.UsageInUsermode - self.old_cpu_user)) / t
-	case stats.CpuStats.CpuUsage.UsageInKernelmode > self.old_cpu_system:
+	}
+	if stats.CpuStats.CpuUsage.UsageInKernelmode > self.old_cpu_system {
 		self.cpu_system_rate = float64((stats.CpuStats.CpuUsage.UsageInKernelmode - self.old_cpu_system)) / t
-	case stats.CpuStats.CpuUsage.TotalUsage > self.old_cpu_usage:
+	}
+	if stats.CpuStats.CpuUsage.TotalUsage > self.old_cpu_usage {
 		self.cpu_usage_rate = float64((stats.CpuStats.CpuUsage.TotalUsage - self.old_cpu_usage)) / t
 	}
 
@@ -117,14 +119,16 @@ func (self *MetricData) UpdateNetStats(cid string) bool {
 	}
 
 	t := float64(time.Now().Sub(self.t).Nanoseconds())
-	switch {
-	case iStats["inbytes.0"] > self.old_net_inbytes:
+	if iStats["inbytes.0"] > self.old_net_inbytes {
 		self.net_inbytes = float64(iStats["inbytes.0"]-self.old_net_inbytes) / t
-	case iStats["outbytes.0"] > self.old_net_outbytes:
+	}
+	if iStats["outbytes.0"] > self.old_net_outbytes {
 		self.net_outbytes = float64(iStats["outbytes.0"]-self.old_net_outbytes) / t
-	case iStats["inerrs.0"] > self.old_net_inerrs:
+	}
+	if iStats["inerrs.0"] > self.old_net_inerrs {
 		self.net_inerrs = float64(iStats["inerrs.0"]-self.old_net_inerrs) / t
-	case iStats["outerrs.0"] > self.old_net_outerrs:
+	}
+	if iStats["outerrs.0"] > self.old_net_outerrs {
 		self.net_outerrs = float64(iStats["outerrs.0"]-self.old_net_outerrs) / t
 	}
 
